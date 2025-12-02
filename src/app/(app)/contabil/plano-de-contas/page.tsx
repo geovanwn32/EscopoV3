@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { MoreHorizontal, Plus, ChevronRight, ChevronDown, Trash2, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -310,3 +311,4 @@ function AccountForm({ onSave, onOpenChange, accounts, account }: AccountFormPro
         </DialogContent>
     );
 }
+
