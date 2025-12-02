@@ -91,7 +91,7 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
         setCompanies(prev => [...prev, newCompany]);
         switchCompany(newCompanyId);
         router.push('/minha-empresa');
-    }, [companies, switchCompany, router]);
+    }, [companies.length, switchCompany, router]);
 
     const updateCompany = useCallback((companyId: number, companyData: Company) => {
         setCompanies(prev => prev.map(c => c.id === companyId ? companyData : c));
@@ -117,7 +117,8 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
             if (typeof window !== 'undefined' && currentCompany) {
                  try {
                     const item = localStorage.getItem(scopedKey);
-                    setData(item ? JSON.parse(item) : defaultValue);
+                    const parsedItem = item ? JSON.parse(item) : defaultValue;
+                    setData(parsedItem);
                 } catch (error) {
                     console.error(`Error reading ${scopedKey} from localStorage`, error);
                     setData(defaultValue);
@@ -125,7 +126,7 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
             } else {
                 setData(defaultValue);
             }
-        }, [currentCompany, scopedKey, defaultValue]);
+        }, [currentCompany, scopedKey]);
 
 
         const setScopedData = useCallback((value: T) => {
