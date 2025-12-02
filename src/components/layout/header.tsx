@@ -1,7 +1,7 @@
 'use client';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { User, Settings as SettingsIcon, ChevronsUpDown, Check, PlusCircle, Building2 } from 'lucide-react';
+import { User, Settings as SettingsIcon, ChevronsUpDown, Check, PlusCircle, Building2, LayoutGrid } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -44,6 +44,7 @@ export default function Header() {
 
 function CompanySwitcher() {
   const [open, setOpen] = useState(false)
+  const router = useRouter();
   const { companies, currentCompany, switchCompany, addCompany } = useCompany();
   
   const handleSelectCompany = (companyId: number) => {
@@ -54,6 +55,11 @@ function CompanySwitcher() {
   const handleAddCompany = () => {
     addCompany();
     setOpen(false)
+  }
+
+  const goToCompanySelection = () => {
+    setOpen(false);
+    router.push('/selecionar-empresa');
   }
 
   if (companies.length === 0) {
@@ -103,6 +109,10 @@ function CompanySwitcher() {
               <CommandItem onSelect={handleAddCompany} className='cursor-pointer'>
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Adicionar Empresa
+              </CommandItem>
+              <CommandItem onSelect={goToCompanySelection} className='cursor-pointer'>
+                <LayoutGrid className="mr-2 h-4 w-4" />
+                Ver Todas as Empresas
               </CommandItem>
             </CommandGroup>
           </CommandList>
