@@ -1,5 +1,5 @@
 
-import { Building2, Menu, BarChart, Package, Users, Mail, Phone, ArrowRight } from 'lucide-react';
+import { Building2, Menu, BarChart, Package, Users, Mail, Phone, ArrowRight, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -7,7 +7,6 @@ import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Check } from 'lucide-react';
 
 const navLinks = [
   { href: "#features", label: "Recursos" },
@@ -305,3 +304,5 @@ export default function HomePage() {
     </div>
   );
 }
+
+    
