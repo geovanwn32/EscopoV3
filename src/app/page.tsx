@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Building2, Mail, Lock, Eye, EyeOff, Phone, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -132,7 +132,7 @@ export default function LoginPage() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
                 <a href="tel:+5562998554529" className="flex items-center gap-2 hover:text-primary transition-colors">
                     <Phone className="h-4 w-4" />
-                    +55 (62) 99855-4529
+                    (62) 99855-4529
                 </a>
                 <a href="mailto:geovaniwn@gmail.com" className="flex items-center gap-2 hover:text-primary transition-colors">
                     <Mail className="h-4 w-4" />
