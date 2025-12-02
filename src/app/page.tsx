@@ -1,13 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { Building2, Mail, Phone, MessageSquare } from 'lucide-react'
+import { Building2, Mail, Phone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -32,142 +31,118 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-const DataBlockAnimation = () => {
-  const [blocks, setBlocks] = useState<any[]>([]);
-
-  useEffect(() => {
-    const generateBlocks = () => {
-      const newBlocks = Array.from({ length: 50 }).map((_, i) => ({
-        id: i,
-        left: `${Math.random() * 100}%`,
-        animationDuration: `${Math.random() * 10 + 5}s`,
-        animationDelay: `${Math.random() * 5}s`,
-        opacity: Math.random() * 0.5 + 0.1,
-        height: `${Math.random() * 150 + 20}px`
-      }));
-      setBlocks(newBlocks);
-    };
-    generateBlocks();
-  }, []);
-
-  return (
-    <div className="data-block-container">
-      {blocks.map(block => (
-        <div
-          key={block.id}
-          className="data-block"
-          style={{
-            left: block.left,
-            height: block.height,
-            opacity: block.opacity,
-            animationDuration: block.animationDuration,
-            animationDelay: block.animationDelay,
-          }}
-        />
-      ))}
-    </div>
-  );
-};
-
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true)
 
   return (
-    <div className="w-full min-h-screen flex flex-col items-center justify-center bg-background p-4 relative overflow-hidden">
-        <DataBlockAnimation />
-        <div className="relative z-10 flex flex-col items-center justify-center gap-10 w-full max-w-md">
-            
-            <div className="space-y-4 text-center">
-                <div className="flex items-center justify-center gap-2 text-primary">
-                <Building2 className="h-8 w-8" />
-                <h1 className="text-3xl font-bold font-headline">EscopoV3</h1>
+    <div className="w-full min-h-screen grid grid-cols-1 lg:grid-cols-2">
+      <div className="hidden lg:flex flex-col items-center justify-center p-12 bg-primary text-primary-foreground relative">
+          <div className="absolute inset-0 bg-primary opacity-90"></div>
+          <div className="relative z-10 w-full max-w-md space-y-6">
+             <div className="flex items-center gap-3 text-white">
+                <Building2 className="h-10 w-10" />
+                <h1 className="text-4xl font-bold font-headline">EscopoV3</h1>
+            </div>
+            <p className="text-lg text-primary-foreground/80">
+              Sua contabilidade ganha vida: organizada, atualizada e sempre segura. Acesse sua empresa com poucos cliques e tenha o controle total.
+            </p>
+          </div>
+           <div className="absolute bottom-12 text-center text-sm text-primary-foreground/60">
+              © {new Date().getFullYear()} EscopoV3. Todos os direitos reservados.
+           </div>
+      </div>
+
+      <div className="flex items-center justify-center p-4 sm:p-8 bg-background">
+        <div className="w-full max-w-md space-y-8">
+            <div className='lg:hidden text-center'>
+                 <div className="flex items-center justify-center gap-2 text-primary">
+                    <Building2 className="h-8 w-8" />
+                    <h1 className="text-3xl font-bold font-headline">EscopoV3</h1>
                 </div>
-                <p className='text-foreground/80 max-w-md'>
-                Sua contabilidade ganha vida. Organizada, atualizada e sempre segura.
+                 <p className='text-foreground/80 mt-2'>
+                    Sua contabilidade ganha vida. Organizada, atualizada e sempre segura.
                 </p>
             </div>
-        
-            <div className="w-full">
-                <Card className='shadow-xl bg-card/80 backdrop-blur-sm'>
-                <CardHeader>
-                    <CardTitle className="text-2xl">{isLogin ? 'Login' : 'Cadastro'}</CardTitle>
-                    <CardDescription>
-                        {isLogin ? 'Insira seu e-mail e senha para acessar.' : 'Preencha os dados para criar sua conta.'}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
-                        <Input id="email" type="email" placeholder="seu@email.com" required />
-                    </div>
-                    <div className="space-y-2">
-                        <div className="flex items-center">
-                            <Label htmlFor="password">Senha</Label>
-                            {isLogin && (
-                                <Link href="#" className="ml-auto inline-block text-sm text-primary/80 underline-offset-4 transition-colors hover:text-primary hover:underline">
-                                    Esqueceu sua senha?
-                                </Link>
-                            )}
-                        </div>
-                        <Input id="password" type="password" required />
-                    </div>
-                    
-                    {!isLogin && (
-                        <div className="space-y-2">
-                            <Label htmlFor="confirmPassword">Confirmar Senha</Label>
-                            <Input id="confirmPassword" type="password" required />
-                        </div>
-                    )}
-                    
-                    <div className="space-y-4 pt-2">
-                        <Button asChild type="submit" className="w-full font-semibold">
-                        <Link href="/dashboard">{isLogin ? 'Entrar' : 'Cadastrar'}</Link>
-                        </Button>
-                        
-                        <div className="relative">
-                            <div className="absolute inset-0 flex items-center">
-                                <span className="w-full border-t" />
-                            </div>
-                            <div className="relative flex justify-center text-xs uppercase">
-                                <span className="bg-card/80 px-2 text-muted-foreground">
-                                Ou continue com
-                                </span>
-                            </div>
-                        </div>
 
-                        <Button variant="outline" className="w-full font-medium">
+            <Card className='shadow-xl'>
+              <CardHeader>
+                  <CardTitle className="text-2xl">{isLogin ? 'Acesse sua conta' : 'Crie sua conta'}</CardTitle>
+                  <CardDescription>
+                      {isLogin ? 'Bem-vindo(a) de volta! Insira seus dados.' : 'Preencha os dados para criar sua conta.'}
+                  </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input id="email" type="email" placeholder="seu@email.com" required />
+                  </div>
+                  <div className="space-y-2">
+                      <div className="flex items-center">
+                          <Label htmlFor="password">Senha</Label>
+                          {isLogin && (
+                              <Link href="#" className="ml-auto inline-block text-sm text-primary/80 underline-offset-4 transition-colors hover:text-primary hover:underline">
+                                  Esqueceu sua senha?
+                              </Link>
+                          )}
+                      </div>
+                      <Input id="password" type="password" required />
+                  </div>
+                  
+                  {!isLogin && (
+                      <div className="space-y-2">
+                          <Label htmlFor="confirmPassword">Confirmar Senha</Label>
+                          <Input id="confirmPassword" type="password" required />
+                      </div>
+                  )}
+                  
+                  <div className="space-y-4 pt-2">
+                      <Button asChild type="submit" className="w-full font-semibold">
+                      <Link href="/dashboard">{isLogin ? 'Entrar' : 'Cadastrar'}</Link>
+                      </Button>
+                      
+                      <div className="relative">
+                          <div className="absolute inset-0 flex items-center">
+                              <span className="w-full border-t" />
+                          </div>
+                          <div className="relative flex justify-center text-xs uppercase">
+                              <span className="bg-card px-2 text-muted-foreground">
+                              Ou continue com
+                              </span>
+                          </div>
+                      </div>
+
+                      <Button variant="outline" className="w-full font-medium">
                         <GoogleIcon className="mr-2 h-5 w-5" />
                         Login com Google
-                        </Button>
-                    </div>
-                </CardContent>
-                </Card>
+                      </Button>
+                  </div>
+              </CardContent>
+            </Card>
 
-                <div className="mt-6 text-center text-sm text-muted-foreground">
-                    {isLogin ? "Não tem uma conta?" : "Já tem uma conta?"}{' '}
-                    <button onClick={() => setIsLogin(!isLogin)} className="font-semibold text-primary underline-offset-4 hover:underline">
-                        {isLogin ? "Registre-se" : "Faça login"}
-                    </button>
+            <div className="text-center text-sm text-muted-foreground">
+                {isLogin ? "Não tem uma conta?" : "Já tem uma conta?"}{' '}
+                <button onClick={() => setIsLogin(!isLogin)} className="font-semibold text-primary underline-offset-4 hover:underline">
+                    {isLogin ? "Registre-se" : "Faça login"}
+                </button>
+            </div>
+            
+            <div className="text-center text-sm text-muted-foreground space-y-2 pt-6 border-t">
+                <h3 className='font-semibold text-foreground mb-3'>Precisa de Ajuda?</h3>
+                <div className='flex flex-wrap items-center justify-center gap-x-6 gap-y-2'>
+                  <a href='tel:+5562998554529' className='flex items-center gap-2 hover:text-primary transition-colors'>
+                      <Phone className='h-4 w-4'/> +55 (62) 99855-4529
+                  </a>
+                  <a href='mailto:geovaniwn@gmail.com' className='flex items-center gap-2 hover:text-primary transition-colors'>
+                      <Mail className='h-4 w-4'/> geovaniwn@gmail.com
+                  </a>
+                  <a href='https://wa.me/5562992127752' target='_blank' rel='noopener noreferrer' className='flex items-center gap-2 hover:text-primary transition-colors'>
+                      <Phone className='h-4 w-4'/> WhatsApp
+                  </a>
                 </div>
             </div>
-
-            <div className="text-center">
-                <h3 className='font-semibold text-foreground mb-4'>Precisa de Ajuda?</h3>
-                <div className='flex flex-col sm:flex-row items-center gap-4 sm:gap-6 text-sm'>
-                <a href='tel:+5562998554529' className='flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors'>
-                    <Phone className='h-4 w-4'/> +55 (62) 99855-4529
-                </a>
-                <a href='mailto:geovaniwn@gmail.com' className='flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors'>
-                    <Mail className='h-4 w-4'/> geovaniwn@gmail.com
-                </a>
-                <a href='https://wa.me/5562992127752' target='_blank' rel='noopener noreferrer' className='flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors'>
-                    <Phone className='h-4 w-4'/> WhatsApp
-                </a>
-                </div>
-            </div>
-
         </div>
+      </div>
     </div>
   )
 }
