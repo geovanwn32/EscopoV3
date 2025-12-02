@@ -109,28 +109,37 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
     }, []);
 
     const deleteCompany = useCallback((companyId: number) => {
-        setCompanies(prev => {
-            const newCompanies = prev.filter(c => c.id !== companyId);
-            
-            // Also delete all scoped data for that company
-            Object.keys(localStorage).forEach(key => {
-                if (key.startsWith(`company-${companyId}-`)) {
-                    localStorage.removeItem(key);
-                }
-            });
-            
-            if (currentCompany === companyId) {
-                const nextCompanyId = newCompanies.length > 0 ? newCompanies[0].id : null;
-                setCurrentCompany(nextCompanyId);
-                localStorage.setItem(LS_CURRENT_COMPANY_KEY, JSON.stringify(nextCompanyId));
-                if (!nextCompanyId) {
-                     router.push('/selecionar-empresa');
-                }
+        const remainingCompanies = companies.filter(c => c.id !== companyId);
+        
+        let nextCompanyId = currentCompany;
+        let needsRedirect = false;
+
+        if (currentCompany === companyId) {
+            nextCompanyId = remainingCompanies.length > 0 ? remainingCompanies[0].id : null;
+            if (!nextCompanyId) {
+                needsRedirect = true;
             }
-            return newCompanies;
+        }
+
+        // Delete scoped data from localStorage
+        Object.keys(localStorage).forEach(key => {
+            if (key.startsWith(`company-${companyId}-`)) {
+                localStorage.removeItem(key);
+            }
         });
 
-    }, [currentCompany, router]);
+        // Update state
+        setCompanies(remainingCompanies);
+        if (currentCompany === companyId) {
+            setCurrentCompany(nextCompanyId);
+            localStorage.setItem(LS_CURRENT_COMPANY_KEY, JSON.stringify(nextCompanyId));
+        }
+
+        // Perform navigation after state update
+        if (needsRedirect) {
+            router.push('/selecionar-empresa');
+        }
+    }, [companies, currentCompany, router]);
 
 
     const useScopedData = <T,>(key: string, defaultValue: T): [T, (value: T) => void] => {
