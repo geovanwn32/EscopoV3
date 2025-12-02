@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Building2, Mail, Phone } from 'lucide-react'
+import { Building2, Mail, Phone, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -47,7 +48,7 @@ const DataBlockAnimation = () => {
     }, []);
   
     if (blocks.length === 0) {
-      return null; // Don't render anything on the server or before useEffect runs
+      return null;
     }
   
     return (
@@ -62,6 +63,7 @@ const DataBlockAnimation = () => {
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true)
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
     <div className="w-full min-h-screen grid grid-cols-1 lg:grid-cols-2">
@@ -106,15 +108,17 @@ export default function LoginPage() {
                       <Input id="email" type="email" placeholder="seu@email.com" required />
                   </div>
                   <div className="space-y-2">
-                      <div className="flex items-center">
-                          <Label htmlFor="password">Senha</Label>
-                          {isLogin && (
-                              <Link href="#" className="ml-auto inline-block text-sm text-primary/80 underline-offset-4 transition-colors hover:text-primary hover:underline">
-                                  Esqueceu sua senha?
-                              </Link>
-                          )}
+                      <Label htmlFor="password">Senha</Label>
+                      <div className="relative">
+                        <Input id="password" type={showPassword ? 'text' : 'password'} required />
+                        <button 
+                          type="button" 
+                          onClick={() => setShowPassword(!showPassword)} 
+                          className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-primary"
+                        >
+                            {showPassword ? <EyeOff /> : <Eye />}
+                        </button>
                       </div>
-                      <Input id="password" type="password" required />
                   </div>
                   
                   {!isLogin && (
@@ -122,6 +126,18 @@ export default function LoginPage() {
                           <Label htmlFor="confirmPassword">Confirmar Senha</Label>
                           <Input id="confirmPassword" type="password" required />
                       </div>
+                  )}
+
+                  {isLogin && (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox id="remember-me" />
+                        <Label htmlFor="remember-me" className="text-sm font-normal">Lembrar-me</Label>
+                      </div>
+                      <Link href="#" className="inline-block text-sm text-primary/80 underline-offset-4 transition-colors hover:text-primary hover:underline">
+                          Esqueceu sua senha?
+                      </Link>
+                    </div>
                   )}
                   
                   <div className="space-y-4 pt-2">
