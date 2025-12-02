@@ -1,14 +1,19 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Moon, Sun, Monitor } from "lucide-react"
 import { useTheme } from "next-themes"
 
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
 export default function ConfiguracoesPage() {
   const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   return (
     <div className="space-y-6">
@@ -25,26 +30,34 @@ export default function ConfiguracoesPage() {
           <CardDescription>Escolha como o EscopoV3 deve se parecer. A opção "Sistema" usará a preferência do seu dispositivo.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <ThemeCard
-              title="Claro"
-              icon={<Sun className="h-6 w-6" />}
-              isActive={theme === "light"}
-              onClick={() => setTheme("light")}
-            />
-            <ThemeCard
-              title="Escuro"
-              icon={<Moon className="h-6 w-6" />}
-              isActive={theme === "dark"}
-              onClick={() => setTheme("dark")}
-            />
-            <ThemeCard
-              title="Sistema"
-              icon={<Monitor className="h-6 w-6" />}
-              isActive={theme === "system"}
-              onClick={() => setTheme("system")}
-            />
-          </div>
+          {mounted ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <ThemeCard
+                title="Claro"
+                icon={<Sun className="h-6 w-6" />}
+                isActive={theme === "light"}
+                onClick={() => setTheme("light")}
+              />
+              <ThemeCard
+                title="Escuro"
+                icon={<Moon className="h-6 w-6" />}
+                isActive={theme === "dark"}
+                onClick={() => setTheme("dark")}
+              />
+              <ThemeCard
+                title="Sistema"
+                icon={<Monitor className="h-6 w-6" />}
+                isActive={theme === "system"}
+                onClick={() => setTheme("system")}
+              />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="h-[120px] bg-muted rounded-lg animate-pulse" />
+                <div className="h-[120px] bg-muted rounded-lg animate-pulse" />
+                <div className="h-[120px] bg-muted rounded-lg animate-pulse" />
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
