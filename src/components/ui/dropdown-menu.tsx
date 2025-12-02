@@ -181,6 +181,19 @@ const DropdownMenuShortcut = ({
 }
 DropdownMenuShortcut.displayName = "DropdownMenuShortcut"
 
+const DropdownMenuFooter = ({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) => {
+  return (
+    <div
+      className={cn("px-1 py-1", className)}
+      {...props}
+    />
+  )
+}
+DropdownMenuFooter.displayName = "DropdownMenuFooter"
+
 export {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -197,4 +210,5 @@ export {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuRadioGroup,
+  DropdownMenuFooter,
 }

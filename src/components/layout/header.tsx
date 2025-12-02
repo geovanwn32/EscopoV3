@@ -11,6 +11,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuFooter
 } from '@/components/ui/dropdown-menu';
 import {
   Command,
@@ -32,6 +33,7 @@ import { useCompany } from '@/hooks/use-company';
 import { cn } from '@/lib/utils';
 import { Input } from '../ui/input';
 import { useRouter } from 'next/navigation';
+import { Badge } from '../ui/badge';
 
 export default function Header() {
   const avatar = PlaceHolderImages.find((img) => img.id === 'user-avatar-1');
@@ -48,14 +50,59 @@ export default function Header() {
         </div>
       </div>
       <div className='flex items-center gap-4'>
-        <Button variant="ghost" size="icon">
-            <Bell className="h-5 w-5" />
-            <span className="sr-only">Notificações</span>
-        </Button>
+        <Notifications />
         <UserMenu avatar={avatar} />
       </div>
     </header>
   );
+}
+
+function Notifications() {
+  // Mock data for notifications. In a real app, this would come from a state or API.
+  const notifications = [
+    { id: 1, title: 'Nova atualização disponível', description: 'Versão 3.1.0 já pode ser instalada.' },
+    { id: 2, title: 'Fatura #1234 vence amanhã', description: 'Cliente: Soluções Inovadoras S.A.' },
+    { id: 3, title: 'XML de Fornecedor XYZ importado', description: 'NF-e 56789 processada com sucesso.' },
+  ];
+  const hasUnread = notifications.length > 0;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="relative">
+            <Bell className="h-5 w-5" />
+            {hasUnread && <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+            </span>}
+            <span className="sr-only">Notificações</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-80" align="end">
+        <DropdownMenuLabel className='flex justify-between items-center'>
+            Notificações
+            <Badge variant="secondary">{notifications.length}</Badge>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {notifications.length > 0 ? (
+          notifications.map(n => (
+            <DropdownMenuItem key={n.id} className="flex flex-col items-start gap-1">
+              <p className="font-semibold">{n.title}</p>
+              <p className="text-xs text-muted-foreground">{n.description}</p>
+            </DropdownMenuItem>
+          ))
+        ) : (
+          <div className='px-2 py-4 text-center text-sm text-muted-foreground'>
+            Nenhuma notificação nova.
+          </div>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild className='justify-center'>
+            <Link href="#">Ver todas as notificações</Link>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
 }
 
 function UserMenu({ avatar }: { avatar?: { imageUrl: string; imageHint: string } }) {
