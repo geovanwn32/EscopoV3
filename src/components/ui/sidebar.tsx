@@ -6,6 +6,7 @@ import { cva } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 type SidebarContext = {
   open: boolean
@@ -43,8 +44,10 @@ const SidebarProvider = React.forwardRef<
     },
     ref
   ) => {
+    const isMobile = useIsMobile()
     const [_open, _setOpen] = React.useState(defaultOpen)
     const open = openProp ?? _open
+    
     const setOpen = React.useCallback(
       (value: boolean | ((value: boolean) => boolean)) => {
         const openState = typeof value === "function" ? value(open) : value
@@ -56,6 +59,29 @@ const SidebarProvider = React.forwardRef<
       },
       [setOpenProp, open]
     )
+
+    // Close sidebar on mobile when navigating
+    React.useEffect(() => {
+        if (isMobile) {
+            setOpen(false);
+        }
+    }, [isMobile, setOpen]);
+    
+    // Set default open state based on screen size
+    React.useEffect(() => {
+        const checkScreenSize = () => {
+            const shouldBeOpen = window.innerWidth > 768;
+             if (setOpenProp) {
+                setOpenProp(shouldBeOpen);
+            } else {
+                _setOpen(shouldBeOpen);
+            }
+        };
+        checkScreenSize();
+        window.addEventListener('resize', checkScreenSize);
+        return () => window.removeEventListener('resize', checkScreenSize);
+    }, [setOpenProp]);
+
 
     const contextValue = React.useMemo<SidebarContext>(
       () => ({
@@ -108,20 +134,12 @@ const Sidebar = React.forwardRef<
     },
     ref
   ) => {
-    const { open } = useSidebar();
+    const { open, setOpen } = useSidebar();
+    const isMobile = useIsMobile();
     
-    // For mobile, we'll use a sheet
-    const [isMobile, setIsMobile] = React.useState(false);
-    React.useEffect(() => {
-        const checkMobile = () => setIsMobile(window.innerWidth < 768);
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
-
     if (isMobile) {
         return (
-            <Sheet open={open} onOpenChange={useSidebar().setOpen}>
+            <Sheet open={open} onOpenChange={setOpen}>
                 <SheetContent side="left" className="w-72 p-0">
                     {children}
                 </SheetContent>
@@ -132,7 +150,12 @@ const Sidebar = React.forwardRef<
     return (
       <aside
         ref={ref}
-        className={cn(sidebarVariants(), open ? "w-72" : "w-20", className)}
+        className={cn(
+            sidebarVariants(), 
+            "h-screen sticky top-0 z-40",
+            open ? "w-72" : "w-20", 
+            className
+        )}
         {...props}
       >
         {children}
