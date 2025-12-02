@@ -84,7 +84,7 @@ export function SidebarNav() {
           
           <div className={cn("flex flex-col transition-all duration-300", !open && "w-0 opacity-0")}>
             <span className="font-bold text-md tracking-tight text-foreground truncate">{activeCompany?.data?.nomeFantasia || activeCompany?.name}</span>
-            <span className="text-xs text-muted-foreground truncate">{active-company?.data?.cnpj}</span>
+            <span className="text-xs text-muted-foreground truncate">{activeCompany?.data?.cnpj}</span>
           </div>
 
         </div>
