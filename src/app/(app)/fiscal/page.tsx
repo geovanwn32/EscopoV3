@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
 
 const actions = [
     {
@@ -247,6 +248,7 @@ function ListHeader({ title, description, searchPlaceholder, buttonLabel, button
 
 
 function RecentDocumentsTable({ headers, data, renderRow }: { headers: string[], data: any[], renderRow: (item: any) => React.ReactNode }) {
+    const { toast } = useToast();
     return (
         <div className="overflow-x-auto rounded-md border">
             <Table>
@@ -269,9 +271,9 @@ function RecentDocumentsTable({ headers, data, renderRow }: { headers: string[],
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                    <DropdownMenuItem>Visualizar</DropdownMenuItem>
-                                    <DropdownMenuItem>Editar</DropdownMenuItem>
-                                    <DropdownMenuItem className="text-destructive">Excluir</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => toast({ title: 'Ação: Visualizar', description: `Visualizando item ${item.id}` })}>Visualizar</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => toast({ title: 'Ação: Editar', description: `Editando item ${item.id}` })}>Editar</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => toast({ variant: "destructive", title: 'Ação: Excluir', description: `Excluindo item ${item.id}` })} className="text-destructive">Excluir</DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                            </TableCell>
