@@ -148,14 +148,14 @@ export function SidebarNav() {
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="w-full justify-between h-auto px-3 py-2">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
                         <Avatar className='h-9 w-9'>
                             <AvatarFallback className="bg-muted text-muted-foreground font-semibold">
                                 {activeCompany?.name.charAt(0).toUpperCase()}
                             </AvatarFallback>
                         </Avatar>
-                        <div className="flex flex-col items-start group-data-[collapsible=icon]:hidden">
-                            <span className="font-semibold text-sm">{activeCompany?.name}</span>
+                        <div className="flex flex-col items-start min-w-0 group-data-[collapsible=icon]:hidden">
+                            <span className="font-semibold text-sm truncate">{activeCompany?.name}</span>
                             <span className="text-xs text-muted-foreground">Ver empresas</span>
                         </div>
                     </div>
