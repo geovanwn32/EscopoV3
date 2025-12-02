@@ -205,6 +205,7 @@ interface PartnerFormProps {
 }
 
 function PartnerForm({ onSave, onOpenChange, partner, isReadOnly }: PartnerFormProps) {
+    const { toast } = useToast();
     const [name, setName] = useState('');
     const [document, setDocument] = useState('');
     const [type, setType] = useState<'Cliente' | 'Fornecedor' | 'Transportadora'>();
@@ -223,11 +224,21 @@ function PartnerForm({ onSave, onOpenChange, partner, isReadOnly }: PartnerFormP
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (name && document && type && !isReadOnly) {
-            onSave({ name, document, type });
-        } else if (isReadOnly) {
+        if (isReadOnly) {
             onOpenChange(false);
+            return;
         }
+
+        if (!name || !document || !type) {
+            toast({
+                variant: 'destructive',
+                title: 'Campos Obrigatórios',
+                description: 'Por favor, preencha todos os campos para salvar o parceiro.'
+            });
+            return;
+        }
+        
+        onSave({ name, document, type });
     };
     
     const dialogTitle = isReadOnly ? "Visualizar Parceiro" : partner ? "Editar Parceiro" : "Novo Parceiro";

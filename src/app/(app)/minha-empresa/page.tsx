@@ -71,18 +71,11 @@ export default function MinhaEmpresaPage() {
     if (field === 'cnpj') {
         const onlyNumbers = value.replace(/\D/g, '');
         let formattedCnpj = onlyNumbers;
-        if (onlyNumbers.length > 2) {
-            formattedCnpj = `${onlyNumbers.slice(0, 2)}.${onlyNumbers.slice(2)}`;
-        }
-        if (onlyNumbers.length > 5) {
-            formattedCnpj = `${onlyNumbers.slice(0, 2)}.${onlyNumbers.slice(2, 5)}.${onlyNumbers.slice(5)}`;
-        }
-        if (onlyNumbers.length > 8) {
-            formattedCnpj = `${onlyNumbers.slice(0, 2)}.${onlyNumbers.slice(2, 5)}.${onlyNumbers.slice(5, 8)}/${onlyNumbers.slice(8)}`;
-        }
-        if (onlyNumbers.length > 12) {
-            formattedCnpj = `${onlyNumbers.slice(0, 2)}.${onlyNumbers.slice(2, 5)}.${onlyNumbers.slice(5, 8)}/${onlyNumbers.slice(8, 12)}-${onlyNumbers.slice(12, 14)}`;
-        }
+        if (onlyNumbers.length > 2) formattedCnpj = `${onlyNumbers.slice(0, 2)}.${onlyNumbers.slice(2)}`;
+        if (onlyNumbers.length > 5) formattedCnpj = `${onlyNumbers.slice(0, 2)}.${onlyNumbers.slice(2, 5)}.${onlyNumbers.slice(5)}`;
+        if (onlyNumbers.length > 8) formattedCnpj = `${onlyNumbers.slice(0, 2)}.${onlyNumbers.slice(2, 5)}.${onlyNumbers.slice(5, 8)}/${onlyNumbers.slice(8)}`;
+        if (onlyNumbers.length > 12) formattedCnpj = `${onlyNumbers.slice(0, 2)}.${onlyNumbers.slice(2, 5)}.${onlyNumbers.slice(5, 8)}/${onlyNumbers.slice(8, 12)}-${onlyNumbers.slice(12, 14)}`;
+
         setCompanyData(prev => ({ ...prev, [field]: formattedCnpj }));
     } else {
         setCompanyData(prev => ({ ...prev, [field]: value }));
@@ -98,10 +91,19 @@ export default function MinhaEmpresaPage() {
       });
       return;
     }
+    
+    if (!companyData.razaoSocial) {
+      toast({
+        variant: 'destructive',
+        title: 'Campo Obrigatório',
+        description: 'Por favor, preencha a Razão Social da empresa.',
+      });
+      return;
+    }
 
     const updatedCompany = {
       id: currentCompany,
-      name: companyData.razaoSocial || `Empresa ${currentCompany}`,
+      name: companyData.razaoSocial,
       data: companyData,
     };
     
@@ -114,9 +116,9 @@ export default function MinhaEmpresaPage() {
   };
 
   const handleCnpjQuery = async () => {
-    const cnpj = companyData.cnpj.replace(/\D/g, ''); // Remove non-digits
+    const cnpj = companyData.cnpj.replace(/\D/g, '');
     if (!cnpj || cnpj.length !== 14) {
-        toast({ variant: 'destructive', title: 'CNPJ inválido', description: 'Por favor, insira um CNPJ válido para consultar.' });
+        toast({ variant: 'destructive', title: 'CNPJ inválido', description: 'Por favor, insira um CNPJ válido com 14 dígitos.' });
         return;
     }
 
@@ -124,7 +126,8 @@ export default function MinhaEmpresaPage() {
     try {
         const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
         if (!response.ok) {
-            throw new Error('CNPJ não encontrado ou API indisponível.');
+            const errorData = await response.json().catch(() => ({ message: 'CNPJ não encontrado ou API indisponível.' }));
+            throw new Error(errorData.message);
         }
         const data = await response.json();
         
@@ -142,7 +145,6 @@ export default function MinhaEmpresaPage() {
             uf: data.uf || '',
             telefone: data.ddd_telefone_1 || '',
             email: data.email || '',
-            // BrasilAPI não fornece regime tributário, então mantemos o valor existente
         }));
 
         toast({ title: 'CNPJ Consultado!', description: 'Os dados da empresa foram preenchidos com sucesso.' });
@@ -204,7 +206,7 @@ export default function MinhaEmpresaPage() {
         <div className="space-y-1">
             <h1 className="text-3xl font-bold tracking-tight font-headline">Minha Empresa</h1>
             <p className="text-muted-foreground">
-            Edite os dados cadastrais da sua empresa. O número de controle é o ID: <span className='font-bold'>{currentCompany}</span>
+            Edite os dados cadastrais da sua empresa. O número de controle é o ID: <span className='font-bold'>{currentCompany || 'N/D'}</span>
             </p>
         </div>
 
@@ -368,7 +370,3 @@ export default function MinhaEmpresaPage() {
     </div>
   );
 }
-
-    
-
-    

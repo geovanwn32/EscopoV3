@@ -146,6 +146,17 @@ export default function FiscalPage() {
             }
         };
 
+        const formatISODateToInput = (isoDate: string | undefined) => {
+            if (!isoDate) return '';
+            try {
+                const date = new Date(isoDate);
+                // Formats to "YYYY-MM-DDTHH:mm" which is required by datetime-local input
+                return date.toISOString().slice(0, 16);
+            } catch (e) {
+                return '';
+            }
+        }
+
 
         // Simulating XML parsing
         if (content.includes('<infNFe') && content.includes('<NFe')) {
@@ -165,7 +176,7 @@ export default function FiscalPage() {
                 geral: {
                     numero: content.match(/<nNF>(.*?)<\/nNF>/)?.[1] || '',
                     serie: content.match(/<serie>(.*?)<\/serie>/)?.[1] || '',
-                    dataEmissao: content.match(/<dhEmi>(.*?)<\/dhEmi>/)?.[1].substring(0, 16) || '',
+                    dataEmissao: formatISODateToInput(content.match(/<dhEmi>(.*?)<\/dhEmi>/)?.[1]),
                 },
                 emitente: {
                     cnpj: content.match(/<emit>[\s\S]*?<CNPJ>(.*?)<\/CNPJ>/)?.[1] || '',
@@ -189,7 +200,7 @@ export default function FiscalPage() {
              parsedData = {
                 identificacao: {
                     numero: content.match(/<Numero>(.*?)<\/Numero>/)?.[1] || '',
-                    dataEmissao: content.match(/<DataEmissao>(.*?)<\/DataEmissao>/)?.[1]?.substring(0, 16) || content.match(/<dhEmi>(.*?)<\/dhEmi>/)?.[1]?.substring(0, 16) || '',
+                    dataEmissao: formatISODateToInput(content.match(/<DataEmissao>(.*?)<\/DataEmissao>/)?.[1] || content.match(/<dhEmi>(.*?)<\/dhEmi>/)?.[1]),
                 },
                 prestador: {
                     cnpj: content.match(/<Prestador>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1] || content.match(/<PrestadorServico>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1] || content.match(/<emit>[\s\S]*?<CNPJ>(.*?)<\/CNPJ>/)?.[1] || '',
@@ -199,10 +210,11 @@ export default function FiscalPage() {
                     cnpj: content.match(/<TomadorServico>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1] || content.match(/<toma>[\s\S]*?<CNPJ>(.*?)<\/CNPJ>/)?.[1] || '',
                     razaoSocial: content.match(/<TomadorServico>[\s\S]*?<RazaoSocial>(.*?)<\/RazaoSocial>/)?.[1] || content.match(/<toma>[\s\S]*?<xNome>(.*?)<\/xNome>/)?.[1] || '',
                 },
-                servico: {
-                    valor: parseFloat(content.match(/<ValorServicos>(.*?)<\/ValorServicos>/)?.[1] || content.match(/<vServ>(.*?)<\/vServ>/)?.[1] || '0'),
-                    descricao: content.match(/<Discriminacao>(.*?)<\/Discriminacao>/)?.[1] || content.match(/<xDescServ>(.*?)<\/xDescServ>/)?.[1] || '',
-                }
+                items: [{
+                    id: Date.now(),
+                    name: content.match(/<Discriminacao>(.*?)<\/Discriminacao>/)?.[1] || content.match(/<xDescServ>(.*?)<\/xDescServ>/)?.[1] || '',
+                    value: parseFloat(content.match(/<ValorServicos>(.*?)<\/ValorServicos>/)?.[1] || content.match(/<vServ>(.*?)<\/vServ>/)?.[1] || '0'),
+                }],
              };
 
             const prestadorData = (parsedData as any).prestador;
@@ -296,13 +308,13 @@ export default function FiscalPage() {
     const handleViewNota = (nota: NotaFiscal) => {
         const tipo = nota.tipo === 'entrada' ? 'produto' : nota.tipo;
         setEditingNota(nota); // Set editingNota to pass full object
-        openLancamentoDialog(tipo as any, nota.dados, true);
+        openLancamentoDialog(tipo as any, nota, true);
     };
 
     const handleEditNota = (nota: NotaFiscal) => {
         const tipo = nota.tipo === 'entrada' ? 'produto' : nota.tipo;
         setEditingNota(nota);
-        openLancamentoDialog(tipo as any, nota.dados, false);
+        openLancamentoDialog(tipo as any, nota, false);
     };
     
     return (
@@ -709,34 +721,27 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave, isReadO
         const data = editingNota ? editingNota.dados : initialData;
         const items = editingNota ? editingNota.items : initialData?.items;
         const effectiveTipo = editingNota ? (editingNota.tipo === 'entrada' ? 'produto' : editingNota.tipo) : tipoNota;
-
+    
         if (effectiveTipo) {
             let notaType = effectiveTipo;
             if (effectiveTipo === 'produto') notaType = 'entrada';
             setTipoNotaValue(notaType);
             setActiveSection(notaType === 'servico' ? 'identificacao' : 'geral');
         }
-
-        if (data) {
-            setFormData(data);
-        } else {
-            setFormData({});
-        }
-
+    
+        setFormData(data || {});
+    
         if (items) {
-             if (effectiveTipo === 'produto' || effectiveTipo === 'saida' || effectiveTipo === 'entrada') {
+            if (effectiveTipo === 'produto' || effectiveTipo === 'saida' || effectiveTipo === 'entrada') {
                 setProductItems(items as ProductItem[] || []);
             } else if (effectiveTipo === 'servico') {
-                const initialServices = Array.isArray(items) 
-                    ? items 
-                    : (initialData?.servico?.descricao ? [{ id: Date.now(), name: initialData.servico.descricao, value: initialData.servico.valor || 0 }] : []);
-                setServiceItems(initialServices as ServiceItem[] || []);
+                setServiceItems(items as ServiceItem[] || []);
             }
         } else {
              setProductItems([]);
              setServiceItems([]);
         }
-
+    
     }, [tipoNota, initialData, editingNota]);
 
     const notaLabel = 
@@ -826,6 +831,27 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave, isReadO
     };
     
     const handleSave = () => {
+        if (tipoNotaValue === 'servico') {
+            if (!formData.identificacao?.numero) {
+                toast({ variant: 'destructive', title: 'Campo Obrigatório', description: 'O número da nota de serviço é obrigatório.' });
+                setActiveSection('identificacao');
+                return;
+            }
+            if (!serviceItems.length || !serviceItems[0].name) {
+                toast({ variant: 'destructive', title: 'Campo Obrigatório', description: 'Adicione uma descrição para o serviço prestado.' });
+                setActiveSection('servico');
+                return;
+            }
+        }
+
+        if (tipoNotaValue === 'entrada' || tipoNotaValue === 'saida') {
+            if (!formData.geral?.numero) {
+                toast({ variant: 'destructive', title: 'Campo Obrigatório', description: 'O número da nota de produto é obrigatório.' });
+                setActiveSection('geral');
+                return;
+            }
+        }
+
         const dataToSave = { 
             tipo: tipoNotaValue,
             dados: formData,

@@ -12,15 +12,14 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 export default function SelecionarEmpresaPage() {
   const router = useRouter();
-  const { companies, switchCompany, addCompany, deleteCompany, updateCompany } = useCompany();
+  const { companies, switchCompany, addCompany, deleteCompany } = useCompany();
   const [itemToDelete, setItemToDelete] = useState<number | null>(null);
-  const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const { toast } = useToast();
 
@@ -30,7 +29,6 @@ export default function SelecionarEmpresaPage() {
   };
 
   const handleAddNewCompany = () => {
-    setEditingCompany(null);
     setIsFormOpen(true);
   };
 
@@ -73,7 +71,7 @@ export default function SelecionarEmpresaPage() {
 
   return (
     <>
-    <Dialog open={isFormOpen && companies.length === 0} onOpenChange={setIsFormOpen}>
+    <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
       <div className="space-y-6">
         <div className="text-center">
           <h1 className="text-3xl font-bold tracking-tight font-headline">Selecionar Empresa</h1>
@@ -210,6 +208,7 @@ function CompanyForm({ onSave, onCancel }: CompanyFormProps) {
     onSave({
       name: formData.razaoSocial,
       data: {
+        razaoSocial: formData.razaoSocial,
         nomeFantasia: formData.nomeFantasia,
         cnpj: formData.cnpj,
       },
