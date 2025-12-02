@@ -135,7 +135,7 @@
   position: absolute;
   bottom: 0;
   width: 2px;
-  background-color: hsl(var(--primary) / 0.2);
+  background-color: hsl(var(--primary-foreground) / 0.2);
   animation-name: move-up;
   animation-timing-function: linear;
   animation-iteration-count: infinite;

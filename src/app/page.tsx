@@ -31,15 +31,31 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
+const DataBlockAnimation = () => {
+    return (
+      <div className="data-block-container">
+        {Array.from({ length: 50 }).map((_, i) => {
+          const style = {
+            left: `${Math.random() * 100}%`,
+            animationDuration: `${Math.random() * 10 + 5}s`,
+            animationDelay: `${Math.random() * 5}s`,
+            opacity: Math.random() * 0.5 + 0.1,
+          };
+          return <div key={i} className="data-block" style={style} />;
+        })}
+      </div>
+    );
+};
+
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true)
 
   return (
     <div className="w-full min-h-screen grid grid-cols-1 lg:grid-cols-2">
-      <div className="hidden lg:flex flex-col items-center justify-center p-12 bg-primary text-primary-foreground relative">
-          <div className="absolute inset-0 bg-primary opacity-90"></div>
-          <div className="relative z-10 w-full max-w-md space-y-6">
+      <div className="hidden lg:flex flex-col p-12 bg-primary text-primary-foreground relative">
+          <DataBlockAnimation />
+          <div className="relative z-10 w-full my-auto max-w-md space-y-6">
              <div className="flex items-center gap-3 text-white">
                 <Building2 className="h-10 w-10" />
                 <h1 className="text-4xl font-bold font-headline">EscopoV3</h1>
@@ -48,7 +64,7 @@ export default function LoginPage() {
               Sua contabilidade ganha vida: organizada, atualizada e sempre segura. Acesse sua empresa com poucos cliques e tenha o controle total.
             </p>
           </div>
-           <div className="absolute bottom-12 text-center text-sm text-primary-foreground/60">
+           <div className="relative z-10 text-center text-sm text-primary-foreground/60">
               © {new Date().getFullYear()} EscopoV3. Todos os direitos reservados.
            </div>
       </div>
