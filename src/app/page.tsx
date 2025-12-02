@@ -36,7 +36,7 @@ export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true)
 
   return (
-    <div className="w-full min-h-screen flex flex-col items-center justify-center bg-muted/50 dark:bg-zinc-900 dot-pattern p-4">
+    <div className="w-full min-h-screen flex flex-col items-center justify-center animated-gradient p-4">
       <div className="flex flex-col items-center justify-center gap-10 w-full max-w-md">
         
         <div className="space-y-4 text-center">
