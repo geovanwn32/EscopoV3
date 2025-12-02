@@ -78,6 +78,8 @@ export default function FiscalPage() {
     const [xmls, setXmls] = useState<XmlFile[]>([]);
     const [isLancamentoDialogOpen, setIsLancamentoDialogOpen] = useState(false);
     const [tipoNota, setTipoNota] = useState<'produto' | 'saida' | 'servico' | null>(null);
+    const [lancamentoData, setLancamentoData] = useState<any>(null);
+
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
@@ -110,24 +112,56 @@ export default function FiscalPage() {
         const reader = new FileReader();
         reader.onload = (e) => {
             const content = e.target?.result as string;
-            let detectedModel: 'produto' | 'saida' | 'servico' | null = null;
-    
-            if (content.includes('<NFe') && content.includes('<infNFe')) {
-                detectedModel = 'produto'; 
+            let detectedModel: 'produto' | 'servico' | null = null;
+            let parsedData = {};
+
+            // Simulating XML parsing
+            if (content.includes('<infNFe')) {
+                detectedModel = 'produto';
+                const products = Array.from(content.matchAll(/<det nItem="(\d+)">([\s\S]*?)<\/det>/g)).map(match => {
+                    const itemContent = match[2];
+                    const find = (tag: string) => itemContent.match(new RegExp(`<${tag}>(.*?)</${tag}>`))?.[1] || '';
+                    return {
+                        id: Date.now() + Math.random(),
+                        name: find('xProd'),
+                        quantity: parseFloat(find('qCom') || '0'),
+                        price: parseFloat(find('vUnCom') || '0'),
+                        total: parseFloat(find('vProd') || '0'),
+                    };
+                });
+                parsedData = {
+                    numero: content.match(/<nNF>(.*?)<\/nNF>/)?.[1],
+                    serie: content.match(/<serie>(.*?)<\/serie>/)?.[1],
+                    dataEmissao: content.match(/<dhEmi>(.*?)<\/dhEmi>/)?.[1].substring(0, 16),
+                    cnpjEmitente: content.match(/<emit>[\s\S]*?<CNPJ>(.*?)<\/CNPJ>/)?.[1],
+                    razaoSocialEmitente: content.match(/<emit>[\s\S]*?<xNome>(.*?)<\/xNome>/)?.[1],
+                    items: products,
+                };
             } else if (content.includes('<infNFSe') || content.includes('<CompNfse')) {
                 detectedModel = 'servico';
+                 parsedData = {
+                    numero: content.match(/<Numero>(.*?)<\/Numero>/)?.[1],
+                    dataEmissao: content.match(/<DataEmissao>(.*?)<\/DataEmissao>/)?.[1].substring(0, 16),
+                    cnpjPrestador: content.match(/<Prestador>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1],
+                    razaoSocialPrestador: content.match(/<PrestadorServico>[\s\S]*?<RazaoSocial>(.*?)<\/RazaoSocial>/)?.[1],
+                    cnpjTomador: content.match(/<TomadorServico>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1],
+                    razaoSocialTomador: content.match(/<TomadorServico>[\s\S]*?<RazaoSocial>(.*?)<\/RazaoSocial>/)?.[1],
+                    valorServico: parseFloat(content.match(/<ValorServicos>(.*?)<\/ValorServicos>/)?.[1] || '0'),
+                    descricao: content.match(/<Discriminacao>(.*?)<\/Discriminacao>/)?.[1],
+                 };
             }
     
             if (detectedModel) {
+                setLancamentoData(parsedData);
                 openLancamentoDialog(detectedModel);
-                // Optionally update status
                 setXmls(prevXmls => prevXmls.map(x => x.id === id ? { ...x, status: 'Lançado' } : x));
             } else {
                 toast({
                     variant: 'destructive',
                     title: 'Modelo de XML não suportado',
-                    description: 'Não foi possível identificar o tipo de nota fiscal para este arquivo. O lançamento manual está disponível.'
+                    description: 'Não foi possível identificar o tipo de nota fiscal para este arquivo.'
                 });
+                 setXmls(prevXmls => prevXmls.map(x => x.id === id ? { ...x, status: 'Erro' } : x));
             }
         };
         reader.onerror = () => {
@@ -136,6 +170,7 @@ export default function FiscalPage() {
                 title: 'Erro ao ler arquivo',
                 description: 'Não foi possível ler o conteúdo do arquivo XML.'
             });
+             setXmls(prevXmls => prevXmls.map(x => x.id === id ? { ...x, status: 'Erro' } : x));
         };
         reader.readAsText(xmlFile.file);
     };
@@ -149,8 +184,9 @@ export default function FiscalPage() {
         });
     }
 
-    const openLancamentoDialog = (tipo: 'produto' | 'saida' | 'servico') => {
+    const openLancamentoDialog = (tipo: 'produto' | 'saida' | 'servico', data: any = null) => {
         setTipoNota(tipo);
+        setLancamentoData(data);
         setIsLancamentoDialogOpen(true);
     };
     
@@ -181,7 +217,7 @@ export default function FiscalPage() {
                     ))}
                 </CardContent>
             </Card>
-            <LancamentoDialog onOpenChange={setIsLancamentoDialogOpen} tipoNota={tipoNota} />
+            <LancamentoDialog onOpenChange={setIsLancamentoDialogOpen} tipoNota={tipoNota} initialData={lancamentoData} />
         </Dialog>
 
         <Card>
@@ -431,20 +467,73 @@ interface ServiceItem {
 }
 
 
-function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boolean) => void, tipoNota: 'produto' | 'saida' | 'servico' | null }) {
+function LancamentoDialog({ onOpenChange, tipoNota, initialData }: { onOpenChange: (open: boolean) => void, tipoNota: 'produto' | 'saida' | 'servico' | null, initialData?: any }) {
     const { toast } = useToast();
     const [productItems, setProductItems] = useState<ProductItem[]>([]);
     const [serviceItems, setServiceItems] = useState<ServiceItem[]>([]);
     const [activeSection, setActiveSection] = useState('geral');
     const [tipoNotaValue, setTipoNotaValue] = useState('');
+    const [formData, setFormData] = useState<any>({});
+
 
     const notaLabel = tipoNota === 'produto' ? 'de Produto' : tipoNota === 'saida' ? 'de Saída' : 'de Serviço';
+
+    const handleInputChange = (section: string, field: string, value: any) => {
+        setFormData((prev: any) => ({
+            ...prev,
+            [section]: {
+                ...prev[section],
+                [field]: value,
+            }
+        }));
+    };
 
     useEffect(() => {
         if (tipoNota) {
             setTipoNotaValue(tipoNota === 'produto' ? 'entrada' : tipoNota);
         }
-    }, [tipoNota]);
+        if (initialData) {
+            if (tipoNota === 'produto' || tipoNota === 'saida') {
+                setFormData({
+                    geral: {
+                        numero: initialData.numero,
+                        serie: initialData.serie,
+                        dataEmissao: initialData.dataEmissao,
+                    },
+                    emitente: {
+                        cnpj: initialData.cnpjEmitente,
+                        razaoSocial: initialData.razaoSocialEmitente,
+                    },
+                });
+                setProductItems(initialData.items || []);
+            } else if (tipoNota === 'servico') {
+                 setFormData({
+                    identificacao: {
+                        numero: initialData.numero,
+                        dataEmissao: initialData.dataEmissao,
+                    },
+                    prestador: {
+                        cnpj: initialData.cnpjPrestador,
+                        razaoSocial: initialData.razaoSocialPrestador,
+                    },
+                    tomador: {
+                        cnpj: initialData.cnpjTomador,
+                        razaoSocial: initialData.razaoSocialTomador,
+                    },
+                    servico: {
+                        valor: initialData.valorServico,
+                        descricao: initialData.descricao,
+                    }
+                 });
+                 setServiceItems([{ id: Date.now(), name: initialData.descricao, value: initialData.valorServico }]);
+            }
+        } else {
+            // Reset form when opening for manual entry
+            setFormData({});
+            setProductItems([]);
+            setServiceItems([]);
+        }
+    }, [tipoNota, initialData]);
 
     const productSections = [
         { id: 'geral', label: 'Dados Gerais' },
@@ -469,7 +558,9 @@ function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boo
     const sections = tipoNota === 'servico' ? serviceSections : productSections;
         
     useEffect(() => {
-        setActiveSection(sections[0].id);
+        if(tipoNota) {
+            setActiveSection(sections[0].id);
+        }
     }, [tipoNota]);
 
 
@@ -487,15 +578,11 @@ function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boo
         setProductItems(prev => prev.map(item => {
             if (item.id === id) {
                 const updatedItem = { ...item, [field]: value };
-                const quantity = typeof value === 'string' && (field === 'quantity' || field === 'price') ? parseFloat(value) : (field === 'quantity' || field === 'price' ? value as number : updatedItem[field]);
-                const price = field === 'price' ? quantity : updatedItem.price;
-                const itemQuantity = field === 'quantity' ? quantity : updatedItem.quantity;
+                const quantity = field === 'quantity' ? Number(value) : Number(updatedItem.quantity);
+                const price = field === 'price' ? Number(value) : Number(updatedItem.price);
     
-                const numQuantity = Number(itemQuantity);
-                const numPrice = Number(price);
-
-                if (!isNaN(numQuantity) && !isNaN(numPrice)) {
-                    updatedItem.total = numQuantity * numPrice;
+                if (!isNaN(quantity) && !isNaN(price)) {
+                    updatedItem.total = quantity * price;
                 }
                 return updatedItem;
             }
@@ -516,16 +603,14 @@ function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boo
 
     const handleServiceChange = (id: number, field: keyof Omit<ServiceItem, 'id'>, value: string | number) => {
         setServiceItems(prev => prev.map(item =>
-            item.id === id ? { ...item, [field]: typeof value === 'string' ? parseFloat(value) || 0 : value } : item
+            item.id === id ? { ...item, [field]: value } : item
         ));
     };
     
     const handleSave = () => {
         console.log("Saving data...", { 
             tipo: tipoNota,
-            dados: {
-                // Collect all form data here
-            },
+            dados: formData,
             items: tipoNota === 'servico' ? serviceItems : productItems,
         });
     
@@ -554,9 +639,9 @@ function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boo
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 <div className="space-y-2"><Label>Tipo da Nota</Label><Select><SelectTrigger><SelectValue placeholder="Prestado" /></SelectTrigger><SelectContent><SelectItem value="prestado">Prestado</SelectItem><SelectItem value="tomado">Tomado</SelectItem></SelectContent></Select></div>
-                                <div className="space-y-2"><Label>Número</Label><Input /></div>
-                                <div className="space-y-2"><Label>Série</Label><Input /></div>
-                                <div className="space-y-2"><Label>Data de Emissão</Label><Input type="date"/></div>
+                                <div className="space-y-2"><Label>Número</Label><Input value={formData.identificacao?.numero || ''} onChange={(e) => handleInputChange('identificacao', 'numero', e.target.value)} /></div>
+                                <div className="space-y-2"><Label>Série</Label><Input value={formData.identificacao?.serie || ''} onChange={(e) => handleInputChange('identificacao', 'serie', e.target.value)} /></div>
+                                <div className="space-y-2"><Label>Data de Emissão</Label><Input type="datetime-local" value={formData.identificacao?.dataEmissao || ''} onChange={(e) => handleInputChange('identificacao', 'dataEmissao', e.target.value)} /></div>
                                 <div className="space-y-2"><Label>Competência</Label><Input type="month"/></div>
                                 <div className="space-y-2 col-span-2"><Label>Natureza da Operação</Label><Input /></div>
                             </div>
@@ -575,13 +660,14 @@ function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boo
                 )
             case 'prestador':
             case 'tomador':
+                const sectionKey = activeSection as 'prestador' | 'tomador';
                 return (
                      <Card>
-                        <CardHeader><CardTitle>{activeSection === 'prestador' ? '2. Dados do Prestador' : '3. Dados do Tomador'}</CardTitle></CardHeader>
+                        <CardHeader><CardTitle>{sectionKey === 'prestador' ? '2. Dados do Prestador' : '3. Dados do Tomador'}</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                <div className="space-y-2"><Label>CNPJ / CPF</Label><Input /></div>
-                                <div className="space-y-2 col-span-2"><Label>Razão Social</Label><Input /></div>
+                                <div className="space-y-2"><Label>CNPJ / CPF</Label><Input value={formData[sectionKey]?.cnpj || ''} onChange={(e) => handleInputChange(sectionKey, 'cnpj', e.target.value)} /></div>
+                                <div className="space-y-2 col-span-2"><Label>Razão Social</Label><Input value={formData[sectionKey]?.razaoSocial || ''} onChange={(e) => handleInputChange(sectionKey, 'razaoSocial', e.target.value)} /></div>
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                 <div className="space-y-2"><Label>Inscrição Municipal</Label><Input /></div>
@@ -607,7 +693,7 @@ function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boo
                      <Card>
                         <CardHeader><CardTitle>4. Dados do Serviço</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
-                             <div className="space-y-2"><Label>Descrição Detalhada do Serviço</Label><Textarea /></div>
+                             <div className="space-y-2"><Label>Descrição Detalhada do Serviço</Label><Textarea value={formData.servico?.descricao || ''} onChange={(e) => handleInputChange('servico', 'descricao', e.target.value)} /></div>
                              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                  <div className="space-y-2"><Label>Código do Serviço (Municipal)</Label><Input /></div>
                                  <div className="space-y-2"><Label>Item da Lista (LC 116)</Label><Input /></div>
@@ -734,9 +820,9 @@ function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boo
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
                                 <div className="space-y-2"><Label htmlFor="nf-modelo">Modelo</Label><Input id="nf-modelo" /></div>
-                                <div className="space-y-2"><Label htmlFor="nf-serie">Série</Label><Input id="nf-serie" /></div>
-                                <div className="space-y-2"><Label htmlFor="nf-numero">Número</Label><Input id="nf-numero" /></div>
-                                <div className="space-y-2"><Label htmlFor="nf-data-emissao">Data de Emissão</Label><Input id="nf-data-emissao" type="datetime-local" /></div>
+                                <div className="space-y-2"><Label htmlFor="nf-serie">Série</Label><Input id="nf-serie" value={formData.geral?.serie || ''} onChange={(e) => handleInputChange('geral', 'serie', e.target.value)}/></div>
+                                <div className="space-y-2"><Label htmlFor="nf-numero">Número</Label><Input id="nf-numero" value={formData.geral?.numero || ''} onChange={(e) => handleInputChange('geral', 'numero', e.target.value)}/></div>
+                                <div className="space-y-2"><Label htmlFor="nf-data-emissao">Data de Emissão</Label><Input id="nf-data-emissao" type="datetime-local" value={formData.geral?.dataEmissao || ''} onChange={(e) => handleInputChange('geral', 'dataEmissao', e.target.value)} /></div>
                             </div >
                         </CardContent>
                     </Card>
@@ -747,8 +833,8 @@ function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boo
                         <CardHeader><CardTitle>Dados do Emitente / Destinatário</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
-                                <div className="space-y-2"><Label htmlFor="emit-cnpj">CNPJ / CPF</Label><Input id="emit-cnpj" /></div>
-                                <div className="space-y-2 col-span-1 md:col-span-2"><Label htmlFor="emit-razao-social">Razão Social</Label><Input id="emit-razao-social" /></div>
+                                <div className="space-y-2"><Label htmlFor="emit-cnpj">CNPJ / CPF</Label><Input id="emit-cnpj" value={formData.emitente?.cnpj || ''} onChange={(e) => handleInputChange('emitente', 'cnpj', e.target.value)} /></div>
+                                <div className="space-y-2 col-span-1 md:col-span-2"><Label htmlFor="emit-razao-social">Razão Social</Label><Input id="emit-razao-social" value={formData.emitente?.razaoSocial || ''} onChange={(e) => handleInputChange('emitente', 'razaoSocial', e.target.value)} /></div>
                                 <div className="space-y-2"><Label htmlFor="emit-ie">Inscrição Estadual</Label><Input id="emit-ie" /></div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
