@@ -48,9 +48,9 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         <Sidebar className="bg-sidebar">
           <SidebarNav />
         </Sidebar>
-        <div className="flex flex-1 flex-col overflow-y-auto">
+        <div className="flex flex-1 flex-col overflow-hidden">
           <Header />
-          <main className="flex-1 p-6">
+          <main className="flex-1 overflow-x-auto overflow-y-auto p-6">
              {children}
           </main>
         </div>
