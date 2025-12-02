@@ -51,28 +51,12 @@ const actions = [
     },
 ]
 
-const mockXmls = [
-    { id: 1, file: 'NFe_44312.xml', date: '25/07/2024', status: 'Processado' },
-    { id: 2, file: 'NFe_44313.xml', date: '25/07/2024', status: 'Processado' },
-    { id: 3, file: 'CTe_8891.xml', date: '24/07/2024', status: 'Erro' },
-];
-
-const mockNotasProduto = [
-    { id: 1, number: '1254', client: 'ABC Indústria Ltda', value: 'R$ 15.400,00', status: 'Emitida' },
-    { id: 2, number: '1255', client: 'XYZ Comércio S.A.', value: 'R$ 8.250,50', status: 'Emitida' },
-];
-
-const mockNotasSaida = [
-    { id: 1, number: '501', client: 'Logística Total', value: 'R$ 1.200,00', status: 'Cancelada' },
-];
-
-const mockNotasServico = [
-    { id: 1, number: '88', client: 'Consultoria Eficaz', value: 'R$ 5.000,00', status: 'Emitida' },
-];
-
-const mockRecibos = [
-    { id: 1, number: 'C-0012', client: 'Consumidor Final', value: 'R$ 150,00', status: 'Emitido' },
-];
+// Dados fictícios removidos. As tabelas agora iniciarão vazias.
+const mockXmls: any[] = [];
+const mockNotasProduto: any[] = [];
+const mockNotasSaida: any[] = [];
+const mockNotasServico: any[] = [];
+const mockRecibos: any[] = [];
 
 
 export default function FiscalPage() {

@@ -17,31 +17,35 @@ const formSchema = z.object({
   transactionAmount: z.coerce.number().min(0.01, 'O valor deve ser maior que zero.'),
   accountDebited: z.string().min(1, 'A conta de débito é obrigatória.'),
   accountCredited: z.string().min(1, 'A conta de crédito é obrigatória.'),
+  description: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
 export default function DescriptionGeneratorForm() {
   const [isLoading, setIsLoading] = useState(false);
-  const [suggestion, setSuggestion] = useState('');
   const { toast } = useToast();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      transactionAmount: 0,
+      transactionAmount: undefined,
       accountDebited: '',
       accountCredited: '',
+      description: '',
     },
   });
 
   async function onSubmit(values: FormValues) {
     setIsLoading(true);
-    setSuggestion('');
+    form.setValue('description', '');
     try {
-      const result = await suggestTransactionDescriptions(values);
+      const result = await suggestTransactionDescriptions({
+        transactionAmount: values.transactionAmount,
+        accountDebited: values.accountDebited,
+        accountCredited: values.accountCredited
+      });
       if (result.suggestedDescription) {
-        setSuggestion(result.suggestedDescription);
         form.setValue('description', result.suggestedDescription);
         toast({
             title: 'Sugestão Gerada!',
@@ -81,7 +85,7 @@ export default function DescriptionGeneratorForm() {
                   <FormItem>
                     <FormLabel>Valor da Transação (R$)</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" {...field} />
+                      <Input type="number" step="0.01" {...field} placeholder="0,00" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

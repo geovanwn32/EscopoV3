@@ -6,11 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-const events = [
-  { date: '2024-08-15', description: 'Entrega EFD-Contribuições' },
-  { date: '2024-08-20', description: 'Vencimento PGDAS' },
-  { date: '2024-09-01', description: 'Férias - João Silva' },
-];
+// Os eventos agora devem vir de um estado ou API
+const events: { date: string; description: string }[] = [];
 
 export default function Agenda() {
   const [date, setDate] = useState<Date | undefined>(new Date());
@@ -43,12 +40,16 @@ export default function Agenda() {
         <div className="flex-grow">
             <h3 className="text-sm font-medium mb-2">Próximos Eventos</h3>
             <div className="space-y-2">
-                {events.map((event) => (
-                    <div key={event.date} className="flex items-center text-sm p-2 rounded-md bg-secondary">
-                        <div className="font-semibold text-primary mr-2">{new Date(event.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short'})}</div>
-                        <div className="text-secondary-foreground">{event.description}</div>
-                    </div>
-                ))}
+                {events.length > 0 ? (
+                  events.map((event) => (
+                      <div key={event.date} className="flex items-center text-sm p-2 rounded-md bg-secondary">
+                          <div className="font-semibold text-primary mr-2">{new Date(event.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short'})}</div>
+                          <div className="text-secondary-foreground">{event.description}</div>
+                      </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">Nenhum evento agendado.</p>
+                )}
             </div>
         </div>
       </CardContent>

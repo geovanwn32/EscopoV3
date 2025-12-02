@@ -37,31 +37,31 @@ export default function MinhaEmpresaPage() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="razao-social">Razão Social</Label>
-                  <Input id="razao-social" defaultValue="Exemplo Comércio de Software LTDA" />
+                  <Input id="razao-social" placeholder="Razão Social Completa" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="nome-fantasia">Nome Fantasia</Label>
-                  <Input id="nome-fantasia" defaultValue="EscopoV3" />
+                  <Input id="nome-fantasia" placeholder="Nome Fantasia" />
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="cnpj">CNPJ</Label>
-                  <Input id="cnpj" defaultValue="00.000.000/0001-00" />
+                  <Input id="cnpj" placeholder="00.000.000/0001-00" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="ie">Inscrição Estadual</Label>
-                  <Input id="ie" defaultValue="123.456.789.112" />
+                  <Input id="ie" placeholder="Inscrição Estadual" />
                 </div>
               </div>
                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="telefone">Telefone</Label>
-                  <Input id="telefone" type="tel" defaultValue="(11) 99999-9999" />
+                  <Input id="telefone" type="tel" placeholder="(00) 00000-0000" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" defaultValue="contato@exemplo.com" />
+                  <Input id="email" type="email" placeholder="contato@suaempresa.com" />
                 </div>
               </div>
               <div className='pt-4 flex justify-end'>
@@ -81,35 +81,35 @@ export default function MinhaEmpresaPage() {
                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="space-y-2 sm:col-span-1">
                   <Label htmlFor="cep">CEP</Label>
-                  <Input id="cep" defaultValue="01001-000" />
+                  <Input id="cep" placeholder="00000-000" />
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="logradouro">Logradouro</Label>
-                  <Input id="logradouro" defaultValue="Praça da Sé" />
+                  <Input id="logradouro" placeholder="Nome da Rua, Avenida, etc." />
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
                   <Label htmlFor="numero">Número</Label>
-                  <Input id="numero" defaultValue="100" />
+                  <Input id="numero" placeholder="Nº" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="complemento">Complemento</Label>
-                  <Input id="complemento" defaultValue="Lado par" />
+                  <Input id="complemento" placeholder="Apto, Bloco, etc." />
                 </div>
                  <div className="space-y-2">
                   <Label htmlFor="bairro">Bairro</Label>
-                  <Input id="bairro" defaultValue="Sé" />
+                  <Input id="bairro" placeholder="Bairro" />
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="cidade">Cidade</Label>
-                  <Input id="cidade" defaultValue="São Paulo" />
+                  <Input id="cidade" placeholder="Cidade" />
                 </div>
                 <div className="space-y-2 sm:col-span-1">
                   <Label htmlFor="uf">UF</Label>
-                  <Input id="uf" defaultValue="SP" />
+                  <Input id="uf" placeholder="UF" />
                 </div>
               </div>
               <div className='pt-4 flex justify-end'>
@@ -128,11 +128,11 @@ export default function MinhaEmpresaPage() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="class-tributaria">Classificação Tributária</Label>
-                <Input id="class-tributaria" defaultValue="99 - Pessoas Jurídicas em Geral" />
+                <Input id="class-tributaria" placeholder="Ex: 99 - Pessoas Jurídicas em Geral" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="cnae">CNAE Preponderante</Label>
-                <Input id="cnae" defaultValue="6201-5/01 - Desenvolvimento de programas de computador sob encomenda" />
+                <Input id="cnae" placeholder="Ex: 6201-5/01 - Desenvolvimento de programas" />
               </div>
               <div className='pt-4 flex justify-end'>
                 <Button>Salvar Alterações</Button>
@@ -150,7 +150,7 @@ export default function MinhaEmpresaPage() {
             <CardContent className="space-y-4">
                 <div className="flex items-center gap-6">
                     <Avatar className="h-24 w-24 rounded-lg">
-                        <AvatarImage src="https://picsum.photos/seed/logo/200" alt="Logo da Empresa"/>
+                        <AvatarImage src="" alt="Logo da Empresa"/>
                         <AvatarFallback className='rounded-lg'>LOGO</AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col gap-2">

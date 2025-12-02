@@ -8,11 +8,12 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 
+// Os KPIs agora devem vir de um estado ou API
 const kpis = [
-  { title: 'Faturamento', value: 'R$ 125.430,50', change: '+12.5%', changeType: 'increase' },
-  { title: 'Compras/Despesas', value: 'R$ 75.120,00', change: '+5.2%', changeType: 'increase' },
-  { title: 'Notas Emitidas', value: '342', change: '-2.1%', changeType: 'decrease' },
-  { title: 'Resultado', value: 'R$ 50.310,50', change: '+20.1%', changeType: 'increase' },
+  { title: 'Faturamento', value: 'R$ 0,00', change: '0%', changeType: 'increase' },
+  { title: 'Compras/Despesas', value: 'R$ 0,00', change: '0%', changeType: 'increase' },
+  { title: 'Notas Emitidas', value: '0', change: '0%', changeType: 'decrease' },
+  { title: 'Resultado', value: 'R$ 0,00', change: '0%', changeType: 'increase' },
 ];
 
 export default function DashboardPage() {

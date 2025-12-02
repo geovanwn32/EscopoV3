@@ -81,7 +81,6 @@ export default function LoginPage() {
                   type="email"
                   placeholder="seu@email.com"
                   required
-                  defaultValue="usuario@exemplo.com"
                 />
               </div>
               <div className="space-y-2">
@@ -94,7 +93,7 @@ export default function LoginPage() {
                     Esqueceu sua senha?
                   </Link>
                 </div>
-                <Input id="password" type="password" required defaultValue="password" />
+                <Input id="password" type="password" required />
               </div>
               <div className="space-y-2 pt-2">
                 <Button asChild type="submit" className="w-full font-semibold">

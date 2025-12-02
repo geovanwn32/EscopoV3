@@ -50,8 +50,8 @@ function UserMenu({ avatar }: { avatar?: { imageUrl: string; imageHint: string }
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">Usuário Padrão</p>
-            <p className="text-xs leading-none text-muted-foreground">usuario@exemplo.com</p>
+            <p className="text-sm font-medium leading-none">Seu Nome</p>
+            <p className="text-xs leading-none text-muted-foreground">seu@email.com</p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />

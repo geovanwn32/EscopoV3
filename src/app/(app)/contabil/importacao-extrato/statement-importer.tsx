@@ -19,15 +19,7 @@ interface Transaction {
   confidence?: number;
 }
 
-const mockTransactions: Omit<Transaction, 'status' | 'suggestion' | 'confidence'>[] = [
-  { id: 1, date: '2024-07-25', description: 'PIX RECEBIDO - JOAO DA SILVA', amount: 1500.00 },
-  { id: 2, date: '2024-07-25', description: 'PAGTO FORNECEDOR ABC LTDA', amount: -350.75 },
-  { id: 3, date: '2024-07-24', description: 'DELL COMPUTADORES', amount: -4500.00 },
-  { id: 4, date: '2024-07-23', description: 'SALARIO MES 07', amount: -5000.00 },
-  { id: 5, date: '2024-07-22', description: 'PGTO ALUGUEL ESCRITORIO', amount: -2500.00 },
-];
-
-// Mock data for AI suggestions
+// Mock data for AI suggestions - can be replaced with real data fetching
 const mockPreviousAssociations = [
   { description: "FORNECEDOR XYZ", account: "Fornecedores" },
   { description: "COMPRA DE MATERIAL", account: "Despesas com Materiais" },
@@ -39,11 +31,30 @@ export default function StatementImporter() {
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
 
-  const handleImport = () => {
-    setTransactions(mockTransactions.map(t => ({ ...t, status: 'pending' })));
-  };
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      toast({
+        title: "Arquivo Selecionado",
+        description: `O arquivo ${file.name} está pronto para ser processado.`
+      })
+      // Here you would typically parse the file and set the transactions
+      // For now, we'll keep it simple and not process the file content.
+      // setTransactions(parsedTransactions);
+    }
+    e.target.value = ''; // Reset input to allow same file selection
+  }
 
   const handleSuggestion = async () => {
+    if (transactions.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Nenhuma transação",
+        description: "Importe um extrato antes de solicitar sugestões.",
+      });
+      return;
+    }
+
     setIsProcessing(true);
     setTransactions(current => current.map(t => ({ ...t, status: 'loading' })));
 
@@ -92,9 +103,12 @@ export default function StatementImporter() {
           <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
             <Upload className="h-12 w-12 text-muted-foreground" />
             <h3 className="mt-4 text-lg font-semibold">Importar Extrato Bancário</h3>
-            <p className="mt-1 text-sm text-muted-foreground">Clique no botão abaixo para simular a importação.</p>
-            <Button className="mt-4" onClick={handleImport}>
-              <Upload className="mr-2 h-4 w-4" /> Simular Importação
+            <p className="mt-1 text-sm text-muted-foreground">Clique no botão abaixo para selecionar um arquivo.</p>
+            <Button asChild className="mt-4">
+              <label htmlFor="statement-upload" className='cursor-pointer'>
+                <Upload className="mr-2 h-4 w-4" /> Importar Arquivo
+                <input id="statement-upload" type="file" className="sr-only" onChange={handleFileSelect} accept=".csv,.ofx,.txt" />
+              </label>
             </Button>
           </div>
         ) : (
