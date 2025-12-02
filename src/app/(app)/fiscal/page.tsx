@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -293,6 +293,11 @@ function RecentDocumentsTable({
     const handleConfirmDelete = () => {
         if (itemToDelete && onDelete) {
             onDelete(itemToDelete.id);
+            toast({
+                variant: "destructive",
+                title: 'Arquivo Excluído!',
+                description: `O documento "${itemToDelete.file}" foi removido.`
+            });
         }
         setItemToDelete(null);
     };
@@ -405,12 +410,14 @@ function LancamentoProdutoDialog() {
         setProductItems(prev => prev.filter(item => item.id !== id));
     };
 
-    const handleProductChange = (id: number, field: keyof ProductItem, value: string | number) => {
+    const handleProductChange = (id: number, field: keyof Omit<ProductItem, 'id' | 'total'>, value: string | number) => {
         setProductItems(prev => prev.map(item => {
             if (item.id === id) {
                 const updatedItem = { ...item, [field]: value };
                 if (field === 'quantity' || field === 'price') {
-                    updatedItem.total = updatedItem.quantity * updatedItem.price;
+                    const quantity = typeof updatedItem.quantity === 'string' ? parseFloat(updatedItem.quantity) : updatedItem.quantity;
+                    const price = typeof updatedItem.price === 'string' ? parseFloat(updatedItem.price) : updatedItem.price;
+                    updatedItem.total = (quantity || 0) * (price || 0);
                 }
                 return updatedItem;
             }
@@ -559,7 +566,9 @@ function LancamentoProdutoDialog() {
                     <p>Total Nota: <span className="font-bold text-foreground text-lg">{totalNota.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span></p>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline">Cancelar</Button>
+                    <DialogClose asChild>
+                        <Button variant="outline">Cancelar</Button>
+                    </DialogClose>
                     <Button type="submit">Salvar Lançamento</Button>
                 </div>
             </div>
