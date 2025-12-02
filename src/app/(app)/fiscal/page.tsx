@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { PackagePlus, FileText, Search, Settings, Upload, FileMinus } from "lucide-react";
+import { PackagePlus, FileText, Wrench, Settings, Upload, FileMinus } from "lucide-react";
 import Link from "next/link";
 
 const actions = [
@@ -24,8 +24,8 @@ const actions = [
         color: "text-amber-600 bg-amber-100/80 group-hover:bg-amber-600 dark:bg-amber-900/40 dark:text-amber-400 dark:group-hover:bg-amber-500",
     },
     {
-        icon: <Search className="h-8 w-8" />,
-        label: "Consultar NFe",
+        icon: <Wrench className="h-8 w-8" />,
+        label: "Nota Serviço",
         href: "#",
         color: "text-indigo-600 bg-indigo-100/80 group-hover:bg-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400 dark:group-hover:bg-indigo-500",
     },
