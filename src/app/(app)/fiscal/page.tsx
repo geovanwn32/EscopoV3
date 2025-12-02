@@ -1,14 +1,16 @@
 
+'use client';
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { PackagePlus, FileText, Wrench, Upload, FileMinus, Receipt, MoreHorizontal, Search, Filter, Plus } from "lucide-react";
+import { PackagePlus, Wrench, Upload, FileMinus, Receipt, MoreHorizontal, Search, Filter, Plus } from "lucide-react";
 import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const actions = [
     {
@@ -85,161 +87,125 @@ export default function FiscalPage() {
             </CardContent>
         </Card>
 
-        <div className="space-y-6">
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between gap-4">
-                    <div className="space-y-1.5">
-                        <CardTitle>XMLs Importados</CardTitle>
-                        <CardDescription>Documentos fiscais importados recentemente.</CardDescription>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="relative">
-                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Buscar por arquivo..." className="pl-9" />
-                        </div>
-                        <Button variant="outline"><Filter className="mr-2 h-4 w-4"/>Filtrar</Button>
-                        <Button><Upload className="mr-2 h-4 w-4"/>Importar</Button>
-                    </div>
+        <Card>
+            <Tabs defaultValue="xmls">
+                <CardHeader>
+                    <TabsList className="grid w-full grid-cols-5">
+                        <TabsTrigger value="xmls">XMLs Importados</TabsTrigger>
+                        <TabsTrigger value="produtos">Notas de Produto</TabsTrigger>
+                        <TabsTrigger value="saidas">Notas de Saída</TabsTrigger>
+                        <TabsTrigger value="servicos">Notas de Serviço</TabsTrigger>
+                        <TabsTrigger value="recibos">Recibos/Cupons</TabsTrigger>
+                    </TabsList>
                 </CardHeader>
-                <CardContent>
-                    <RecentDocumentsTable
-                        headers={['Arquivo', 'Data Importação', 'Status']}
-                        data={mockXmls}
-                        renderRow={(item) => (
-                            <>
-                                <TableCell className="font-medium">{item.file}</TableCell>
-                                <TableCell>{item.date}</TableCell>
-                                <TableCell><Badge variant={item.status === 'Processado' ? 'secondary' : 'destructive'}>{item.status}</Badge></TableCell>
-                            </>
-                        )}
-                    />
+                <CardContent className="space-y-4">
+                    <TabsContent value="xmls">
+                        <ListHeader 
+                            title="XMLs Importados"
+                            description="Documentos fiscais importados recentemente."
+                            searchPlaceholder="Buscar por arquivo..."
+                            buttonLabel="Importar"
+                            buttonIcon={<Upload className="mr-2 h-4 w-4"/>}
+                        />
+                        <RecentDocumentsTable
+                            headers={['Arquivo', 'Data Importação', 'Status']}
+                            data={mockXmls}
+                            renderRow={(item: any) => (
+                                <>
+                                    <TableCell className="font-medium">{item.file}</TableCell>
+                                    <TableCell>{item.date}</TableCell>
+                                    <TableCell><Badge variant={item.status === 'Processado' ? 'secondary' : 'destructive'}>{item.status}</Badge></TableCell>
+                                </>
+                            )}
+                        />
+                    </TabsContent>
+                     <TabsContent value="produtos">
+                        <ListHeader 
+                            title="Notas de Produto"
+                            description="Notas fiscais de produto emitidas recentemente."
+                            searchPlaceholder="Buscar por cliente ou nº..."
+                            buttonLabel="Nova Nota"
+                            buttonIcon={<Plus className="mr-2 h-4 w-4"/>}
+                        />
+                        <RecentDocumentsTable
+                            headers={['Número', 'Cliente', 'Valor', 'Status']}
+                            data={mockNotasProduto}
+                            renderRow={(item: any) => (
+                                <>
+                                    <TableCell className="font-medium">{item.number}</TableCell>
+                                    <TableCell>{item.client}</TableCell>
+                                    <TableCell>{item.value}</TableCell>
+                                    <TableCell><Badge>{item.status}</Badge></TableCell>
+                                </>
+                            )}
+                        />
+                    </TabsContent>
+                     <TabsContent value="saidas">
+                        <ListHeader 
+                            title="Notas de Saída"
+                            description="Notas fiscais de saída emitidas recentemente."
+                            searchPlaceholder="Buscar por destinatário..."
+                            buttonLabel="Nova Nota"
+                            buttonIcon={<Plus className="mr-2 h-4 w-4"/>}
+                        />
+                        <RecentDocumentsTable
+                            headers={['Número', 'Destinatário', 'Valor', 'Status']}
+                            data={mockNotasSaida}
+                            renderRow={(item: any) => (
+                                <>
+                                    <TableCell className="font-medium">{item.number}</TableCell>
+                                    <TableCell>{item.client}</TableCell>
+                                    <TableCell>{item.value}</TableCell>
+                                    <TableCell><Badge variant="destructive">{item.status}</Badge></TableCell>
+                                </>
+                            )}
+                        />
+                    </TabsContent>
+                     <TabsContent value="servicos">
+                        <ListHeader 
+                            title="Notas de Serviço"
+                            description="Notas fiscais de serviço emitidas recentemente."
+                            searchPlaceholder="Buscar por tomador..."
+                            buttonLabel="Nova Nota"
+                            buttonIcon={<Plus className="mr-2 h-4 w-4"/>}
+                        />
+                        <RecentDocumentsTable
+                            headers={['Número', 'Tomador', 'Valor', 'Status']}
+                            data={mockNotasServico}
+                            renderRow={(item: any) => (
+                                <>
+                                    <TableCell className="font-medium">{item.number}</TableCell>
+                                    <TableCell>{item.client}</TableCell>
+                                    <TableCell>{item.value}</TableCell>
+                                    <TableCell><Badge>{item.status}</Badge></TableCell>
+                                </>
+                            )}
+                        />
+                    </TabsContent>
+                     <TabsContent value="recibos">
+                        <ListHeader 
+                            title="Recibos/Cupons"
+                            description="Recibos e cupons fiscais emitidos recentemente."
+                            searchPlaceholder="Buscar por cliente..."
+                            buttonLabel="Novo Recibo"
+                            buttonIcon={<Plus className="mr-2 h-4 w-4"/>}
+                        />
+                        <RecentDocumentsTable
+                            headers={['Número', 'Cliente', 'Valor', 'Status']}
+                            data={mockRecibos}
+                            renderRow={(item: any) => (
+                                <>
+                                    <TableCell className="font-medium">{item.number}</TableCell>
+                                    <TableCell>{item.client}</TableCell>
+                                    <TableCell>{item.value}</TableCell>
+                                    <TableCell><Badge variant="secondary">{item.status}</Badge></TableCell>
+                                </>
+                            )}
+                        />
+                    </TabsContent>
                 </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between gap-4">
-                     <div className="space-y-1.5">
-                        <CardTitle>Notas de Produto</CardTitle>
-                        <CardDescription>Notas fiscais de produto emitidas recentemente.</CardDescription>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="relative">
-                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Buscar por cliente ou nº..." className="pl-9" />
-                        </div>
-                        <Button variant="outline"><Filter className="mr-2 h-4 w-4"/>Filtrar</Button>
-                        <Button><Plus className="mr-2 h-4 w-4"/>Nova Nota</Button>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <RecentDocumentsTable
-                        headers={['Número', 'Cliente', 'Valor', 'Status']}
-                        data={mockNotasProduto}
-                        renderRow={(item) => (
-                            <>
-                                <TableCell className="font-medium">{item.number}</TableCell>
-                                <TableCell>{item.client}</TableCell>
-                                <TableCell>{item.value}</TableCell>
-                                <TableCell><Badge>{item.status}</Badge></TableCell>
-                            </>
-                        )}
-                    />
-                </CardContent>
-            </Card>
-
-             <Card>
-                <CardHeader className="flex flex-row items-center justify-between gap-4">
-                     <div className="space-y-1.5">
-                        <CardTitle>Notas de Saída</CardTitle>
-                        <CardDescription>Notas fiscais de saída emitidas recentemente.</CardDescription>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="relative">
-                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Buscar por destinatário..." className="pl-9" />
-                        </div>
-                        <Button variant="outline"><Filter className="mr-2 h-4 w-4"/>Filtrar</Button>
-                        <Button><Plus className="mr-2 h-4 w-4"/>Nova Nota</Button>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                     <RecentDocumentsTable
-                        headers={['Número', 'Destinatário', 'Valor', 'Status']}
-                        data={mockNotasSaida}
-                        renderRow={(item) => (
-                            <>
-                                <TableCell className="font-medium">{item.number}</TableCell>
-                                <TableCell>{item.client}</TableCell>
-                                <TableCell>{item.value}</TableCell>
-                                <TableCell><Badge variant="destructive">{item.status}</Badge></TableCell>
-                            </>
-                        )}
-                    />
-                </CardContent>
-            </Card>
-            
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between gap-4">
-                     <div className="space-y-1.5">
-                        <CardTitle>Notas de Serviço</CardTitle>
-                        <CardDescription>Notas fiscais de serviço emitidas recentemente.</CardDescription>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="relative">
-                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Buscar por tomador..." className="pl-9" />
-                        </div>
-                        <Button variant="outline"><Filter className="mr-2 h-4 w-4"/>Filtrar</Button>
-                        <Button><Plus className="mr-2 h-4 w-4"/>Nova Nota</Button>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                     <RecentDocumentsTable
-                        headers={['Número', 'Tomador', 'Valor', 'Status']}
-                        data={mockNotasServico}
-                        renderRow={(item) => (
-                            <>
-                                <TableCell className="font-medium">{item.number}</TableCell>
-                                <TableCell>{item.client}</TableCell>
-                                <TableCell>{item.value}</TableCell>
-                                <TableCell><Badge>{item.status}</Badge></TableCell>
-                            </>
-                        )}
-                    />
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between gap-4">
-                    <div className="space-y-1.5">
-                        <CardTitle>Recibos/Cupons</CardTitle>
-                        <CardDescription>Recibos e cupons fiscais emitidos recentemente.</CardDescription>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="relative">
-                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Buscar por cliente..." className="pl-9" />
-                        </div>
-                        <Button variant="outline"><Filter className="mr-2 h-4 w-4"/>Filtrar</Button>
-                        <Button><Plus className="mr-2 h-4 w-4"/>Novo Recibo</Button>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                     <RecentDocumentsTable
-                        headers={['Número', 'Cliente', 'Valor', 'Status']}
-                        data={mockRecibos}
-                        renderRow={(item) => (
-                            <>
-                                <TableCell className="font-medium">{item.number}</TableCell>
-                                <TableCell>{item.client}</TableCell>
-                                <TableCell>{item.value}</TableCell>
-                                <TableCell><Badge variant="secondary">{item.status}</Badge></TableCell>
-                            </>
-                        )}
-                    />
-                </CardContent>
-            </Card>
-        </div>
+            </Tabs>
+        </Card>
       </div>
     );
 }
@@ -260,9 +226,29 @@ function ActionTile({ icon, label, href = "#", color }: { icon: React.ReactNode,
   )
 }
 
+function ListHeader({ title, description, searchPlaceholder, buttonLabel, buttonIcon }: { title: string, description: string, searchPlaceholder: string, buttonLabel: string, buttonIcon: React.ReactNode}) {
+    return (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+            <div className="space-y-1.5 flex-grow">
+                <CardTitle>{title}</CardTitle>
+                <CardDescription>{description}</CardDescription>
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="relative flex-grow sm:flex-grow-0">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder={searchPlaceholder} className="pl-9 w-full" />
+                </div>
+                <Button variant="outline" className="hidden sm:inline-flex"><Filter className="mr-2 h-4 w-4"/>Filtrar</Button>
+                <Button className="flex-grow sm:flex-grow-0">{buttonIcon}{buttonLabel}</Button>
+            </div>
+        </div>
+    );
+}
+
+
 function RecentDocumentsTable({ headers, data, renderRow }: { headers: string[], data: any[], renderRow: (item: any) => React.ReactNode }) {
     return (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto rounded-md border">
             <Table>
                 <TableHeader>
                     <TableRow>
@@ -271,7 +257,7 @@ function RecentDocumentsTable({ headers, data, renderRow }: { headers: string[],
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {data.map((item) => (
+                    {data.length > 0 ? data.map((item) => (
                         <TableRow key={item.id}>
                            {renderRow(item)}
                            <TableCell>
@@ -290,7 +276,13 @@ function RecentDocumentsTable({ headers, data, renderRow }: { headers: string[],
                             </DropdownMenu>
                            </TableCell>
                         </TableRow>
-                    ))}
+                    )) : (
+                        <TableRow>
+                            <TableCell colSpan={headers.length + 1} className="h-24 text-center">
+                                Nenhum documento encontrado.
+                            </TableCell>
+                        </TableRow>
+                    )}
                 </TableBody>
             </Table>
         </div>
