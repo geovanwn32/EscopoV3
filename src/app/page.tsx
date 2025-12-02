@@ -1,13 +1,13 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { Building2, Mail, Phone, Eye, EyeOff } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
+import { useState } from 'react';
+import Link from 'next/link';
+import { Building2, Mail, Lock, User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -32,161 +32,103 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-const DataBlockAnimation = () => {
-    const [blocks, setBlocks] = useState<React.CSSProperties[]>([]);
-  
-    useEffect(() => {
-      const generateBlocks = () => {
-        return Array.from({ length: 50 }).map(() => ({
-          left: `${Math.random() * 100}%`,
-          animationDuration: `${Math.random() * 10 + 5}s`,
-          animationDelay: `${Math.random() * 5}s`,
-          opacity: Math.random() * 0.5 + 0.1,
-        }));
-      };
-      setBlocks(generateBlocks());
-    }, []);
-  
-    if (blocks.length === 0) {
-      return null;
-    }
-  
-    return (
-      <div className="data-block-container">
-        {blocks.map((style, i) => (
-          <div key={i} className="data-block" style={style} />
-        ))}
-      </div>
-    );
-  };
-
-
 export default function LoginPage() {
-  const [isLogin, setIsLogin] = useState(true)
-  const [showPassword, setShowPassword] = useState(false);
+  const [isLogin, setIsLogin] = useState(true);
 
   return (
-    <div className="w-full min-h-screen grid grid-cols-1 lg:grid-cols-2">
-      <div className="hidden lg:flex flex-col p-12 bg-primary text-primary-foreground relative">
-          <DataBlockAnimation />
-          <div className="relative z-10 w-full my-auto max-w-md space-y-6">
-             <div className="flex items-center gap-3 text-white">
-                <Building2 className="h-10 w-10" />
-                <h1 className="text-4xl font-bold font-headline">EscopoV3</h1>
-            </div>
-            <p className="text-lg text-primary-foreground/80">
-              Sua contabilidade ganha vida: organizada, atualizada e sempre segura. Acesse sua empresa com poucos cliques e tenha o controle total.
-            </p>
-          </div>
-           <div className="relative z-10 text-center text-sm text-primary-foreground/60">
-              © {new Date().getFullYear()} EscopoV3. Todos os direitos reservados.
-           </div>
-      </div>
-
-      <div className="flex items-center justify-center p-4 sm:p-8 bg-background">
-        <div className="w-full max-w-md space-y-8">
-            <div className='lg:hidden text-center'>
-                 <div className="flex items-center justify-center gap-2 text-primary">
-                    <Building2 className="h-8 w-8" />
-                    <h1 className="text-3xl font-bold font-headline">EscopoV3</h1>
+    <div className="flex min-h-screen w-full items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
+      <Card className="w-full max-w-4xl grid lg:grid-cols-2 shadow-2xl overflow-hidden">
+        {/* Left Panel */}
+        <div className="hidden lg:flex flex-col justify-center p-12 bg-primary text-primary-foreground relative">
+            {/* Abstract Shapes */}
+            <div className="absolute top-0 left-0 -translate-x-1/4 -translate-y-1/4 w-48 h-48 bg-primary-foreground/5 rounded-full" />
+            <div className="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4 w-32 h-32 bg-primary-foreground/5 rounded-full" />
+            
+            <div className="relative z-10 space-y-4">
+                <div className="flex items-center gap-3 text-white">
+                    <Building2 className="h-10 w-10" />
+                    <h1 className="text-4xl font-bold font-headline">EscopoV3</h1>
                 </div>
-                 <p className='text-foreground/80 mt-2'>
-                    Sua contabilidade ganha vida. Organizada, atualizada e sempre segura.
+                <h2 className="text-3xl font-bold">Bem-vindo(a) de volta!</h2>
+                <p className="text-primary-foreground/80">
+                  Acesse sua conta para gerenciar sua contabilidade com eficiência e segurança.
                 </p>
             </div>
-
-            <Card className='shadow-xl'>
-              <CardHeader>
-                  <CardTitle className="text-2xl">{isLogin ? 'Acesse sua conta' : 'Crie sua conta'}</CardTitle>
-                  <CardDescription>
-                      {isLogin ? 'Bem-vindo(a) de volta! Insira seus dados.' : 'Preencha os dados para criar sua conta.'}
-                  </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input id="email" type="email" placeholder="seu@email.com" required />
-                  </div>
-                  <div className="space-y-2">
-                      <Label htmlFor="password">Senha</Label>
-                      <div className="relative">
-                        <Input id="password" type={showPassword ? 'text' : 'password'} required />
-                        <button 
-                          type="button" 
-                          onClick={() => setShowPassword(!showPassword)} 
-                          className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-primary"
-                        >
-                            {showPassword ? <EyeOff /> : <Eye />}
-                        </button>
-                      </div>
-                  </div>
-                  
-                  {!isLogin && (
-                      <div className="space-y-2">
-                          <Label htmlFor="confirmPassword">Confirmar Senha</Label>
-                          <Input id="confirmPassword" type="password" required />
-                      </div>
-                  )}
-
-                  {isLogin && (
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox id="remember-me" />
-                        <Label htmlFor="remember-me" className="text-sm font-normal">Lembrar-me</Label>
-                      </div>
-                      <Link href="#" className="inline-block text-sm text-primary/80 underline-offset-4 transition-colors hover:text-primary hover:underline">
-                          Esqueceu sua senha?
-                      </Link>
-                    </div>
-                  )}
-                  
-                  <div className="space-y-4 pt-2">
-                      <Button asChild type="submit" className="w-full font-semibold">
-                      <Link href="/dashboard">{isLogin ? 'Entrar' : 'Cadastrar'}</Link>
-                      </Button>
-                      
-                      <div className="relative">
-                          <div className="absolute inset-0 flex items-center">
-                              <span className="w-full border-t" />
-                          </div>
-                          <div className="relative flex justify-center text-xs uppercase">
-                              <span className="bg-card px-2 text-muted-foreground">
-                              Ou continue com
-                              </span>
-                          </div>
-                      </div>
-
-                      <Button variant="outline" className="w-full font-medium">
-                        <GoogleIcon className="mr-2 h-5 w-5" />
-                        Login com Google
-                      </Button>
-                  </div>
-              </CardContent>
-            </Card>
-
-            <div className="text-center text-sm text-muted-foreground">
-                {isLogin ? "Não tem uma conta?" : "Já tem uma conta?"}{' '}
-                <button onClick={() => setIsLogin(!isLogin)} className="font-semibold text-primary underline-offset-4 hover:underline">
-                    {isLogin ? "Registre-se" : "Faça login"}
-                </button>
+        </div>
+        
+        {/* Right Panel */}
+        <div className="p-8 sm:p-12 bg-card">
+            <div className="space-y-4">
+              <h2 className="text-3xl font-bold">{isLogin ? 'Login' : 'Criar Conta'}</h2>
+              <p className="text-muted-foreground">
+                {isLogin ? 'Insira seus dados para acessar o sistema.' : 'Preencha os campos para se registrar.'}
+              </p>
             </div>
-            
-            <div className="text-center text-sm text-muted-foreground space-y-2 pt-6 border-t">
-                <h3 className='font-semibold text-foreground mb-3'>Precisa de Ajuda?</h3>
-                <div className='flex flex-wrap items-center justify-center gap-x-6 gap-y-2'>
-                  <a href='tel:+5562998554529' className='flex items-center gap-2 hover:text-primary transition-colors'>
-                      <Phone className='h-4 w-4'/> +55 (62) 99855-4529
-                  </a>
-                  <a href='mailto:geovaniwn@gmail.com' className='flex items-center gap-2 hover:text-primary transition-colors'>
-                      <Mail className='h-4 w-4'/> geovaniwn@gmail.com
-                  </a>
-                  <a href='https://wa.me/5562992127752' target='_blank' rel='noopener noreferrer' className='flex items-center gap-2 hover:text-primary transition-colors'>
-                      <Phone className='h-4 w-4'/> WhatsApp
-                  </a>
+
+            <div className="mt-8 space-y-6">
+                <div className="space-y-4">
+                    <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Input id="email" type="email" placeholder="E-mail" required className="pl-10" />
+                    </div>
+                    <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Input id="password" type="password" placeholder="Senha" required className="pl-10" />
+                    </div>
+                     {!isLogin && (
+                        <div className="relative">
+                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                            <Input id="confirmPassword" type="password" placeholder="Confirmar Senha" required className="pl-10" />
+                        </div>
+                    )}
                 </div>
+
+                <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center space-x-2">
+                    <Checkbox id="remember-me" />
+                    <Label htmlFor="remember-me" className="font-normal text-muted-foreground">Lembrar-me</Label>
+                    </div>
+                    {isLogin && (
+                    <Link href="#" className="font-medium text-primary hover:underline">
+                        Esqueceu sua senha?
+                    </Link>
+                    )}
+                </div>
+
+                <div className="space-y-4">
+                    <Button asChild type="submit" className="w-full font-semibold text-lg py-6">
+                        <Link href="/dashboard">{isLogin ? 'Entrar' : 'Cadastrar'}</Link>
+                    </Button>
+                    
+                    <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-card px-2 text-muted-foreground">
+                            Ou continue com
+                            </span>
+                        </div>
+                    </div>
+
+                    <Button variant="outline" className="w-full">
+                    <GoogleIcon className="mr-2 h-5 w-5" />
+                    Login com Google
+                    </Button>
+                </div>
+
+                <p className="text-center text-sm text-muted-foreground">
+                    {isLogin ? 'Não tem uma conta?' : 'Já tem uma conta?'}{' '}
+                    <button
+                        onClick={() => setIsLogin(!isLogin)}
+                        className="font-medium text-primary hover:underline"
+                    >
+                        {isLogin ? 'Crie uma agora' : 'Faça login'}
+                    </button>
+                </p>
             </div>
         </div>
-      </div>
+      </Card>
     </div>
-  )
+  );
 }
