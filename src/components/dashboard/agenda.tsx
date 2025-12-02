@@ -48,7 +48,7 @@ export default function Agenda() {
             classNames={{
                 day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
                 day_today: "bg-primary/20 text-primary",
-                head_cell: "w-10",
+                head_cell: "text-muted-foreground rounded-md w-full font-normal text-[0.8rem]",
                 cell: "w-10 h-10",
                 day: "w-10 h-10",
             }}
