@@ -2,7 +2,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Building2, MoreVertical, PlusCircle, Trash2, Pencil, Eye } from 'lucide-react';
+import { Building2, MoreVertical, PlusCircle, Trash2, Pencil, Eye, Loader2, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { useCompany, type Company } from '@/hooks/use-company';
@@ -94,10 +94,10 @@ export default function SelecionarEmpresaPage() {
                   <CardContent className="flex flex-col items-center justify-center p-6 text-center space-y-4">
                     <Avatar className="h-16 w-16">
                         <AvatarFallback className="text-xl font-bold bg-muted text-muted-foreground">
-                          {company.name ? company.name.charAt(0).toUpperCase() : '?'}
+                          {(company.data?.nomeFantasia || company.name).charAt(0).toUpperCase() || '?'}
                         </AvatarFallback>
                     </Avatar>
-                    <h2 className="text-lg font-semibold">{company.name || `Empresa (ID: ${company.id})`}</h2>
+                    <h2 className="text-lg font-semibold">{company.data?.nomeFantasia || company.name}</h2>
                     {company.data?.cnpj && <p className="text-sm text-muted-foreground">{company.data.cnpj}</p>}
                   </CardContent>
                 </div>
@@ -193,6 +193,8 @@ interface CompanyFormProps {
 }
 
 function CompanyForm({ onSave, onCancel }: CompanyFormProps) {
+  const { toast } = useToast();
+  const [isQueryingCnpj, setIsQueryingCnpj] = useState(false);
   const [formData, setFormData] = useState({
     razaoSocial: '',
     nomeFantasia: '',
@@ -200,11 +202,60 @@ function CompanyForm({ onSave, onCancel }: CompanyFormProps) {
   });
 
   const handleInputChange = (field: keyof typeof formData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    if (field === 'cnpj') {
+        const onlyNumbers = value.replace(/\D/g, '');
+        let formattedCnpj = onlyNumbers;
+        if (onlyNumbers.length > 2) formattedCnpj = `${onlyNumbers.slice(0, 2)}.${onlyNumbers.slice(2)}`;
+        if (onlyNumbers.length > 5) formattedCnpj = `${onlyNumbers.slice(0, 2)}.${onlyNumbers.slice(2, 5)}.${onlyNumbers.slice(5)}`;
+        if (onlyNumbers.length > 8) formattedCnpj = `${onlyNumbers.slice(0, 2)}.${onlyNumbers.slice(2, 5)}.${onlyNumbers.slice(5, 8)}/${onlyNumbers.slice(8)}`;
+        if (onlyNumbers.length > 12) formattedCnpj = `${onlyNumbers.slice(0, 2)}.${onlyNumbers.slice(2, 5)}.${onlyNumbers.slice(5, 8)}/${onlyNumbers.slice(8, 12)}-${onlyNumbers.slice(12, 14)}`;
+        setFormData(prev => ({ ...prev, [field]: formattedCnpj }));
+    } else {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    }
+  };
+
+  const handleCnpjQuery = async () => {
+    const cnpj = formData.cnpj.replace(/\D/g, '');
+    if (!cnpj || cnpj.length !== 14) {
+        toast({ variant: 'destructive', title: 'CNPJ inválido', description: 'Por favor, insira um CNPJ válido com 14 dígitos.' });
+        return;
+    }
+    setIsQueryingCnpj(true);
+    try {
+        const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'CNPJ não encontrado ou API indisponível.' }));
+            throw new Error(errorData.message);
+        }
+        const data = await response.json();
+        setFormData(prev => ({
+            ...prev,
+            razaoSocial: data.razao_social || '',
+            nomeFantasia: data.nome_fantasia || '',
+        }));
+        toast({ title: 'CNPJ Consultado!', description: 'Os dados da empresa foram preenchidos com sucesso.' });
+    } catch (error: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Erro na Consulta',
+            description: error.message || 'Não foi possível buscar os dados do CNPJ.'
+        });
+    } finally {
+        setIsQueryingCnpj(false);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+     if (!formData.razaoSocial) {
+      toast({
+        variant: 'destructive',
+        title: 'Campo Obrigatório',
+        description: 'A Razão Social é obrigatória. Consulte o CNPJ ou preencha manualmente.',
+      });
+      return;
+    }
     onSave({
       name: formData.razaoSocial,
       data: {
@@ -220,10 +271,20 @@ function CompanyForm({ onSave, onCancel }: CompanyFormProps) {
       <DialogHeader>
         <DialogTitle>Cadastrar Nova Empresa</DialogTitle>
         <DialogDescription>
-          Preencha os dados da empresa. Você poderá editar mais detalhes depois.
+          Preencha os dados da empresa. Você pode consultar o CNPJ para preenchimento automático.
         </DialogDescription>
       </DialogHeader>
       <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+            <Label htmlFor="cnpj">CNPJ</Label>
+            <div className="flex gap-2">
+                <Input id="cnpj" value={formData.cnpj} onChange={(e) => handleInputChange('cnpj', e.target.value)} placeholder="00.000.000/0001-00" maxLength={18} />
+                <Button type="button" variant="outline" onClick={handleCnpjQuery} disabled={isQueryingCnpj}>
+                    {isQueryingCnpj ? <Loader2 className="animate-spin h-4 w-4" /> : <Search className="h-4 w-4" />}
+                    <span className="ml-2 hidden sm:inline">Consultar</span>
+                </Button>
+            </div>
+        </div>
         <div className="space-y-2">
           <Label htmlFor="razaoSocial">Razão Social</Label>
           <Input id="razaoSocial" value={formData.razaoSocial} onChange={e => handleInputChange('razaoSocial', e.target.value)} required />
@@ -232,10 +293,7 @@ function CompanyForm({ onSave, onCancel }: CompanyFormProps) {
           <Label htmlFor="nomeFantasia">Nome Fantasia</Label>
           <Input id="nomeFantasia" value={formData.nomeFantasia} onChange={e => handleInputChange('nomeFantasia', e.target.value)} />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="cnpj">CNPJ</Label>
-          <Input id="cnpj" value={formData.cnpj} onChange={e => handleInputChange('cnpj', e.target.value)} />
-        </div>
+        
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
           <Button type="submit">Salvar e Continuar</Button>
