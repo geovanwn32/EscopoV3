@@ -32,7 +32,6 @@ export const NAV_TITLES: Record<string, string> = {
   '/utilitarios/arquivos': 'Arquivos',
   '/utilitarios/audit-trail': 'Trilha de Auditoria',
   '/utilitarios/gov-status': 'Status de Serviços do Governo',
-  '/minha-empresa': 'Minha Empresa',
   '/configuracoes': 'Configurações',
   '/admin': 'Painel de Administração',
 };

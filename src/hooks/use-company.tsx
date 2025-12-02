@@ -21,7 +21,7 @@ interface CompanyContextType {
     currentCompany: number | null;
     isLoaded: boolean;
     switchCompany: (companyId: number, navigate?: boolean) => void;
-    addCompany: () => void;
+    addCompany: (name: string, data?: CompanyData) => void;
     updateCompany: (companyId: number, companyData: Company) => void;
     deleteCompany: (companyId: number) => void;
     useScopedData: <T>(key: string, defaultValue: T) => [T, (value: T) => void];
@@ -93,18 +93,16 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
         }
     }, [router]);
 
-    const addCompany = useCallback(() => {
+    const addCompany = useCallback((name: string, data?: CompanyData) => {
         const newCompanyId = Date.now();
         const newCompany: Company = {
             id: newCompanyId,
-            name: ``, // Start with an empty name
-            data: {},
+            name: name,
+            data: data || {},
         };
         setCompanies(prev => [...prev, newCompany]);
-        // Switch to the new company and navigate to the edit page
-        switchCompany(newCompanyId, false);
-        router.push('/minha-empresa');
-    }, [router, switchCompany]);
+        switchCompany(newCompanyId);
+    }, [switchCompany]);
 
     const updateCompany = useCallback((companyId: number, companyData: Company) => {
         setCompanies(prev => prev.map(c => c.id === companyId ? companyData : c));
