@@ -108,7 +108,7 @@ const secondaryMenu: NavItem[] = [
 
 export function SidebarNav() {
   const pathname = usePathname();
-  const { companies, currentCompany, switchCompany, addCompany } = useCompany();
+  const { companies, currentCompany, switchCompany } = useCompany();
   const router = useRouter();
 
   const activeCompany = companies.find(c => c.id === currentCompany);
@@ -132,6 +132,8 @@ export function SidebarNav() {
   const handleGoToAdmin = () => {
     router.push('/admin');
   };
+  
+  const companyDisplayName = activeCompany?.data?.nomeFantasia || activeCompany?.name;
 
   return (
     <>
@@ -151,11 +153,11 @@ export function SidebarNav() {
                     <div className="flex items-center gap-3 min-w-0">
                         <Avatar className='h-9 w-9'>
                             <AvatarFallback className="bg-muted text-muted-foreground font-semibold">
-                                {activeCompany?.name ? activeCompany.name.charAt(0).toUpperCase() : ''}
+                                {companyDisplayName ? companyDisplayName.charAt(0).toUpperCase() : ''}
                             </AvatarFallback>
                         </Avatar>
                         <div className="flex flex-col items-start min-w-0 group-data-[collapsible=icon]:hidden">
-                            <span className="font-semibold text-sm truncate">{activeCompany?.name}</span>
+                            <span className="font-semibold text-sm truncate">{companyDisplayName}</span>
                             <span className="text-xs text-muted-foreground">Ver empresas</span>
                         </div>
                     </div>
@@ -167,7 +169,7 @@ export function SidebarNav() {
                 {companies.map(company => (
                     <DropdownMenuItem key={company.id} onSelect={() => handleCompanySwitch(company.id)}>
                         <Check className={`mr-2 h-4 w-4 ${currentCompany === company.id ? 'opacity-100' : 'opacity-0'}`} />
-                        {company.name}
+                        {company.data?.nomeFantasia || company.name}
                     </DropdownMenuItem>
                 ))}
                 <DropdownMenuSeparator />
