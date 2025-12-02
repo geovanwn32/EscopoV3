@@ -9,12 +9,6 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
-import {
   LayoutDashboard,
   FileText,
   Users,
@@ -46,7 +40,7 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '../ui/button';
-import { cn } from '@/lib/utils';
+import { Separator } from '../ui/separator';
 
 interface NavItem {
   href: string;
@@ -139,33 +133,12 @@ export function SidebarNav() {
   const pathname = usePathname();
 
   const isNavItemActive = (href: string) => {
-    // Exact match for most cases
     if (pathname === href) return true;
-    // For group items, check if the current path starts with the group's base path
-    // This is useful for keeping the parent group active.
-    // Example: if path is '/fiscal/apuracao', '/fiscal' should be considered active.
-    if (href !== '/dashboard' && pathname.startsWith(href) && href.split('/').length > 1) {
-        const pathSegments = pathname.split('/');
-        const hrefSegments = href.split('/');
-        // Make sure it's not a false positive for root paths
-        if (pathSegments.length > 2 && hrefSegments.length > 1) {
-             return pathSegments[1] === hrefSegments[1];
-        }
+    if (href !== '/dashboard' && pathname.startsWith(href)) {
+        return true;
     }
     return false;
   };
-
-  const getActiveGroup = () => {
-    for (const group of navGroups) {
-      if (group.items.some(item => pathname.startsWith(item.href.substring(0, item.href.lastIndexOf('/')) || item.href))) {
-        const basePath = `/${pathname.split('/')[1]}`;
-        const mainGroup = navGroups.find(g => g.items.some(i => i.href.startsWith(basePath)));
-        if (mainGroup) return mainGroup.label;
-      }
-    }
-    return undefined;
-  };
-
 
   return (
     <>
@@ -195,58 +168,33 @@ export function SidebarNav() {
           </SidebarMenuItem>
         </SidebarMenu>
         
-        <Accordion type="single" collapsible defaultValue={getActiveGroup()} className="w-full group-data-[collapsible=icon]:hidden">
-           {navGroups.map((group) => (
-            <AccordionItem value={group.label} key={group.label} className="border-b-0">
-               <AccordionTrigger 
-                  className={cn(
-                    "flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50",
-                    "hover:no-underline [&[data-state=open]>svg]:text-sidebar-accent-foreground",
-                    group.items.some(item => isNavItemActive(item.href)) && "bg-sidebar-accent text-sidebar-accent-foreground"
-                    )}
-                >
-                    <group.icon />
-                    <span>{group.label}</span>
-                </AccordionTrigger>
-                <AccordionContent className="pb-0">
-                    <SidebarMenu className="pl-5 pr-1 py-1 border-l border-sidebar-border ml-3">
-                        {group.items.map((item) => (
-                        <SidebarMenuItem key={item.href}>
-                            <SidebarMenuButton
-                            asChild
-                            size="sm"
-                            isActive={pathname === item.href}
-                            tooltip={item.label}
-                            >
-                            <Link href={item.href}>
-                                <item.icon />
-                                <span>{item.label}</span>
-                            </Link>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
-                        ))}
-                    </SidebarMenu>
-              </AccordionContent>
-            </AccordionItem>
-           ))}
-        </Accordion>
+        <Separator className='my-2 bg-sidebar-border/50' />
 
-        {/* Icon-only view for collapsed sidebar */}
-        <SidebarMenu className="hidden group-data-[collapsible=icon]:flex">
-            {navGroups.map((group) => (
-                <SidebarMenuItem key={group.label}>
-                    <SidebarMenuButton
+        <SidebarMenu>
+          {navGroups.map((group) => (
+            <div key={group.label} className="group/nav-group">
+                <p className="px-2 py-1 text-xs font-medium text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">
+                    {group.label}
+                </p>
+                {group.items.map((item) => (
+                    <SidebarMenuItem key={item.href}>
+                        <SidebarMenuButton
                         asChild
-                        isActive={group.items.some(item => isNavItemActive(item.href))}
-                        tooltip={group.label}
-                    >
-                        <Link href={group.items[0]?.href || '#'}>
-                            <group.icon/>
-                            <span className="sr-only">{group.label}</span>
+                        size="sm"
+                        isActive={pathname === item.href}
+                        tooltip={item.label}
+                        >
+                        <Link href={item.href}>
+                            <item.icon />
+                            <span>{item.label}</span>
                         </Link>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-            ))}
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                ))}
+                 {/* Only show separator if not in collapsed mode */}
+                <Separator className='my-2 bg-sidebar-border/50 last:hidden group-data-[collapsible=icon]:hidden' />
+            </div>
+           ))}
         </SidebarMenu>
 
       </SidebarContent>
