@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 
 const actions = [
     {
@@ -329,7 +330,7 @@ function RecentDocumentsTable({
                                         <DropdownMenuItem onClick={() => toast({ title: 'Ação: Visualizar', description: `Visualizando item ${item.id}` })}>Visualizar</DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => toast({ title: 'Ação: Editar', description: `Editando item ${item.id}` })}>Editar</DropdownMenuItem>
                                         {onDelete && (
-                                            <DropdownMenuItem onClick={() => handleDeleteClick(item)} className="text-destructive">
+                                            <DropdownMenuItem onClick={() => handleDeleteClick(item)} className="text-destructive focus:text-destructive">
                                                 <Trash2 className="mr-2 h-4 w-4" />
                                                 Excluir
                                             </DropdownMenuItem>
@@ -555,12 +556,104 @@ function LancamentoProdutoDialog({ onOpenChange }: { onOpenChange: (open: boolea
                         </Card>
                     )}
                     
-                    {['tributos', 'transporte', 'faturas', 'info'].includes(currentSection) && (
+                    {currentSection === 'tributos' && (
                         <Card>
-                            <CardHeader><CardTitle className="capitalize">{sections.find(s => s.id === currentSection)?.name}</CardTitle></CardHeader>
-                            <CardContent>
-                                <div className="flex items-center justify-center h-48">
-                                    <p className="text-muted-foreground">Seção em desenvolvimento.</p>
+                            <CardHeader><CardTitle>Tributos da Nota</CardTitle></CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div className="space-y-2"><Label htmlFor="trib-bc-icms">Base ICMS</Label><Input id="trib-bc-icms" readOnly value="R$ 0,00" /></div>
+                                    <div className="space-y-2"><Label htmlFor="trib-valor-icms">Valor ICMS</Label><Input id="trib-valor-icms" readOnly value="R$ 0,00" /></div>
+                                    <div className="space-y-2"><Label htmlFor="trib-bc-st">Base ICMS ST</Label><Input id="trib-bc-st" readOnly value="R$ 0,00" /></div>
+                                    <div className="space-y-2"><Label htmlFor="trib-valor-st">Valor ICMS ST</Label><Input id="trib-valor-st" readOnly value="R$ 0,00" /></div>
+                                    <div className="space-y-2"><Label htmlFor="trib-valor-ipi">Valor IPI</Label><Input id="trib-valor-ipi" readOnly value="R$ 0,00" /></div>
+                                    <div className="space-y-2"><Label htmlFor="trib-valor-pis">Valor PIS</Label><Input id="trib-valor-pis" readOnly value="R$ 0,00" /></div>
+                                    <div className="space-y-2"><Label htmlFor="trib-valor-cofins">Valor COFINS</Label><Input id="trib-valor-cofins" readOnly value="R$ 0,00" /></div>
+                                    <div className="space-y-2"><Label htmlFor="trib-valor-total">Valor Total Tributos</Label><Input id="trib-valor-total" readOnly value="R$ 0,00" /></div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {currentSection === 'transporte' && (
+                        <Card>
+                            <CardHeader><CardTitle>Dados do Transporte</CardTitle></CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="transp-modalidade">Modalidade do Frete</Label>
+                                        <Select><SelectTrigger id="transp-modalidade"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>
+                                            <SelectItem value="0">Contratação do Frete por conta do Remetente (CIF)</SelectItem>
+                                            <SelectItem value="1">Contratação do Frete por conta do Destinatário (FOB)</SelectItem>
+                                            <SelectItem value="2">Contratação do Frete por conta de Terceiros</SelectItem>
+                                            <SelectItem value="3">Transporte Próprio por conta do Remetente</SelectItem>
+                                            <SelectItem value="4">Transporte Próprio por conta do Destinatário</SelectItem>
+                                            <SelectItem value="9">Sem Ocorrência de Transporte</SelectItem>
+                                        </SelectContent></Select>
+                                    </div>
+                                    <div className="space-y-2 col-span-2">
+                                        <Label htmlFor="transp-transportadora">Transportadora</Label>
+                                        <Input id="transp-transportadora" placeholder="Razão Social da Transportadora"/>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="space-y-2"><Label htmlFor="transp-cnpj">CNPJ</Label><Input id="transp-cnpj"/></div>
+                                    <div className="space-y-2"><Label htmlFor="transp-placa">Placa do Veículo</Label><Input id="transp-placa"/></div>
+                                    <div className="space-y-2"><Label htmlFor="transp-uf-veiculo">UF do Veículo</Label><Input id="transp-uf-veiculo"/></div>
+                                </div>
+                                <Separator className="my-4" />
+                                <h4 className="text-md font-semibold">Volumes</h4>
+                                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                    <div className="space-y-2"><Label htmlFor="vol-qtd">Quantidade</Label><Input id="vol-qtd" type="number"/></div>
+                                    <div className="space-y-2"><Label htmlFor="vol-especie">Espécie</Label><Input id="vol-especie"/></div>
+                                    <div className="space-y-2"><Label htmlFor="vol-marca">Marca</Label><Input id="vol-marca"/></div>
+                                    <div className="space-y-2"><Label htmlFor="vol-peso-bruto">Peso Bruto</Label><Input id="vol-peso-bruto" type="number"/></div>
+                                    <div className="space-y-2"><Label htmlFor="vol-peso-liquido">Peso Líquido</Label><Input id="vol-peso-liquido" type="number"/></div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {currentSection === 'faturas' && (
+                        <Card>
+                            <CardHeader><CardTitle>Faturas e Pagamentos</CardTitle></CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="fat-tipo-pag">Tipo de Pagamento</Label>
+                                        <Select><SelectTrigger id="fat-tipo-pag"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>
+                                            <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                                            <SelectItem value="cartao">Cartão</SelectItem>
+                                            <SelectItem value="boleto">Boleto</SelectItem>
+                                            <SelectItem value="pix">Pix</SelectItem>
+                                            <SelectItem value="outros">Outros</SelectItem>
+                                        </SelectContent></Select>
+                                    </div>
+                                    <div className="space-y-2"><Label htmlFor="fat-valor">Valor</Label><Input id="fat-valor" type="number"/></div>
+                                    <div className="space-y-2"><Label htmlFor="fat-numero">Nº da Fatura</Label><Input id="fat-numero"/></div>
+                                    <div className="space-y-2"><Label htmlFor="fat-vencimento">Vencimento</Label><Input id="fat-vencimento" type="date"/></div>
+                                </div>
+                                <div className="text-center pt-4">
+                                    <p className="text-sm text-muted-foreground">Funcionalidade de parcelas em desenvolvimento.</p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {currentSection === 'info' && (
+                        <Card>
+                            <CardHeader><CardTitle>Informações Adicionais</CardTitle></CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="info-complementares">Informações Complementares de Interesse do Contribuinte</Label>
+                                    <Textarea id="info-complementares" rows={4} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="info-fisco">Informações Adicionais de Interesse do Fisco</Label>
+                                    <Textarea id="info-fisco" rows={4} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="info-obs">Observações Internas</Label>
+                                    <Textarea id="info-obs" rows={2} />
                                 </div>
                             </CardContent>
                         </Card>
