@@ -46,41 +46,43 @@ const SidebarProvider = React.forwardRef<
   ) => {
     const isMobile = useIsMobile()
     const [_open, _setOpen] = React.useState(defaultOpen)
-    const open = openProp ?? _open
     
+    // Determine the effective open state
+    const open = openProp !== undefined ? openProp : _open
+
     const setOpen = React.useCallback(
-      (value: boolean | ((value: boolean) => boolean)) => {
-        const openState = typeof value === "function" ? value(open) : value
+      (value: boolean) => {
         if (setOpenProp) {
-          setOpenProp(openState)
+          setOpenProp(value)
         } else {
-          _setOpen(openState)
+          _setOpen(value)
         }
       },
-      [setOpenProp, open]
+      [setOpenProp]
     )
 
-    // Close sidebar on mobile when navigating
+    // Effect to handle mobile state
     React.useEffect(() => {
         if (isMobile) {
             setOpen(false);
         }
     }, [isMobile, setOpen]);
     
-    // Set default open state based on screen size
+    // Effect to handle desktop state on resize
     React.useEffect(() => {
         const checkScreenSize = () => {
-            const shouldBeOpen = window.innerWidth > 768;
-             if (setOpenProp) {
-                setOpenProp(shouldBeOpen);
-            } else {
-                _setOpen(shouldBeOpen);
+            if (!isMobile) {
+                const shouldBeOpen = window.innerWidth > 1024;
+                setOpen(shouldBeOpen);
             }
         };
+
+        // Initial check
         checkScreenSize();
+
         window.addEventListener('resize', checkScreenSize);
         return () => window.removeEventListener('resize', checkScreenSize);
-    }, [setOpenProp]);
+    }, [isMobile, setOpen]);
 
 
     const contextValue = React.useMemo<SidebarContext>(
@@ -152,7 +154,7 @@ const Sidebar = React.forwardRef<
         ref={ref}
         className={cn(
             sidebarVariants(), 
-            "h-screen sticky top-0 z-40",
+            "fixed inset-y-0 left-0 z-40 h-full",
             open ? "w-72" : "w-20", 
             className
         )}

@@ -2,7 +2,7 @@
 'use client';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { User, Bell, ChevronsUpDown, Check, PlusCircle, Building2, Search, Settings, LogOut, AlertTriangle, ArrowRightCircle } from 'lucide-react';
+import { User, Bell, ChevronsUpDown, Check, PlusCircle, Building2, Search, Settings, LogOut, AlertTriangle, ArrowRightCircle, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,16 +27,22 @@ import { Badge } from '../ui/badge';
 import { useState, useMemo } from 'react';
 import { NAV_TITLES } from '@/lib/nav-titles';
 import { Conta } from '@/types/financeiro';
+import { useSidebar } from '../ui/sidebar';
 
 export default function Header() {
   const avatar = PlaceHolderImages.find((img) => img.id === 'user-avatar-1');
   const pathname = usePathname();
   const pageTitle = NAV_TITLES[pathname] || "Dashboard";
+  const { open, setOpen } = useSidebar();
 
 
   return (
-    <header className="sticky top-0 z-30 flex h-20 w-full items-center justify-between border-b bg-background/95 px-6 backdrop-blur-sm">
+    <header className="sticky top-0 z-30 flex h-20 w-full shrink-0 items-center justify-between border-b bg-background/95 px-6 backdrop-blur-sm">
       <div className="flex items-center gap-4">
+        <Button variant="ghost" size="icon" onClick={() => setOpen(!open)} className="h-10 w-10">
+            {open ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeftOpen className="h-5 w-5" />}
+            <span className="sr-only">Toggle Sidebar</span>
+        </Button>
         <h1 className="text-2xl font-bold tracking-tight">{pageTitle}</h1>
       </div>
       <div className='flex flex-1 items-center justify-end gap-4'>

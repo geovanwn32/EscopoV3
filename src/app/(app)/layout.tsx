@@ -5,9 +5,12 @@ import { useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Header from '@/components/layout/header';
 import { SidebarNav } from '@/components/layout/sidebar-nav';
-import { Sidebar, SidebarProvider } from '@/components/ui/sidebar';
+import { Sidebar, SidebarProvider, useSidebar } from '@/components/ui/sidebar';
 import { CompanyProvider, useCompany } from '@/hooks/use-company';
 import { AuditLog, logAudit } from '@/lib/audit-log';
+import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
+
 
 function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -15,6 +18,9 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const { currentCompany, isLoaded, useScopedData } = useCompany();
   const [, setAuditLogs] = useScopedData<AuditLog[]>('audit-trail-logs', []);
   const loginLoggedRef = useRef(false);
+
+  const { open: isSidebarOpen } = useSidebar();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (isLoaded) {
@@ -43,19 +49,20 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <SidebarProvider>
       <div className="flex h-screen bg-background">
         <Sidebar className="bg-sidebar">
           <SidebarNav />
         </Sidebar>
-        <div className="flex-1 flex flex-col">
+        <div className={cn(
+            "flex flex-1 flex-col transition-all duration-300 ease-in-out",
+            !isMobile && (isSidebarOpen ? "ml-72" : "ml-20")
+        )}>
           <Header />
           <main className="flex-1 overflow-y-auto p-6">
              {children}
           </main>
         </div>
       </div>
-    </SidebarProvider>
   );
 }
 
@@ -63,7 +70,9 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <CompanyProvider>
-      <AppLayoutContent>{children}</AppLayoutContent>
+      <SidebarProvider>
+        <AppLayoutContent>{children}</AppLayoutContent>
+      </SidebarProvider>
     </CompanyProvider>
   );
 }
