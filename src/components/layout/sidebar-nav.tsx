@@ -151,7 +151,7 @@ export function SidebarNav() {
                     <div className="flex items-center gap-3 min-w-0">
                         <Avatar className='h-9 w-9'>
                             <AvatarFallback className="bg-muted text-muted-foreground font-semibold">
-                                {activeCompany?.name.charAt(0).toUpperCase()}
+                                {activeCompany?.name ? activeCompany.name.charAt(0).toUpperCase() : ''}
                             </AvatarFallback>
                         </Avatar>
                         <div className="flex flex-col items-start min-w-0 group-data-[collapsible=icon]:hidden">
