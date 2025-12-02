@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Search, Upload } from 'lucide-react';
+import { Loader2, Search, Upload, Building2 } from 'lucide-react';
 import { useCompany } from '@/hooks/use-company';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -339,3 +339,4 @@ export default function MinhaEmpresaPage() {
   );
 }
 
+    
