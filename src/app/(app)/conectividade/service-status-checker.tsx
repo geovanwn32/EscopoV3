@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2, Search, Server, Wifi, WifiOff } from 'lucide-react';
+import { Loader2, Search, Server, Wifi, WifiOff, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -103,10 +103,19 @@ export default function ServiceStatusChecker() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Button variant="outline" onClick={fetchStatus} disabled={isLoading} size="icon">
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Loader2 className="h-4 w-4" />}
-              <span className="sr-only">Atualizar</span>
-            </Button>
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="outline" onClick={fetchStatus} disabled={isLoading} size="icon">
+                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                        <span className="sr-only">Atualizar</span>
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Atualizar Status</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
       </CardHeader>
@@ -124,11 +133,11 @@ export default function ServiceStatusChecker() {
             <TableBody>
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="h-12 animate-pulse bg-muted rounded-md"></TableCell>
-                    <TableCell className="animate-pulse bg-muted rounded-md"></TableCell>
-                    <TableCell className="hidden sm:table-cell animate-pulse bg-muted rounded-md"></TableCell>
-                    <TableCell className="hidden sm:table-cell animate-pulse bg-muted rounded-md"></TableCell>
+                  <TableRow key={i} className="h-14">
+                    <TableCell><div className="h-4 bg-muted rounded-md animate-pulse"></div></TableCell>
+                    <TableCell><div className="h-4 bg-muted rounded-md animate-pulse"></div></TableCell>
+                    <TableCell className="hidden sm:table-cell"><div className="h-4 bg-muted rounded-md animate-pulse"></div></TableCell>
+                    <TableCell className="hidden sm:table-cell"><div className="h-4 bg-muted rounded-md animate-pulse"></div></TableCell>
                   </TableRow>
                 ))
               ) : filteredStatuses.length > 0 ? (
@@ -141,7 +150,7 @@ export default function ServiceStatusChecker() {
                       <TableCell className="text-right hidden sm:table-cell">
                         <Tooltip>
                             <TooltipTrigger>
-                                {new Date(status.ultima_verificacao).toLocaleTimeString('pt-BR')}
+                                <span className='cursor-default'>{new Date(status.ultima_verificacao).toLocaleTimeString('pt-BR')}</span>
                             </TooltipTrigger>
                             <TooltipContent>
                                 {new Date(status.ultima_verificacao).toLocaleString('pt-BR')}
