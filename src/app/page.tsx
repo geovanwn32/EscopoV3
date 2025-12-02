@@ -123,7 +123,7 @@ export default function LoginPage() {
                 <Mail className='h-4 w-4'/> geovaniwn@gmail.com
               </a>
               <a href='https://wa.me/5562992127752' target='_blank' rel='noopener noreferrer' className='flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors'>
-                <MessageSquare className='h-4 w-4'/> WhatsApp
+                <Phone className='h-4 w-4'/> WhatsApp
               </a>
             </div>
         </div>
