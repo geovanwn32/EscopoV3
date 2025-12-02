@@ -1,6 +1,6 @@
 
 'use client';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { User, Bell, ChevronsUpDown, Check, PlusCircle, Building2, Search, Settings, LogOut, AlertTriangle, ArrowRightCircle, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -18,19 +18,17 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useCompany } from '@/hooks/use-company';
 import { cn } from '@/lib/utils';
 import { Input } from '../ui/input';
-import { useRouter } from 'next/navigation';
 import { Badge } from '../ui/badge';
 import { useState, useMemo } from 'react';
 import { NAV_TITLES } from '@/lib/nav-titles';
 import { Conta } from '@/types/financeiro';
 import { useSidebar } from '../ui/sidebar';
+import { useAuth, useUser } from '@/firebase';
 
 export default function Header() {
-  const avatar = PlaceHolderImages.find((img) => img.id === 'user-avatar-1');
   const pathname = usePathname();
   const pageTitle = NAV_TITLES[pathname] || "Dashboard";
   const { open, setOpen } = useSidebar();
@@ -51,7 +49,7 @@ export default function Header() {
             <Input placeholder="Pesquisar..." className="pl-10 w-full bg-card border-none" />
         </div>
         <Notifications />
-        <UserMenu avatar={avatar} />
+        <UserMenu />
       </div>
     </header>
   );
@@ -122,19 +120,38 @@ function Notifications() {
   )
 }
 
-function UserMenu({ avatar }: { avatar?: { imageUrl: string; imageHint: string } }) {
+function UserMenu() {
+  const { user } = useUser();
+  const auth = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await auth.signOut();
+    router.push('/login');
+  }
+
+  if (!user) {
+    return (
+       <Avatar className="h-10 w-10 border-2 border-transparent">
+          <AvatarFallback>
+            <User />
+          </AvatarFallback>
+        </Avatar>
+    )
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <div className="flex items-center gap-3 cursor-pointer">
             <Avatar className="h-10 w-10 border-2 border-transparent hover:border-primary transition-colors">
-              {avatar && <AvatarImage src={avatar.imageUrl} data-ai-hint={avatar.imageHint} alt="Avatar do usuário" />}
+              {user.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'Avatar do usuário'} />}
               <AvatarFallback>
-                <User />
+                {user.displayName ? user.displayName.charAt(0).toUpperCase() : <User />}
               </AvatarFallback>
             </Avatar>
             <div className="hidden md:flex flex-col text-left">
-                <p className="text-sm font-medium leading-none">Geovani Nunes</p>
+                <p className="text-sm font-medium leading-none">{user.displayName || 'Usuário'}</p>
                 <p className="text-xs leading-none text-muted-foreground">Admin</p>
             </div>
         </div>
@@ -142,8 +159,8 @@ function UserMenu({ avatar }: { avatar?: { imageUrl: string; imageHint: string }
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">Geovani Nunes</p>
-            <p className="text-xs leading-none text-muted-foreground">geovaniwn@gmail.com</p>
+            <p className="text-sm font-medium leading-none">{user.displayName}</p>
+            <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -160,11 +177,9 @@ function UserMenu({ avatar }: { avatar?: { imageUrl: string; imageHint: string }
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/">
-            <LogOut className='mr-2 h-4 w-4'/>
-            Sair
-          </Link>
+        <DropdownMenuItem onClick={handleLogout}>
+          <LogOut className='mr-2 h-4 w-4'/>
+          Sair
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
