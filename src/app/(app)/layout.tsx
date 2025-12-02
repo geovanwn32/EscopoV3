@@ -10,7 +10,7 @@ import { CompanyProvider, useCompany } from '@/hooks/use-company';
 function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { currentCompany, companies, isLoaded } = useCompany();
+  const { currentCompany, isLoaded } = useCompany();
 
   useEffect(() => {
     if (isLoaded) {
@@ -19,12 +19,9 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         if (pathname !== '/selecionar-empresa' && pathname !== '/minha-empresa') {
           router.push('/selecionar-empresa');
         }
-      } else if (companies.length > 0 && pathname === '/selecionar-empresa') {
-        // If a company is selected and user is on selection page, go to dashboard
-        router.push('/dashboard');
       }
     }
-  }, [isLoaded, currentCompany, companies, pathname, router]);
+  }, [isLoaded, currentCompany, pathname, router]);
 
   // Avoid rendering the main layout if we are about to redirect or not ready
   if (!isLoaded || (!currentCompany && pathname !== '/selecionar-empresa' && pathname !== '/minha-empresa')) {
@@ -37,7 +34,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <Sidebar collapsible="icon" variant="inset" className="bg-sidebar text-sidebar-foreground">
+      <Sidebar collapsible="icon" variant="inset" className="bg-background text-foreground border-r">
         <SidebarNav />
       </Sidebar>
       <SidebarInset>
