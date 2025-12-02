@@ -18,15 +18,14 @@ import {
   Archive,
   Plug,
   Settings,
-  ChevronsUpDown,
   Building,
   Shield,
   LayoutGrid,
-  PlusCircle,
   Check,
   LifeBuoy,
   LogOut,
   Wrench,
+  Building2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -135,13 +134,22 @@ export function SidebarNav() {
 
   return (
     <>
-      <SidebarHeader className="p-4">
+      <SidebarHeader className="p-4 space-y-4">
+        <div className='flex items-center gap-3'>
+            <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary text-primary-foreground">
+                <Building2 className="h-6 w-6" />
+            </div>
+            <div className='flex flex-col group-data-[collapsible=icon]:hidden'>
+                <span className="font-bold text-lg tracking-tight">EscopoV3</span>
+            </div>
+        </div>
+
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="w-full justify-start h-auto px-2 py-1.5">
+                <Button variant="outline" className="w-full justify-between h-auto px-3 py-2">
                     <div className="flex items-center gap-3">
                         <Avatar className='h-9 w-9'>
-                            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                            <AvatarFallback className="bg-muted text-muted-foreground font-semibold">
                                 {activeCompany?.name.charAt(0).toUpperCase()}
                             </AvatarFallback>
                         </Avatar>
