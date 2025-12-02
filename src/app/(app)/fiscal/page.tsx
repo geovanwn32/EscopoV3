@@ -354,123 +354,125 @@ export default function FiscalPage() {
     const handleViewNota = (nota: NotaFiscal) => {
         const tipo = nota.tipo === 'entrada' ? 'produto' : nota.tipo;
         setEditingNota(nota); // Set editingNota to pass full object
-        openLancamentoDialog(tipo as any, nota, true);
+        openLancamentoDialog(tipo as any, nota.dados, true);
     };
 
     const handleEditNota = (nota: NotaFiscal) => {
         const tipo = nota.tipo === 'entrada' ? 'produto' : nota.tipo;
         setEditingNota(nota);
-        openLancamentoDialog(tipo as any, nota, false);
+        openLancamentoDialog(tipo as any, nota.dados, false);
     };
     
     return (
-      <div className="space-y-6">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight font-headline">Lançamentos Fiscais</h1>
-          <p className="text-muted-foreground">
-            Importe XMLs ou lance manually suas notas e recibos.
-          </p>
-        </div>
+        <>
+            <div className="space-y-6">
+                <div className="space-y-1">
+                <h1 className="text-3xl font-bold tracking-tight font-headline">Lançamentos Fiscais</h1>
+                <p className="text-muted-foreground">
+                    Importe XMLs ou lance manually suas notas e recibos.
+                </p>
+                </div>
 
-        <Dialog open={isLancamentoDialogOpen} onOpenChange={(open) => {
-            if (!open) {
-                setEditingNota(null);
-                setIsReadOnly(false);
-            }
-            setIsLancamentoDialogOpen(open);
-        }}>
-            <Card>
-                <CardContent className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 pt-6">
-                    {actions.map((action) => (
-                        <ActionTile 
-                            key={action.label} 
-                            {...action} 
-                            onFileChange={action.id === 'importar-xml' ? handleFileChange : undefined}
-                            onActionClick={
-                                action.id === 'nota-produto' ? () => openLancamentoDialog('produto') :
-                                action.id === 'nota-saida' ? () => openLancamentoDialog('saida') :
-                                action.id === 'nota-servico' ? () => openLancamentoDialog('servico') :
-                                undefined
-                            }
-                         />
-                    ))}
-                </CardContent>
-            </Card>
-            <LancamentoDialog 
-                onOpenChange={setIsLancamentoDialogOpen} 
-                tipoNota={tipoNota} 
-                initialData={lancamentoData} 
-                onSave={handleSaveNota}
-                isReadOnly={isReadOnly}
-                editingNota={editingNota}
-            />
-        </Dialog>
-
-        <Card>
-            <CardHeader>
-                <CardTitle>Documentos Fiscais</CardTitle>
-                <CardDescription>Gerencie todos os seus documentos importados e lançados.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Tabs defaultValue="xmls">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-none sm:flex">
-                            <TabsTrigger value="xmls">XMLs Importados</TabsTrigger>
-                            <TabsTrigger value="produtos">Notas de Produto</TabsTrigger>
-                            <TabsTrigger value="saidas">Notas de Saída</TabsTrigger>
-                            <TabsTrigger value="servicos">Notas de Serviço</TabsTrigger>
-                            <TabsTrigger value="recibos">Recibos/Cupons</TabsTrigger>
-                        </TabsList>
-                        <div className="flex w-full sm:w-auto items-center gap-2">
-                            <div className="relative flex-grow">
-                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input placeholder="Buscar..." className="pl-9 w-full" />
-                            </div>
-                            <Button variant="outline"><Filter className="mr-2 h-4 w-4"/>Filtrar</Button>
-                        </div>
-                    </div>
-                    <div className="mt-4">
-                        <TabsContent value="xmls">
-                            <RecentDocumentsTable
-                                headers={['Arquivo', 'Data Importação', 'Status']}
-                                data={xmls}
-                                renderRow={(item: XmlFile) => (
-                                    <>
-                                        <TableCell className="font-medium">{item.fileName}</TableCell>
-                                        <TableCell>{item.date}</TableCell>
-                                        <TableCell>
-                                            <Badge variant={
-                                                item.status === 'Lançado' ? 'default' :
-                                                item.status === 'Importado' ? 'secondary' : 'destructive'
-                                            }>
-                                                {item.status}
-                                            </Badge>
-                                        </TableCell>
-                                    </>
-                                )}
-                                onLancar={handleLancarXml}
-                                onDelete={handleDeleteXml}
+                <Card>
+                    <CardContent className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 pt-6">
+                        {actions.map((action) => (
+                            <ActionTile 
+                                key={action.label} 
+                                {...action} 
+                                onFileChange={action.id === 'importar-xml' ? handleFileChange : undefined}
+                                onActionClick={
+                                    action.id === 'nota-produto' ? () => openLancamentoDialog('produto') :
+                                    action.id === 'nota-saida' ? () => openLancamentoDialog('saida') :
+                                    action.id === 'nota-servico' ? () => openLancamentoDialog('servico') :
+                                    undefined
+                                }
                             />
-                        </TabsContent>
-                        <TabsContent value="produtos">
-                            <NotasFiscaisTable data={notasProduto} tipo="produto" onDelete={handleDeleteNota} onView={handleViewNota} onEdit={handleEditNota} />
-                        </TabsContent>
-                        <TabsContent value="saidas">
-                            <NotasFiscaisTable data={notasSaida} tipo="saida" onDelete={handleDeleteNota} onView={handleViewNota} onEdit={handleEditNota} />
-                        </TabsContent>
-                        <TabsContent value="servicos">
-                            <NotasFiscaisTable data={notasServico} tipo="servico" onDelete={handleDeleteNota} onView={handleViewNota} onEdit={handleEditNota} />
-                        </TabsContent>
-                        <TabsContent value="recibos">
-                             <div className="text-center py-10">
-                                <p className="text-muted-foreground">Nenhum recibo encontrado.</p>
+                        ))}
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Documentos Fiscais</CardTitle>
+                        <CardDescription>Gerencie todos os seus documentos importados e lançados.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Tabs defaultValue="xmls">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-none sm:flex">
+                                    <TabsTrigger value="xmls">XMLs Importados</TabsTrigger>
+                                    <TabsTrigger value="produtos">Notas de Produto</TabsTrigger>
+                                    <TabsTrigger value="saidas">Notas de Saída</TabsTrigger>
+                                    <TabsTrigger value="servicos">Notas de Serviço</TabsTrigger>
+                                    <TabsTrigger value="recibos">Recibos/Cupons</TabsTrigger>
+                                </TabsList>
+                                <div className="flex w-full sm:w-auto items-center gap-2">
+                                    <div className="relative flex-grow">
+                                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                        <Input placeholder="Buscar..." className="pl-9 w-full" />
+                                    </div>
+                                    <Button variant="outline"><Filter className="mr-2 h-4 w-4"/>Filtrar</Button>
+                                </div>
                             </div>
-                        </TabsContent>
-                    </div>
-                </Tabs>
-            </CardContent>
-        </Card>
-      </div>
+                            <div className="mt-4">
+                                <TabsContent value="xmls">
+                                    <RecentDocumentsTable
+                                        headers={['Arquivo', 'Data Importação', 'Status']}
+                                        data={xmls}
+                                        renderRow={(item: XmlFile) => (
+                                            <>
+                                                <TableCell className="font-medium">{item.fileName}</TableCell>
+                                                <TableCell>{item.date}</TableCell>
+                                                <TableCell>
+                                                    <Badge variant={
+                                                        item.status === 'Lançado' ? 'default' :
+                                                        item.status === 'Importado' ? 'secondary' : 'destructive'
+                                                    }>
+                                                        {item.status}
+                                                    </Badge>
+                                                </TableCell>
+                                            </>
+                                        )}
+                                        onLancar={handleLancarXml}
+                                        onDelete={handleDeleteXml}
+                                    />
+                                </TabsContent>
+                                <TabsContent value="produtos">
+                                    <NotasFiscaisTable data={notasProduto} tipo="produto" onDelete={handleDeleteNota} onView={handleViewNota} onEdit={handleEditNota} />
+                                </TabsContent>
+                                <TabsContent value="saidas">
+                                    <NotasFiscaisTable data={notasSaida} tipo="saida" onDelete={handleDeleteNota} onView={handleViewNota} onEdit={handleEditNota} />
+                                </TabsContent>
+                                <TabsContent value="servicos">
+                                    <NotasFiscaisTable data={notasServico} tipo="servico" onDelete={handleDeleteNota} onView={handleViewNota} onEdit={handleEditNota} />
+                                </TabsContent>
+                                <TabsContent value="recibos">
+                                    <div className="text-center py-10">
+                                        <p className="text-muted-foreground">Nenhum recibo encontrado.</p>
+                                    </div>
+                                </TabsContent>
+                            </div>
+                        </Tabs>
+                    </CardContent>
+                </Card>
+            </div>
+            <Dialog open={isLancamentoDialogOpen} onOpenChange={(open) => {
+                if (!open) {
+                    setEditingNota(null);
+                    setIsReadOnly(false);
+                }
+                setIsLancamentoDialogOpen(open);
+            }}>
+                <LancamentoDialog 
+                    onOpenChange={setIsLancamentoDialogOpen} 
+                    tipoNota={tipoNota} 
+                    initialData={lancamentoData} 
+                    onSave={handleSaveNota}
+                    isReadOnly={isReadOnly}
+                    editingNota={editingNota}
+                />
+            </Dialog>
+        </>
     );
 }
 
@@ -766,19 +768,24 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave, isReadO
     useEffect(() => {
         const data = editingNota ? editingNota.dados : initialData;
         const items = editingNota ? editingNota.items : initialData?.items;
-        const effectiveTipo = editingNota ? (editingNota.tipo === 'entrada' ? 'produto' : editingNota.tipo) : tipoNota;
-    
-        if (effectiveTipo) {
-            let notaType = effectiveTipo;
-            if (effectiveTipo === 'produto') notaType = 'entrada';
-            setTipoNotaValue(notaType);
-            setActiveSection(notaType === 'servico' ? 'identificacao' : 'geral');
+        let effectiveTipo = editingNota ? (editingNota.tipo === 'entrada' ? 'produto' : editingNota.tipo) : tipoNota;
+
+        // If 'produto' is coming from the action tile, it means 'entrada'.
+        if (effectiveTipo === 'produto' && !editingNota) {
+            effectiveTipo = 'entrada';
+        } else if (effectiveTipo === 'produto' && editingNota) {
+             effectiveTipo = editingNota.tipo;
         }
-    
+
+        if (effectiveTipo) {
+            setTipoNotaValue(effectiveTipo);
+            setActiveSection(effectiveTipo === 'servico' ? 'identificacao' : 'geral');
+        }
+
         setFormData(data || {});
-    
+
         if (items) {
-            if (effectiveTipo === 'produto' || effectiveTipo === 'saida' || effectiveTipo === 'entrada') {
+            if (effectiveTipo === 'entrada' || effectiveTipo === 'saida') {
                 setProductItems(items as ProductItem[] || []);
             } else if (effectiveTipo === 'servico') {
                 setServiceItems(items as ServiceItem[] || []);
@@ -787,7 +794,7 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave, isReadO
              setProductItems([]);
              setServiceItems([]);
         }
-    
+
     }, [tipoNota, initialData, editingNota]);
 
     const notaLabel = 
@@ -1311,7 +1318,7 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave, isReadO
                         `Lançamento de Nota Fiscal ${notaLabel}`;
 
     return (
-      <DialogContent className="max-w-6xl h-[90vh] flex flex-col">
+      <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{dialogTitle}</DialogTitle>
           <DialogDescription>
@@ -1373,3 +1380,4 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave, isReadO
     
 
     
+
