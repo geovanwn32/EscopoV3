@@ -34,7 +34,7 @@ import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
 import { useCompany } from '@/hooks/use-company';
 import { Avatar, AvatarFallback } from '../ui/avatar';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '../ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel } from '../ui/dropdown-menu';
 
 interface NavItem {
   href: string;
