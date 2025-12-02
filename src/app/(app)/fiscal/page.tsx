@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { cn } from "@/lib/utils";
 import { PackagePlus, FileText, Wrench, Upload, FileMinus, Receipt, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -72,7 +71,7 @@ export default function FiscalPage() {
         <div className="space-y-1">
           <h1 className="text-3xl font-bold tracking-tight font-headline">Lançamentos Fiscais</h1>
           <p className="text-muted-foreground">
-            Importe XMLs ou lance manualmente suas notas e recibos.
+            Importe XMLs ou lance manually suas notas e recibos.
           </p>
         </div>
 
@@ -84,91 +83,111 @@ export default function FiscalPage() {
             </CardContent>
         </Card>
 
-        <Card>
-            <Tabs defaultValue="xml">
+        <div className="space-y-6">
+            <Card>
                 <CardHeader>
-                    <TabsList>
-                        <TabsTrigger value="xml">XMLs Importados</TabsTrigger>
-                        <TabsTrigger value="produto">Notas de Produto</TabsTrigger>
-                        <TabsTrigger value="saida">Notas de Saída</TabsTrigger>
-                        <TabsTrigger value="servico">Notas de Serviço</TabsTrigger>
-                        <TabsTrigger value="recibos">Recibos/Cupons</TabsTrigger>
-                    </TabsList>
+                    <CardTitle>XMLs Importados</CardTitle>
+                    <CardDescription>Documentos fiscais importados recentemente.</CardDescription>
                 </CardHeader>
-
                 <CardContent>
-                    <TabsContent value="xml">
-                        <RecentDocumentsTable
-                            headers={['Arquivo', 'Data Importação', 'Status']}
-                            data={mockXmls}
-                            renderRow={(item) => (
-                                <>
-                                    <TableCell className="font-medium">{item.file}</TableCell>
-                                    <TableCell>{item.date}</TableCell>
-                                    <TableCell><Badge variant={item.status === 'Processado' ? 'secondary' : 'destructive'}>{item.status}</Badge></TableCell>
-                                </>
-                            )}
-                        />
-                    </TabsContent>
-                    <TabsContent value="produto">
-                        <RecentDocumentsTable
-                            headers={['Número', 'Cliente', 'Valor', 'Status']}
-                            data={mockNotasProduto}
-                            renderRow={(item) => (
-                                <>
-                                    <TableCell className="font-medium">{item.number}</TableCell>
-                                    <TableCell>{item.client}</TableCell>
-                                    <TableCell>{item.value}</TableCell>
-                                    <TableCell><Badge>{item.status}</Badge></TableCell>
-                                </>
-                            )}
-                        />
-                    </TabsContent>
-                    <TabsContent value="saida">
-                         <RecentDocumentsTable
-                            headers={['Número', 'Destinatário', 'Valor', 'Status']}
-                            data={mockNotasSaida}
-                            renderRow={(item) => (
-                                <>
-                                    <TableCell className="font-medium">{item.number}</TableCell>
-                                    <TableCell>{item.client}</TableCell>
-                                    <TableCell>{item.value}</TableCell>
-                                    <TableCell><Badge variant="destructive">{item.status}</Badge></TableCell>
-                                </>
-                            )}
-                        />
-                    </TabsContent>
-                    <TabsContent value="servico">
-                         <RecentDocumentsTable
-                            headers={['Número', 'Tomador', 'Valor', 'Status']}
-                            data={mockNotasServico}
-                            renderRow={(item) => (
-                                <>
-                                    <TableCell className="font-medium">{item.number}</TableCell>
-                                    <TableCell>{item.client}</TableCell>
-                                    <TableCell>{item.value}</TableCell>
-                                    <TableCell><Badge>{item.status}</Badge></TableCell>
-                                </>
-                            )}
-                        />
-                    </TabsContent>
-                    <TabsContent value="recibos">
-                         <RecentDocumentsTable
-                            headers={['Número', 'Cliente', 'Valor', 'Status']}
-                            data={mockRecibos}
-                            renderRow={(item) => (
-                                <>
-                                    <TableCell className="font-medium">{item.number}</TableCell>
-                                    <TableCell>{item.client}</TableCell>
-                                    <TableCell>{item.value}</TableCell>
-                                    <TableCell><Badge variant="secondary">{item.status}</Badge></TableCell>
-                                </>
-                            )}
-                        />
-                    </TabsContent>
+                    <RecentDocumentsTable
+                        headers={['Arquivo', 'Data Importação', 'Status']}
+                        data={mockXmls}
+                        renderRow={(item) => (
+                            <>
+                                <TableCell className="font-medium">{item.file}</TableCell>
+                                <TableCell>{item.date}</TableCell>
+                                <TableCell><Badge variant={item.status === 'Processado' ? 'secondary' : 'destructive'}>{item.status}</Badge></TableCell>
+                            </>
+                        )}
+                    />
                 </CardContent>
-            </Tabs>
-        </Card>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Notas de Produto</CardTitle>
+                    <CardDescription>Notas fiscais de produto emitidas recentemente.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <RecentDocumentsTable
+                        headers={['Número', 'Cliente', 'Valor', 'Status']}
+                        data={mockNotasProduto}
+                        renderRow={(item) => (
+                            <>
+                                <TableCell className="font-medium">{item.number}</TableCell>
+                                <TableCell>{item.client}</TableCell>
+                                <TableCell>{item.value}</TableCell>
+                                <TableCell><Badge>{item.status}</Badge></TableCell>
+                            </>
+                        )}
+                    />
+                </CardContent>
+            </Card>
+
+             <Card>
+                <CardHeader>
+                    <CardTitle>Notas de Saída</CardTitle>
+                    <CardDescription>Notas fiscais de saída emitidas recentemente.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                     <RecentDocumentsTable
+                        headers={['Número', 'Destinatário', 'Valor', 'Status']}
+                        data={mockNotasSaida}
+                        renderRow={(item) => (
+                            <>
+                                <TableCell className="font-medium">{item.number}</TableCell>
+                                <TableCell>{item.client}</TableCell>
+                                <TableCell>{item.value}</TableCell>
+                                <TableCell><Badge variant="destructive">{item.status}</Badge></TableCell>
+                            </>
+                        )}
+                    />
+                </CardContent>
+            </Card>
+            
+            <Card>
+                <CardHeader>
+                    <CardTitle>Notas de Serviço</CardTitle>
+                    <CardDescription>Notas fiscais de serviço emitidas recentemente.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                     <RecentDocumentsTable
+                        headers={['Número', 'Tomador', 'Valor', 'Status']}
+                        data={mockNotasServico}
+                        renderRow={(item) => (
+                            <>
+                                <TableCell className="font-medium">{item.number}</TableCell>
+                                <TableCell>{item.client}</TableCell>
+                                <TableCell>{item.value}</TableCell>
+                                <TableCell><Badge>{item.status}</Badge></TableCell>
+                            </>
+                        )}
+                    />
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Recibos/Cupons</CardTitle>
+                    <CardDescription>Recibos e cupons fiscais emitidos recentemente.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                     <RecentDocumentsTable
+                        headers={['Número', 'Cliente', 'Valor', 'Status']}
+                        data={mockRecibos}
+                        renderRow={(item) => (
+                            <>
+                                <TableCell className="font-medium">{item.number}</TableCell>
+                                <TableCell>{item.client}</TableCell>
+                                <TableCell>{item.value}</TableCell>
+                                <TableCell><Badge variant="secondary">{item.status}</Badge></TableCell>
+                            </>
+                        )}
+                    />
+                </CardContent>
+            </Card>
+        </div>
       </div>
     );
 }
