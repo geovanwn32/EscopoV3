@@ -120,6 +120,8 @@ export default function FiscalPage() {
     const [rejectedFiles, setRejectedFiles] = useState<string[]>([]);
     const [rejectedFilesTitle, setRejectedFilesTitle] = useState('');
     const [isRejectedFilesDialogOpen, setIsRejectedFilesDialogOpen] = useState(false);
+    const [sourceXmlId, setSourceXmlId] = useState<number | undefined>(undefined);
+
 
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -362,6 +364,7 @@ export default function FiscalPage() {
         }
 
         if (detectedModel) {
+            setSourceXmlId(xmlFile.id); // Store the source XML ID
             openLancamentoDialog(detectedModel, parsedData);
             setXmls(prevXmls => prevXmls.map(x => x.id === id ? { ...x, status: 'Lançado' } : x));
         } else {
@@ -410,7 +413,11 @@ export default function FiscalPage() {
 
         } else {
             // Add new note
-            const notaComId = {...savedNota, id: Date.now()};
+            const notaComId: NotaFiscal = {
+                ...savedNota,
+                id: Date.now(),
+                sourceXmlId: sourceXmlId, // Attach the source XML ID
+            };
             if (notaComId.tipo === 'entrada') {
                 setNotasProduto(prev => [...prev, notaComId]);
             } else if (notaComId.tipo === 'saida') {
@@ -424,6 +431,7 @@ export default function FiscalPage() {
             });
         }
         setIsLancamentoDialogOpen(false); 
+        setSourceXmlId(undefined); // Clean up source ID
     };
 
     const handleDeleteNota = (nota: NotaFiscal) => {
@@ -431,6 +439,14 @@ export default function FiscalPage() {
         if (nota.tipo === 'entrada' || nota.tipo === 'produto') setNotasProduto(removeNota);
         if (nota.tipo === 'saida') setNotasSaida(removeNota);
         if (nota.tipo === 'servico') setNotasServico(removeNota);
+
+        // Revert XML status if it came from an XML
+        if (nota.sourceXmlId) {
+            setXmls(prevXmls => prevXmls.map(xml => 
+                xml.id === nota.sourceXmlId ? { ...xml, status: 'Importado' } : xml
+            ));
+        }
+
         toast({
             variant: "destructive",
             title: "Nota Excluída!",
@@ -547,6 +563,7 @@ export default function FiscalPage() {
                 if (!open) {
                     setEditingNota(null);
                     setIsReadOnly(false);
+                    setSourceXmlId(undefined);
                 }
                 setIsLancamentoDialogOpen(open);
             }}>

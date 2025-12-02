@@ -1,4 +1,5 @@
 
+
 export interface ProductItem {
     id: number;
     name: string;
@@ -18,6 +19,7 @@ export interface NotaFiscal {
     tipo: 'entrada' | 'saida' | 'servico';
     dados: any; // Could be more specific, e.g., NotaProdutoDados | NotaServicoDados
     items: ProductItem[] | ServiceItem[];
+    sourceXmlId?: number; // Armazena o ID do arquivo XML de origem
 }
 
     
