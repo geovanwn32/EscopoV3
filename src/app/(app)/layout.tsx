@@ -19,7 +19,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         if (pathname !== '/selecionar-empresa' && pathname !== '/minha-empresa') {
           router.push('/selecionar-empresa');
         }
-      }
+      } 
     }
   }, [isLoaded, currentCompany, pathname, router]);
 
@@ -34,15 +34,15 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <Sidebar collapsible="icon" variant="inset" className="bg-background text-foreground border-r">
+      <Sidebar side="left" collapsible="icon" variant="sidebar" className="bg-background text-foreground border-r">
         <SidebarNav />
       </Sidebar>
-      <SidebarInset>
+      <div className="flex flex-col flex-1">
         <Header />
-        <main className="p-4 lg:p-6">
+        <main className="flex-1 p-4 lg:p-6 bg-muted/40">
           {children}
         </main>
-      </SidebarInset>
+      </div>
     </SidebarProvider>
   );
 }
