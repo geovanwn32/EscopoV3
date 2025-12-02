@@ -305,6 +305,7 @@ export default function MinhaEmpresaPage() {
                                         <SelectValue placeholder="Selecione..." />
                                     </SelectTrigger>
                                     <SelectContent>
+                                        <SelectItem value="mei">Microempreendedor Individual</SelectItem>
                                         <SelectItem value="simples">Simples Nacional</SelectItem>
                                         <SelectItem value="lucro_presumido">Lucro Presumido</SelectItem>
                                         <SelectItem value="lucro_real">Lucro Real</SelectItem>
