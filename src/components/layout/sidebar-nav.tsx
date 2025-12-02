@@ -19,13 +19,13 @@ import {
   Plug,
   Settings,
   Building,
-  LayoutGrid,
   LifeBuoy,
   Building2,
   MoreVertical,
   Phone,
   Mail,
   MessageSquare,
+  Wrench,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -137,26 +137,6 @@ export function SidebarNav() {
       </SidebarHeader>
 
       <SidebarContent className="p-4">
-        <Card className="group-data-[collapsible=icon]:hidden">
-            <CardContent className="p-2">
-                <div className='flex items-center justify-between'>
-                    <div className="flex items-center gap-2 min-w-0">
-                        <Avatar className="h-8 w-8">
-                            <AvatarFallback className="bg-muted text-muted-foreground text-sm font-bold">
-                                {companyDisplayName ? companyDisplayName.charAt(0).toUpperCase() : '?'}
-                            </AvatarFallback>
-                        </Avatar>
-                        <div className="flex flex-col min-w-0">
-                            <span className="text-sm font-semibold truncate" title={companyDisplayName}>
-                                {companyDisplayName || 'Nenhuma empresa'}
-                            </span>
-                            <span className="text-xs text-muted-foreground">ID: {activeCompany?.id || 'N/D'}</span>
-                        </div>
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-        
         <SidebarMenu className="mt-4">
             <p className="px-3 py-2 text-xs font-semibold text-muted-foreground/80 group-data-[collapsible=icon]:hidden">
                 MENU PRINCIPAL
