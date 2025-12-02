@@ -1,11 +1,12 @@
 
+
 'use client';
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { PackagePlus, Wrench, Upload, FileMinus, Receipt, MoreHorizontal, Search, Filter, Plus, FileUp } from "lucide-react";
+import { PackagePlus, Wrench, Upload, FileMinus, Receipt, MoreHorizontal, Search, Filter, Plus, FileUp, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +14,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const actions = [
     {
@@ -102,6 +104,15 @@ export default function FiscalPage() {
             description: `O documento foi lançado com sucesso no sistema.`
         });
     };
+
+    const handleDeleteXml = (id: number) => {
+        setXmls(prevXmls => prevXmls.filter(xml => xml.id !== id));
+        toast({
+            variant: "destructive",
+            title: 'Arquivo Excluído!',
+            description: `O documento foi removido da lista.`
+        });
+    }
     
     return (
       <div className="space-y-6">
@@ -158,6 +169,7 @@ export default function FiscalPage() {
                                 </>
                             )}
                             onLancar={handleLancarXml}
+                            onDelete={handleDeleteXml}
                         />
                     </TabsContent>
                      <TabsContent value="produtos">
@@ -328,60 +340,99 @@ function RecentDocumentsTable({
     headers, 
     data, 
     renderRow,
-    onLancar
+    onLancar,
+    onDelete
 }: { 
     headers: string[], 
     data: any[], 
     renderRow: (item: any) => React.ReactNode,
-    onLancar?: (id: number) => void
+    onLancar?: (id: number) => void,
+    onDelete?: (id: number) => void
 }) {
     const { toast } = useToast();
+    const [itemToDelete, setItemToDelete] = useState<any | null>(null);
+
+    const handleDeleteClick = (item: any) => {
+        setItemToDelete(item);
+    };
+
+    const handleConfirmDelete = () => {
+        if (itemToDelete && onDelete) {
+            onDelete(itemToDelete.id);
+        }
+        setItemToDelete(null);
+    };
+
     return (
-        <div className="overflow-x-auto rounded-md border">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        {headers.map(header => <TableHead key={header}>{header}</TableHead>)}
-                        <TableHead className="w-[64px]"></TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {data.length > 0 ? data.map((item) => (
-                        <TableRow key={item.id}>
-                           {renderRow(item)}
-                           <TableCell>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                        <MoreHorizontal className="h-4 w-4" />
-                                        <span className="sr-only">Ações</span>
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    {onLancar && item.status === 'Importado' && (
-                                        <DropdownMenuItem onClick={() => onLancar(item.id)}>
-                                            <FileUp className="mr-2 h-4 w-4" />
-                                            Lançar
-                                        </DropdownMenuItem>
-                                    )}
-                                    <DropdownMenuItem onClick={() => toast({ title: 'Ação: Visualizar', description: `Visualizando item ${item.id}` })}>Visualizar</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => toast({ title: 'Ação: Editar', description: `Editando item ${item.id}` })}>Editar</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => toast({ variant: "destructive", title: 'Ação: Excluir', description: `Excluindo item ${item.id}` })} className="text-destructive">Excluir</DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                           </TableCell>
-                        </TableRow>
-                    )) : (
+        <>
+            <div className="overflow-x-auto rounded-md border">
+                <Table>
+                    <TableHeader>
                         <TableRow>
-                            <TableCell colSpan={headers.length + 1} className="h-24 text-center">
-                                Nenhum documento encontrado.
-                            </TableCell>
+                            {headers.map(header => <TableHead key={header}>{header}</TableHead>)}
+                            <TableHead className="w-[64px]"></TableHead>
                         </TableRow>
-                    )}
-                </TableBody>
-            </Table>
-        </div>
+                    </TableHeader>
+                    <TableBody>
+                        {data.length > 0 ? data.map((item) => (
+                            <TableRow key={item.id}>
+                               {renderRow(item)}
+                               <TableCell>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                                            <MoreHorizontal className="h-4 w-4" />
+                                            <span className="sr-only">Ações</span>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        {onLancar && (item as XmlFile).status === 'Importado' && (
+                                            <DropdownMenuItem onClick={() => onLancar(item.id)}>
+                                                <FileUp className="mr-2 h-4 w-4" />
+                                                Lançar
+                                            </DropdownMenuItem>
+                                        )}
+                                        <DropdownMenuItem onClick={() => toast({ title: 'Ação: Visualizar', description: `Visualizando item ${item.id}` })}>Visualizar</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => toast({ title: 'Ação: Editar', description: `Editando item ${item.id}` })}>Editar</DropdownMenuItem>
+                                        {onDelete && (
+                                            <DropdownMenuItem onClick={() => handleDeleteClick(item)} className="text-destructive">
+                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                Excluir
+                                            </DropdownMenuItem>
+                                        )}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                               </TableCell>
+                            </TableRow>
+                        )) : (
+                            <TableRow>
+                                <TableCell colSpan={headers.length + 1} className="h-24 text-center">
+                                    Nenhum documento encontrado.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </div>
+             <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Essa ação não pode ser desfeita. Isso excluirá permanentemente o documento
+                             <span className="font-bold"> "{itemToDelete?.file}"</span>.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleConfirmDelete}>Confirmar</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
     )
 }
+
+    
 
     
