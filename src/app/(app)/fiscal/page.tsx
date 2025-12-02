@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, ChangeEvent, useMemo } from "react";
@@ -347,7 +346,7 @@ export default function FiscalPage() {
                 },
                 items: [{
                     id: Date.now(),
-                    name: content.match(/<Discriminacao>(.*?)<\/Discriminacao>/)?.[1] || content.match(/<xDescServ>(.*?)<\/xDescServ>/)?.[1] || '',
+                    name: content.match(/<Discriminacao>([\s\S]*?)<\/Discriminacao>/)?.[1] || content.match(/<xDescServ>(.*?)<\/xDescServ>/)?.[1] || '',
                     value: parseFloat(content.match(/<ValorServicos>(.*?)<\/ValorServicos>/)?.[1] || content.match(/<vServ>(.*?)<\/vServ>/)?.[1] || '0'),
                 }],
              };
@@ -1487,13 +1486,3 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave, isReadO
       </DialogContent>
     );
 }
-
-    
-
-    
-
-
-
-    
-
-    
