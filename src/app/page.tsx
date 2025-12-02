@@ -116,13 +116,13 @@ export default function LoginPage() {
         <div className="text-center">
             <h3 className='font-semibold text-foreground mb-4'>Precisa de Ajuda?</h3>
             <div className='flex flex-col sm:flex-row items-center gap-4 sm:gap-6 text-sm'>
-              <a href='#' className='flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors'>
-                <Phone className='h-4 w-4'/> (XX) XXXX-XXXX
+              <a href='tel:+5562998554529' className='flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors'>
+                <Phone className='h-4 w-4'/> +55 (62) 99855-4529
               </a>
-              <a href='#' className='flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors'>
+              <a href='mailto:suporte@escopo.com' className='flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors'>
                 <Mail className='h-4 w-4'/> suporte@escopo.com
               </a>
-              <a href='#' className='flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors'>
+              <a href='https://wa.me/5562998554529' target='_blank' rel='noopener noreferrer' className='flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors'>
                 <MessageSquare className='h-4 w-4'/> WhatsApp
               </a>
             </div>
