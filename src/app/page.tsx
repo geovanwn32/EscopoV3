@@ -62,7 +62,7 @@ function Header() {
 
 function HeroSection() {
     return (
-        <section id="conheca-me" className="py-20 sm:py-28 lg:py-36 bg-secondary/50">
+        <section id="conheca-me" className="w-full py-20 sm:py-28 lg:py-36 bg-secondary/50">
             <div className="container text-center">
                 <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground">
                     Gestão Contábil Inteligente e Simplificada
@@ -75,7 +75,7 @@ function HeroSection() {
                         <Link href="#planos">Comece Agora</Link>
                     </Button>
                     <Button size="lg" variant="outline" asChild>
-                        <Link href="#contato">Ver Planos</Link>
+                        <Link href="#planos">Ver Planos</Link>
                     </Button>
                 </div>
             </div>
@@ -103,7 +103,7 @@ function FeaturesSection() {
     ];
 
     return (
-        <section id="features" className="py-16 sm:py-24">
+        <section id="features" className="w-full py-16 sm:py-24">
             <div className="container text-center">
                  <h2 className="text-3xl font-bold tracking-tight">Tudo que você precisa em um só lugar</h2>
                 <p className="mt-4 text-muted-foreground max-w-2xl mx-auto">De lançamentos fiscais a relatórios financeiros, nossa plataforma centraliza todas as suas necessidades contábeis com ferramentas poderosas e intuitivas.</p>
@@ -148,7 +148,7 @@ function PlansSection() {
         }
     ];
     return (
-        <section id="planos" className="py-16 sm:py-24 bg-secondary/50">
+        <section id="planos" className="w-full py-16 sm:py-24 bg-secondary/50">
             <div className="container">
                 <div className="text-center">
                     <h2 className="text-3xl font-bold tracking-tight">Planos flexíveis para cada necessidade</h2>
@@ -191,7 +191,7 @@ function PlansSection() {
 
 function AboutSection() {
     return (
-        <section id="sobre" className="py-16 sm:py-24">
+        <section id="sobre" className="w-full py-16 sm:py-24">
             <div className="container grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
                 <div className="order-2 md:order-1">
                     <h2 className="text-3xl font-bold tracking-tight">Sobre o EscopoV3</h2>
@@ -219,7 +219,7 @@ function AboutSection() {
 
 function ContactSection() {
     return (
-        <section id="contato" className="py-16 sm:py-24 bg-secondary/50">
+        <section id="contato" className="w-full py-16 sm:py-24 bg-secondary/50">
             <div className="container">
                  <div className="text-center">
                     <h2 className="text-3xl font-bold tracking-tight">Entre em Contato</h2>
@@ -271,7 +271,7 @@ function ContactSection() {
 
 function Footer() {
     return (
-        <footer className="border-t">
+        <footer className="w-full border-t">
             <div className="container flex flex-col sm:flex-row items-center justify-between py-6 gap-4">
                 <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} EscopoV3. Todos os direitos reservados.</p>
                 <div className="flex gap-4">
@@ -289,7 +289,7 @@ export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
         <Header />
-        <main className="flex-1">
+        <main className="flex flex-1 flex-col items-center">
             <HeroSection />
             <FeaturesSection />
             <PlansSection />
