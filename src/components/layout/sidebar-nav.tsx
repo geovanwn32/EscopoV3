@@ -18,7 +18,6 @@ import {
   Archive,
   Plug,
   Settings,
-  HelpCircle,
   ChevronsUpDown,
   Building,
   Shield,
@@ -27,6 +26,7 @@ import {
   Check,
   LifeBuoy,
   LogOut,
+  Wrench,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
