@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -37,51 +36,26 @@ export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true)
 
   return (
-    <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
-      <div className="hidden lg:flex flex-col justify-between p-8 bg-muted/50 dark:bg-zinc-900 dot-pattern">
-          <div className="flex items-center gap-2 text-primary">
-            <Building2 className="h-8 w-8" />
-            <h1 className="text-2xl font-bold font-headline">EscopoV3</h1>
-          </div>
-
-          <div className='text-foreground max-w-md'>
-            <h2 className='text-3xl font-bold'>Sua contabilidade ganha vida.</h2>
-            <p className='text-muted-foreground mt-2'>Organizada, atualizada e sempre segura. Acesse sua empresa com poucos cliques e tenha o controle total na palma da mão.</p>
-          </div>
-
-          <div>
-            <h3 className='font-semibold text-foreground mb-4'>Precisa de Ajuda?</h3>
-            <div className='flex items-center gap-6 text-sm'>
-              <a href='#' className='flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors'>
-                <Phone className='h-4 w-4'/> (XX) XXXX-XXXX
-              </a>
-              <a href='#' className='flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors'>
-                <Mail className='h-4 w-4'/> suporte@escopo.com
-              </a>
-              <a href='#' className='flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors'>
-                <MessageSquare className='h-4 w-4'/> WhatsApp
-              </a>
-            </div>
-          </div>
-      </div>
-      <div className="flex items-center justify-center py-12">
-        <div className="mx-auto w-[380px] max-w-[90vw] space-y-6">
-          <div className="space-y-2 text-center">
-             <div className="flex items-center justify-center gap-2 lg:hidden">
-              <Building2 className="h-8 w-8 text-primary" />
-              <h1 className="text-3xl font-bold font-headline text-primary">EscopoV3</h1>
-            </div>
-            <p className="text-balance text-muted-foreground">
-              {isLogin ? "Acesse sua conta para gerenciar sua empresa" : "Crie sua conta para começar"}
-            </p>
-          </div>
+    <div className="w-full min-h-screen flex flex-col items-center justify-center bg-muted/50 dark:bg-zinc-900 dot-pattern p-4">
+      <div className="flex flex-col items-center justify-center gap-10 w-full max-w-md">
         
-          <Card className='shadow-xl'>
+        <div className="space-y-4 text-center">
+            <div className="flex items-center justify-center gap-2 text-primary">
+              <Building2 className="h-8 w-8" />
+              <h1 className="text-3xl font-bold font-headline">EscopoV3</h1>
+            </div>
+            <p className='text-foreground/80 max-w-md'>
+              Sua contabilidade ganha vida. Organizada, atualizada e sempre segura.
+            </p>
+        </div>
+      
+        <div className="w-full">
+            <Card className='shadow-xl'>
               <CardHeader>
-              <CardTitle className="text-2xl">{isLogin ? 'Login' : 'Cadastro'}</CardTitle>
-              <CardDescription>
-                  {isLogin ? 'Insira seu e-mail e senha para acessar.' : 'Preencha os dados para criar sua conta.'}
-              </CardDescription>
+                <CardTitle className="text-2xl">{isLogin ? 'Login' : 'Cadastro'}</CardTitle>
+                <CardDescription>
+                    {isLogin ? 'Insira seu e-mail e senha para acessar.' : 'Preencha os dados para criar sua conta.'}
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -101,7 +75,7 @@ export default function LoginPage() {
                 </div>
                 
                 {!isLogin && (
-                     <div className="space-y-2">
+                      <div className="space-y-2">
                         <Label htmlFor="confirmPassword">Confirmar Senha</Label>
                         <Input id="confirmPassword" type="password" required />
                     </div>
@@ -129,15 +103,31 @@ export default function LoginPage() {
                     </Button>
                 </div>
               </CardContent>
-          </Card>
+            </Card>
 
-          <div className="text-center text-sm text-muted-foreground">
-              {isLogin ? "Não tem uma conta?" : "Já tem uma conta?"}{' '}
-              <button onClick={() => setIsLogin(!isLogin)} className="font-semibold text-primary underline-offset-4 hover:underline">
-                  {isLogin ? "Registre-se" : "Faça login"}
-              </button>
-          </div>
+            <div className="mt-6 text-center text-sm text-muted-foreground">
+                {isLogin ? "Não tem uma conta?" : "Já tem uma conta?"}{' '}
+                <button onClick={() => setIsLogin(!isLogin)} className="font-semibold text-primary underline-offset-4 hover:underline">
+                    {isLogin ? "Registre-se" : "Faça login"}
+                </button>
+            </div>
         </div>
+
+        <div className="text-center">
+            <h3 className='font-semibold text-foreground mb-4'>Precisa de Ajuda?</h3>
+            <div className='flex flex-col sm:flex-row items-center gap-4 sm:gap-6 text-sm'>
+              <a href='#' className='flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors'>
+                <Phone className='h-4 w-4'/> (XX) XXXX-XXXX
+              </a>
+              <a href='#' className='flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors'>
+                <Mail className='h-4 w-4'/> suporte@escopo.com
+              </a>
+              <a href='#' className='flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors'>
+                <MessageSquare className='h-4 w-4'/> WhatsApp
+              </a>
+            </div>
+        </div>
+
       </div>
     </div>
   )
