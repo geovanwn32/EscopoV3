@@ -38,6 +38,8 @@ export default function MinhaEmpresaPage() {
   });
   
   const [isQueryingCnpj, setIsQueryingCnpj] = useState(false);
+  const [isQueryingCep, setIsQueryingCep] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (currentCompany) {
@@ -67,28 +69,61 @@ export default function MinhaEmpresaPage() {
     }
   }, [currentCompany, companies, switchCompany]);
 
-  const handleInputChange = (field: keyof typeof companyData, value: string) => {
-    if (field === 'cnpj') {
-        const onlyNumbers = value.replace(/\D/g, '');
-        let formattedCnpj = onlyNumbers;
-        if (onlyNumbers.length > 2) formattedCnpj = `${onlyNumbers.slice(0, 2)}.${onlyNumbers.slice(2)}`;
-        if (onlyNumbers.length > 5) formattedCnpj = `${onlyNumbers.slice(0, 2)}.${onlyNumbers.slice(2, 5)}.${onlyNumbers.slice(5)}`;
-        if (onlyNumbers.length > 8) formattedCnpj = `${onlyNumbers.slice(0, 2)}.${onlyNumbers.slice(2, 5)}.${onlyNumbers.slice(5, 8)}/${onlyNumbers.slice(8)}`;
-        if (onlyNumbers.length > 12) formattedCnpj = `${onlyNumbers.slice(0, 2)}.${onlyNumbers.slice(2, 5)}.${onlyNumbers.slice(5, 8)}/${onlyNumbers.slice(8, 12)}-${onlyNumbers.slice(12, 14)}`;
+    const handleInputChange = (field: keyof typeof companyData, value: string) => {
+        const formatCnpj = (cnpj: string) => {
+            const onlyNumbers = cnpj.replace(/\D/g, '');
+            if (!onlyNumbers) return '';
+            let res = onlyNumbers.slice(0, 14);
+            res = res.replace(/(\d{2})(\d)/, '$1.$2');
+            res = res.replace(/(\d{3})(\d)/, '$1.$2');
+            res = res.replace(/(\d{3})(\d)/, '$1/$2');
+            res = res.replace(/(\d{4})(\d)/, '$1-$2');
+            return res;
+        }
 
-        setCompanyData(prev => ({ ...prev, [field]: formattedCnpj }));
-    } else {
-        setCompanyData(prev => ({ ...prev, [field]: value }));
+        const formatCep = (cep: string) => {
+            const onlyNumbers = cep.replace(/\D/g, '');
+            if (!onlyNumbers) return '';
+            let res = onlyNumbers.slice(0, 8);
+            res = res.replace(/(\d{5})(\d)/, '$1-$2');
+            return res;
+        }
+
+        if (field === 'cnpj') {
+            setCompanyData(prev => ({ ...prev, [field]: formatCnpj(value) }));
+        } else if (field === 'cep') {
+            setCompanyData(prev => ({ ...prev, [field]: formatCep(value) }));
+        }
+        else {
+            setCompanyData(prev => ({ ...prev, [field]: value }));
+        }
+    };
+
+    const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64String = reader.result as string;
+                setCompanyData(prev => ({ ...prev, logo: base64String }));
+                toast({
+                    title: "Logo Atualizada",
+                    description: "A nova imagem de logo foi carregada. Lembre-se de salvar as alterações.",
+                })
+            };
+            reader.readAsDataURL(file);
+        }
     }
-};
 
   const handleSave = () => {
+    setIsSaving(true);
     if (!currentCompany) {
       toast({
         variant: 'destructive',
         title: 'Nenhuma empresa selecionada',
         description: 'Selecione uma empresa antes de salvar.',
       });
+      setIsSaving(false);
       return;
     }
     
@@ -98,6 +133,7 @@ export default function MinhaEmpresaPage() {
         title: 'Campo Obrigatório',
         description: 'Por favor, preencha a Razão Social da empresa.',
       });
+      setIsSaving(false);
       return;
     }
 
@@ -109,10 +145,13 @@ export default function MinhaEmpresaPage() {
     
     updateCompany(currentCompany, updatedCompany);
 
-    toast({
-      title: 'Dados Salvos!',
-      description: 'As informações da empresa foram atualizadas com sucesso.',
-    });
+    setTimeout(() => {
+        toast({
+            title: 'Dados Salvos!',
+            description: 'As informações da empresa foram atualizadas com sucesso.',
+        });
+        setIsSaving(false);
+    }, 500); // Simulate save time
   };
 
   const handleCnpjQuery = async () => {
@@ -127,7 +166,7 @@ export default function MinhaEmpresaPage() {
         const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({ message: 'CNPJ não encontrado ou API indisponível.' }));
-            throw new Error(errorData.message);
+            throw new Error(errorData.message || `Erro: ${response.statusText}`);
         }
         const data = await response.json();
         
@@ -152,15 +191,52 @@ export default function MinhaEmpresaPage() {
     } catch (error: any) {
         toast({
             variant: 'destructive',
-            title: 'Erro na Consulta',
+            title: 'Erro na Consulta de CNPJ',
             description: error.message || 'Não foi possível buscar os dados do CNPJ.'
         });
     } finally {
         setIsQueryingCnpj(false);
     }
   }
+
+    const handleCepQuery = async () => {
+        const cep = companyData.cep.replace(/\D/g, '');
+        if (!cep || cep.length !== 8) {
+            toast({ variant: 'destructive', title: 'CEP inválido', description: 'Por favor, insira um CEP válido com 8 dígitos.' });
+            return;
+        }
+
+        setIsQueryingCep(true);
+        try {
+            const response = await fetch(`https://brasilapi.com.br/api/cep/v1/${cep}`);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'CEP não encontrado ou API indisponível.' }));
+                throw new Error(errorData.message || `Erro: ${response.statusText}`);
+            }
+            const data = await response.json();
+
+            setCompanyData(prev => ({
+                ...prev,
+                logradouro: data.street || '',
+                bairro: data.neighborhood || '',
+                cidade: data.city || '',
+                uf: data.state || '',
+            }));
+
+            toast({ title: 'CEP Consultado!', description: 'O endereço foi preenchido com sucesso.' });
+
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Erro na Consulta de CEP',
+                description: error.message || 'Não foi possível buscar os dados do CEP.'
+            });
+        } finally {
+            setIsQueryingCep(false);
+        }
+    }
   
-  if (companies.length === 0) {
+  if (companies.length === 0 && !currentCompany) {
     return (
       <div className="space-y-6">
         <div className="space-y-1">
@@ -172,28 +248,10 @@ export default function MinhaEmpresaPage() {
         <Card>
             <CardHeader>
               <CardTitle>Nenhuma Empresa Encontrada</CardTitle>
-              <CardDescription>Parece que você ainda não cadastrou nenhuma empresa. Preencha os dados abaixo para adicionar a primeira.</CardDescription>
+              <CardDescription>Parece que você ainda não cadastrou nenhuma empresa. Clique abaixo para adicionar a primeira.</CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="razao-social">Razão Social</Label>
-                        <Input id="razao-social" value={companyData.razaoSocial} onChange={(e) => handleInputChange('razaoSocial', e.target.value)} placeholder="Razão Social Completa" required/>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="nome-fantasia">Nome Fantasia</Label>
-                        <Input id="nome-fantasia" value={companyData.nomeFantasia} onChange={(e) => handleInputChange('nomeFantasia', e.target.value)} placeholder="Nome Fantasia" />
-                    </div>
-                </div>
-                 <div className="space-y-2">
-                  <Label htmlFor="cnpj">CNPJ</Label>
-                  <Input id="cnpj" value={companyData.cnpj} onChange={(e) => handleInputChange('cnpj', e.target.value)} placeholder="00.000.000/0001-00" />
-                </div>
-                 <div className='pt-4 flex justify-end'>
-                  <Button type="submit">Salvar Empresa</Button>
-                </div>
-              </form>
+                <Button onClick={() => router.push('/selecionar-empresa')}>Cadastrar Empresa</Button>
             </CardContent>
           </Card>
       </div>
@@ -273,7 +331,13 @@ export default function MinhaEmpresaPage() {
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div className="space-y-2 sm:col-span-1">
                                 <Label htmlFor="cep">CEP</Label>
-                                <Input id="cep" value={companyData.cep} onChange={(e) => handleInputChange('cep', e.target.value)} placeholder="74000-000" />
+                                <div className="flex gap-2">
+                                    <Input id="cep" value={companyData.cep} onChange={(e) => handleInputChange('cep', e.target.value)} placeholder="00000-000" maxLength={9}/>
+                                     <Button variant="outline" onClick={handleCepQuery} disabled={isQueryingCep}>
+                                        {isQueryingCep ? <Loader2 className="animate-spin h-4 w-4" /> : <Search className="h-4 w-4" />}
+                                        <span className="ml-2 hidden sm:inline">Buscar</span>
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -303,7 +367,7 @@ export default function MinhaEmpresaPage() {
                             </div>
                              <div className="space-y-2 sm:col-span-1">
                                 <Label htmlFor="uf">UF</Label>
-                                <Input id="uf" value={companyData.uf} onChange={(e) => handleInputChange('uf', e.target.value)} />
+                                <Input id="uf" value={companyData.uf} onChange={(e) => handleInputChange('uf', e.target.value)} maxLength={2} />
                             </div>
                         </div>
                     </CardContent>
@@ -357,7 +421,7 @@ export default function MinhaEmpresaPage() {
                         <Button asChild variant="outline">
                             <label htmlFor="logo-upload" className='cursor-pointer'>
                                 <Upload className="mr-2 h-4 w-4" /> Enviar Logo
-                                <input id="logo-upload" type="file" className="sr-only" accept="image/*" />
+                                <input id="logo-upload" type="file" className="sr-only" accept="image/*" onChange={handleLogoChange}/>
                             </label>
                         </Button>
                     </CardContent>
@@ -365,7 +429,10 @@ export default function MinhaEmpresaPage() {
             </TabsContent>
         </Tabs>
         <div className='pt-6 flex justify-end'>
-            <Button onClick={handleSave} size="lg">Salvar Alterações</Button>
+            <Button onClick={handleSave} size="lg" disabled={isSaving}>
+                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Salvar Alterações
+            </Button>
         </div>
     </div>
   );
