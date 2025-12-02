@@ -3,11 +3,13 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Building2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Building2, Mail, Lock, Eye, EyeOff, GraduationCap, Facebook, Apple } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import Image from 'next/image';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
@@ -52,6 +54,8 @@ function DataBlocksAnimation() {
 export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const characterImage = PlaceHolderImages.find(p => p.id === 'login-character');
+
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center p-4 lg:p-8 animated-gradient">
@@ -66,7 +70,7 @@ export default function LoginPage() {
             </div>
             <div className='my-auto z-10'>
                  <h2 className="text-3xl font-bold mb-4">Bem-vindo ao EscopoV3.</h2>
-                 <p className="text-primary-foreground/80 max-w-lg mx-auto text-left text-sm">
+                 <div className="text-primary-foreground/80 max-w-lg mx-auto text-left text-sm">
                     Seu sistema profissional de gestão contábil, desenvolvido para atender contadores, empresas e MEIs com eficiência, precisão e segurança. Acesse rapidamente as principais funcionalidades:
                     <br/><br/>
                     <ul className="list-disc list-inside space-y-1">
@@ -79,7 +83,7 @@ export default function LoginPage() {
                     </ul>
                     <br/>
                     Organize sua rotina, acompanhe indicadores e mantenha a contabilidade sempre em dia. Utilize o menu principal para navegar entre os módulos e otimizar suas operações.
-                </p>
+                </div>
             </div>
              <p className='text-sm text-primary-foreground/60 z-10'>© 2025 EscopoV3. Todos os direitos reservados.</p>
         </div>
