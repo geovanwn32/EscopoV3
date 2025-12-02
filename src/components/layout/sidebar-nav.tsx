@@ -19,14 +19,13 @@ import {
   Plug,
   Settings,
   Building,
-  Shield,
   LayoutGrid,
-  Check,
   LifeBuoy,
-  LogOut,
-  Wrench,
   Building2,
   MoreVertical,
+  Phone,
+  Mail,
+  MessageSquare,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -213,12 +212,36 @@ export function SidebarNav() {
                 </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
-                <SidebarMenuButton asChild size="lg" tooltip="Suporte" isActive={isNavItemActive('/suporte')}>
-                    <Link href="#">
-                        <LifeBuoy />
-                        <span className='group-data-[collapsible=icon]:hidden'>Suporte</span>
-                    </Link>
-                </SidebarMenuButton>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <SidebarMenuButton size="lg" tooltip="Suporte">
+                            <LifeBuoy />
+                            <span className='group-data-[collapsible=icon]:hidden'>Suporte</span>
+                        </SidebarMenuButton>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent side="right" align="start" className="mb-2">
+                        <DropdownMenuLabel>Canais de Suporte</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                             <a href="tel:+5562998554529">
+                                <Phone className="mr-2" />
+                                Telefone
+                            </a>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                             <a href="mailto:geovaniwn@gmail.com">
+                                <Mail className="mr-2" />
+                                E-mail
+                            </a>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                            <a href="https://wa.me/5562992127752" target="_blank" rel="noopener noreferrer">
+                                <MessageSquare className="mr-2" />
+                                WhatsApp
+                            </a>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </SidebarMenuItem>
              <SidebarMenuItem>
                 <SidebarMenuButton asChild size="lg" tooltip="Minha Empresa" isActive={isNavItemActive('/minha-empresa')}>
