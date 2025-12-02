@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { PackagePlus, Wrench, Upload, FileMinus, Receipt, MoreHorizontal, Search, Filter, Plus, FileUp, Trash2, X } from "lucide-react";
+import { PackagePlus, Wrench, Upload, FileMinus, Receipt, MoreHorizontal, Search, Filter, Plus, FileUp, Trash2, X, ArrowLeft, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -195,6 +195,7 @@ export default function FiscalPage() {
                                     <TableCell><Badge>{item.status}</Badge></TableCell>
                                 </>
                             )}
+                            onDelete={handleDeleteXml}
                         />
                     </TabsContent>
                      <TabsContent value="saidas">
@@ -216,6 +217,7 @@ export default function FiscalPage() {
                                     <TableCell><Badge variant="destructive">{item.status}</Badge></TableCell>
                                 </>
                             )}
+                             onDelete={handleDeleteXml}
                         />
                     </TabsContent>
                      <TabsContent value="servicos">
@@ -237,6 +239,7 @@ export default function FiscalPage() {
                                     <TableCell><Badge>{item.status}</Badge></TableCell>
                                 </>
                             )}
+                             onDelete={handleDeleteXml}
                         />
                     </TabsContent>
                      <TabsContent value="recibos">
@@ -258,6 +261,7 @@ export default function FiscalPage() {
                                     <TableCell><Badge variant="secondary">{item.status}</Badge></TableCell>
                                 </>
                             )}
+                             onDelete={handleDeleteXml}
                         />
                     </TabsContent>
                 </CardContent>
@@ -463,9 +467,32 @@ function FormRow({ children }: { children: React.ReactNode }) {
     )
 }
 
+const steps = [
+    { id: '01', name: 'Dados Gerais', fields: ['nf-tipo', 'nf-finalidade', 'nf-natureza', 'nf-modelo', 'nf-serie', 'nf-numero', 'nf-data-emissao'] },
+    { id: '02', name: 'Emitente / Dest.', fields: ['emit-cnpj', 'emit-razao-social', 'emit-ie', 'emit-cep', 'emit-logradouro', 'emit-numero', 'emit-bairro', 'emit-cidade', 'emit-uf', 'emit-regime'] },
+    { id: '03', name: 'Itens da Nota', fields: [] },
+    { id: '04', name: 'Tributos', fields: [] },
+    { id: '05', name: 'Transporte', fields: [] },
+    { id: '06', name: 'Faturas', fields: [] },
+    { id: '07', name: 'Informações Adicionais', fields: [] },
+]
+
 function LancamentoProdutoDialog() {
+    const [currentStep, setCurrentStep] = useState(0);
     const productItems: any[] = [];
     const totalNota = productItems.reduce((acc, item) => acc + (item.total || 0), 0);
+
+    const next = () => {
+        if (currentStep < steps.length - 1) {
+            setCurrentStep(step => step + 1);
+        }
+    }
+
+    const prev = () => {
+        if (currentStep > 0) {
+            setCurrentStep(step => step - 1);
+        }
+    }
   
     return (
       <DialogContent className="max-w-6xl">
@@ -475,255 +502,182 @@ function LancamentoProdutoDialog() {
             Preencha os dados abaixo para realizar o lançamento da nota fiscal.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
-            <Accordion type="multiple" className="w-full" defaultValue={['item-1']}>
-                {/* 1. Dados Gerais */}
-                <AccordionItem value="item-1">
-                    <AccordionTrigger className="text-lg font-semibold text-primary">Dados Gerais da Nota</AccordionTrigger>
-                    <AccordionContent className="pt-4">
-                        <div className="space-y-4 rounded-md border p-4">
-                            <FormRow>
-                                <div className="space-y-2">
-                                    <Label htmlFor="nf-tipo">Tipo da Nota</Label>
-                                    <Select>
-                                        <SelectTrigger id="nf-tipo"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                                        <SelectContent><SelectItem value="entrada">Entrada</SelectItem><SelectItem value="saida">Saída</SelectItem></SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="nf-finalidade">Finalidade</Label>
-                                     <Select>
-                                        <SelectTrigger id="nf-finalidade"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="normal">Normal</SelectItem>
-                                            <SelectItem value="complementar">Complementar</SelectItem>
-                                            <SelectItem value="ajuste">Ajuste</SelectItem>
-                                            <SelectItem value="devolucao">Devolução</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2 col-span-1 md:col-span-2">
-                                    <Label htmlFor="nf-natureza">Natureza da Operação (CFOP)</Label>
-                                    <Input id="nf-natureza" />
-                                </div>
-                            </FormRow>
-                             <FormRow>
-                                <div className="space-y-2">
-                                    <Label htmlFor="nf-modelo">Modelo</Label>
-                                    <Input id="nf-modelo" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="nf-serie">Série</Label>
-                                    <Input id="nf-serie" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="nf-numero">Número</Label>
-                                    <Input id="nf-numero" />
-                                </div>
-                                 <div className="space-y-2">
-                                    <Label htmlFor="nf-data-emissao">Data de Emissão</Label>
-                                    <Input id="nf-data-emissao" type="datetime-local" />
-                                </div>
-                            </FormRow>
-                       </div>
-                    </AccordionContent>
-                </AccordionItem>
 
-                {/* 2. Emitente / Destinatário */}
-                <AccordionItem value="item-2">
-                    <AccordionTrigger className="text-lg font-semibold text-primary">Dados do Emitente / Destinatário</AccordionTrigger>
-                    <AccordionContent className="pt-4">
-                        <div className="space-y-4 rounded-md border p-4">
-                            <FormRow>
-                                <div className="space-y-2">
-                                    <Label htmlFor="emit-cnpj">CNPJ / CPF</Label>
-                                    <Input id="emit-cnpj" />
-                                </div>
-                                <div className="space-y-2 col-span-1 md:col-span-2">
-                                    <Label htmlFor="emit-razao-social">Razão Social</Label>
-                                    <Input id="emit-razao-social" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="emit-ie">Inscrição Estadual</Label>
-                                    <Input id="emit-ie" />
-                                </div>
-                            </FormRow>
-                             <FormRow>
-                                <div className="space-y-2">
-                                    <Label htmlFor="emit-cep">CEP</Label>
-                                    <Input id="emit-cep" />
-                                </div>
-                                <div className="space-y-2 col-span-1 md:col-span-2">
-                                    <Label htmlFor="emit-logradouro">Logradouro</Label>
-                                    <Input id="emit-logradouro" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="emit-numero">Número</Label>
-                                    <Input id="emit-numero" />
-                                </div>
-                            </FormRow>
-                             <FormRow>
-                                 <div className="space-y-2">
-                                    <Label htmlFor="emit-bairro">Bairro</Label>
-                                    <Input id="emit-bairro" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="emit-cidade">Cidade</Label>
-                                    <Input id="emit-cidade" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="emit-uf">UF</Label>
-                                    <Input id="emit-uf" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="emit-regime">Regime Tributário</Label>
-                                    <Select>
-                                        <SelectTrigger id="emit-regime"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="simples">Simples Nacional</SelectItem>
-                                            <SelectItem value="presumido">Lucro Presumido</SelectItem>
-                                            <SelectItem value="real">Lucro Real</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                             </FormRow>
-                        </div>
-                    </AccordionContent>
-                </AccordionItem>
+        <nav aria-label="Progress">
+            <ol role="list" className="space-y-4 md:flex md:space-x-8 md:space-y-0">
+                {steps.map((step, index) => (
+                <li key={step.name} className="md:flex-1">
+                    {index < currentStep ? (
+                    <div className="group flex w-full flex-col border-l-4 border-primary py-2 pl-4 transition-colors md:border-l-0 md:border-t-4 md:pb-0 md:pl-0 md:pt-4">
+                        <span className="text-sm font-medium text-primary transition-colors ">{step.id}</span>
+                        <span className="text-sm font-medium">{step.name}</span>
+                    </div>
+                    ) : index === currentStep ? (
+                    <div className="flex w-full flex-col border-l-4 border-primary py-2 pl-4 md:border-l-0 md:border-t-4 md:pb-0 md:pl-0 md:pt-4" aria-current="step">
+                        <span className="text-sm font-medium text-primary">{step.id}</span>
+                        <span className="text-sm font-medium">{step.name}</span>
+                    </div>
+                    ) : (
+                    <div className="group flex w-full flex-col border-l-4 border-gray-200 py-2 pl-4 transition-colors md:border-l-0 md:border-t-4 md:pb-0 md:pl-0 md:pt-4">
+                        <span className="text-sm font-medium text-gray-500 transition-colors">{step.id}</span>
+                        <span className="text-sm font-medium">{step.name}</span>
+                    </div>
+                    )}
+                </li>
+                ))}
+            </ol>
+        </nav>
 
-                {/* 3. Produtos */}
-                <AccordionItem value="item-3">
-                    <AccordionTrigger className="text-lg font-semibold text-primary">Itens da Nota</AccordionTrigger>
-                    <AccordionContent className="pt-4">
-                       <div className="space-y-4 rounded-md border p-4">
-                            <Table>
-                                <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-[40%]">Produto</TableHead>
-                                    <TableHead>Qtd.</TableHead>
-                                    <TableHead>Vl. Unit.</TableHead>
-                                    <TableHead className="text-right">Total</TableHead>
-                                    <TableHead className="w-12"></TableHead>
-                                </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                {productItems.length > 0 ? productItems.map((item) => (
-                                    <TableRow key={item.id}>
-                                        <TableCell className="font-medium">{item.name}</TableCell>
-                                        <TableCell>{item.quantity}</TableCell>
-                                        <TableCell>{Number(item.price).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</TableCell>
-                                        <TableCell className="text-right">{item.total.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</TableCell>
-                                        <TableCell>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8"><X className="h-4 w-4" /></Button>
-                                        </TableCell>
-                                    </TableRow>
-                                )) : (
-                                    <TableRow>
-                                        <TableCell colSpan={5} className="h-24 text-center">Nenhum produto adicionado.</TableCell>
-                                    </TableRow>
-                                )}
-                                </TableBody>
-                            </Table>
-                            <div className="mt-4 flex justify-end">
-                                <Button variant="outline"><Plus className="mr-2 h-4 w-4" /> Adicionar Produto</Button>
-                            </div>
-                        </div>
-                    </AccordionContent>
-                </AccordionItem>
-                
-                {/* 4. Tributação */}
-                 <AccordionItem value="item-4">
-                    <AccordionTrigger className="text-lg font-semibold text-primary">Totais de Tributos</AccordionTrigger>
-                    <AccordionContent className="pt-4">
-                       <div className="space-y-4 rounded-md border p-4">
-                            <FormRow>
-                                <div className="space-y-2">
-                                    <Label>Base de Cálculo ICMS</Label>
-                                    <Input readOnly disabled />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Valor do ICMS</Label>
-                                    <Input readOnly disabled />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Base de Cálculo ICMS ST</Label>
-                                    <Input readOnly disabled />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Valor do ICMS ST</Label>
-                                    <Input readOnly disabled />
-                                </div>
-                            </FormRow>
-                             <FormRow>
-                                <div className="space-y-2">
-                                    <Label>Valor do IPI</Label>
-                                    <Input readOnly disabled />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Valor do PIS</Label>
-                                    <Input readOnly disabled />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Valor do COFINS</Label>
-                                    <Input readOnly disabled />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-destructive">Valor Total dos Tributos</Label>
-                                    <Input readOnly disabled className="text-destructive font-bold" />
-                                </div>
-                            </FormRow>
-                        </div>
-                    </AccordionContent>
-                </AccordionItem>
 
-                 {/* 5. Transporte */}
-                <AccordionItem value="item-5">
-                    <AccordionTrigger className="text-lg font-semibold text-primary">Dados de Transporte</AccordionTrigger>
-                    <AccordionContent className="pt-4">
-                        <div className="space-y-4 rounded-md border p-4">
-                            <FormRow>
-                                <div className="space-y-2">
-                                    <Label htmlFor="transp-modalidade">Modalidade do Frete</Label>
-                                    <Select>
-                                        <SelectTrigger id="transp-modalidade"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="9">Sem Ocorrência de Transporte</SelectItem>
-                                            <SelectItem value="0">Contratação por conta do Remetente (CIF)</SelectItem>
-                                            <SelectItem value="1">Contratação por conta do Destinatário (FOB)</SelectItem>
-                                            <SelectItem value="2">Contratação por conta de Terceiros</SelectItem>
-                                            <SelectItem value="3">Transporte Próprio por conta do Remetente</SelectItem>
-                                            <SelectItem value="4">Transporte Próprio por conta do Destinatário</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </FormRow>
+        <div className="py-4 max-h-[60vh] min-h-[40vh] overflow-y-auto pr-4">
+            
+            {currentStep === 0 && (
+                <div className="space-y-4 rounded-md border p-4">
+                    <FormRow>
+                        <div className="space-y-2">
+                            <Label htmlFor="nf-tipo">Tipo da Nota</Label>
+                            <Select>
+                                <SelectTrigger id="nf-tipo"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                                <SelectContent><SelectItem value="entrada">Entrada</SelectItem><SelectItem value="saida">Saída</SelectItem></SelectContent>
+                            </Select>
                         </div>
-                    </AccordionContent>
-                </AccordionItem>
-                
-                {/* 6. Faturas */}
-                <AccordionItem value="item-6">
-                    <AccordionTrigger className="text-lg font-semibold text-primary">Faturas e Pagamentos</AccordionTrigger>
-                    <AccordionContent className="pt-4">
-                        <div className="space-y-4 rounded-md border p-4">
-                           <p className="text-sm text-muted-foreground">Nenhuma informação de pagamento para esta nota.</p>
+                        <div className="space-y-2">
+                            <Label htmlFor="nf-finalidade">Finalidade</Label>
+                                <Select>
+                                <SelectTrigger id="nf-finalidade"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="normal">Normal</SelectItem>
+                                    <SelectItem value="complementar">Complementar</SelectItem>
+                                    <SelectItem value="ajuste">Ajuste</SelectItem>
+                                    <SelectItem value="devolucao">Devolução</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
-                    </AccordionContent>
-                </AccordionItem>
-
-                 {/* 7. Informações Adicionais */}
-                <AccordionItem value="item-7">
-                    <AccordionTrigger className="text-lg font-semibold text-primary">Informações Adicionais</AccordionTrigger>
-                    <AccordionContent className="pt-4">
-                        <div className="space-y-4 rounded-md border p-4">
+                        <div className="space-y-2 col-span-1 md:col-span-2">
+                            <Label htmlFor="nf-natureza">Natureza da Operação (CFOP)</Label>
+                            <Input id="nf-natureza" />
+                        </div>
+                    </FormRow>
+                        <FormRow>
+                        <div className="space-y-2">
+                            <Label htmlFor="nf-modelo">Modelo</Label>
+                            <Input id="nf-modelo" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="nf-serie">Série</Label>
+                            <Input id="nf-serie" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="nf-numero">Número</Label>
+                            <Input id="nf-numero" />
+                        </div>
                             <div className="space-y-2">
-                                <Label>Informações Complementares</Label>
-                                <p className="text-sm p-3 bg-muted rounded-md min-h-[60px]"></p>
-                            </div>
+                            <Label htmlFor="nf-data-emissao">Data de Emissão</Label>
+                            <Input id="nf-data-emissao" type="datetime-local" />
                         </div>
-                    </AccordionContent>
-                </AccordionItem>
-            </Accordion>
+                    </FormRow>
+                </div>
+            )}
+            {currentStep === 1 && (
+                 <div className="space-y-4 rounded-md border p-4">
+                    <FormRow>
+                        <div className="space-y-2">
+                            <Label htmlFor="emit-cnpj">CNPJ / CPF</Label>
+                            <Input id="emit-cnpj" />
+                        </div>
+                        <div className="space-y-2 col-span-1 md:col-span-2">
+                            <Label htmlFor="emit-razao-social">Razão Social</Label>
+                            <Input id="emit-razao-social" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="emit-ie">Inscrição Estadual</Label>
+                            <Input id="emit-ie" />
+                        </div>
+                    </FormRow>
+                        <FormRow>
+                        <div className="space-y-2">
+                            <Label htmlFor="emit-cep">CEP</Label>
+                            <Input id="emit-cep" />
+                        </div>
+                        <div className="space-y-2 col-span-1 md:col-span-2">
+                            <Label htmlFor="emit-logradouro">Logradouro</Label>
+                            <Input id="emit-logradouro" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="emit-numero">Número</Label>
+                            <Input id="emit-numero" />
+                        </div>
+                    </FormRow>
+                        <FormRow>
+                            <div className="space-y-2">
+                            <Label htmlFor="emit-bairro">Bairro</Label>
+                            <Input id="emit-bairro" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="emit-cidade">Cidade</Label>
+                            <Input id="emit-cidade" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="emit-uf">UF</Label>
+                            <Input id="emit-uf" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="emit-regime">Regime Tributário</Label>
+                            <Select>
+                                <SelectTrigger id="emit-regime"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="simples">Simples Nacional</SelectItem>
+                                    <SelectItem value="presumido">Lucro Presumido</SelectItem>
+                                    <SelectItem value="real">Lucro Real</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        </FormRow>
+                </div>
+            )}
+
+            {currentStep === 2 && (
+                <div className="space-y-4 rounded-md border p-4">
+                    <Table>
+                        <TableHeader>
+                        <TableRow>
+                            <TableHead className="w-[40%]">Produto</TableHead>
+                            <TableHead>Qtd.</TableHead>
+                            <TableHead>Vl. Unit.</TableHead>
+                            <TableHead className="text-right">Total</TableHead>
+                            <TableHead className="w-12"></TableHead>
+                        </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                        {productItems.length > 0 ? productItems.map((item) => (
+                            <TableRow key={item.id}>
+                                <TableCell className="font-medium">{item.name}</TableCell>
+                                <TableCell>{item.quantity}</TableCell>
+                                <TableCell>{Number(item.price).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</TableCell>
+                                <TableCell className="text-right">{item.total.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</TableCell>
+                                <TableCell>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8"><X className="h-4 w-4" /></Button>
+                                </TableCell>
+                            </TableRow>
+                        )) : (
+                            <TableRow>
+                                <TableCell colSpan={5} className="h-24 text-center">Nenhum produto adicionado.</TableCell>
+                            </TableRow>
+                        )}
+                        </TableBody>
+                    </Table>
+                    <div className="mt-4 flex justify-end">
+                        <Button variant="outline"><Plus className="mr-2 h-4 w-4" /> Adicionar Produto</Button>
+                    </div>
+                </div>
+            )}
+            
+            {[3, 4, 5, 6].includes(currentStep) && (
+                <div className="flex items-center justify-center h-full">
+                    <p className="text-muted-foreground">Seção em desenvolvimento.</p>
+                </div>
+            )}
+
         </div>
         <DialogFooter>
             <div className="flex w-full justify-between items-center">
@@ -731,9 +685,21 @@ function LancamentoProdutoDialog() {
                     <p>Total Produtos: <span className="font-bold text-foreground">{totalNota.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span></p>
                     <p>Total Nota: <span className="font-bold text-foreground text-lg">{totalNota.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span></p>
                 </div>
-                <div>
-                    <Button variant="outline">Cancelar</Button>
-                    <Button type="submit" className="ml-2">Salvar Lançamento</Button>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={prev} disabled={currentStep === 0}>
+                        <ArrowLeft className="mr-2 h-4 w-4"/>
+                        Voltar
+                    </Button>
+
+                    {currentStep < steps.length - 1 && (
+                        <Button onClick={next}>
+                            Avançar
+                            <ArrowRight className="ml-2 h-4 w-4"/>
+                        </Button>
+                    )}
+                    {currentStep === steps.length - 1 && (
+                         <Button type="submit">Salvar Lançamento</Button>
+                    )}
                 </div>
             </div>
         </DialogFooter>
@@ -747,5 +713,7 @@ function LancamentoProdutoDialog() {
 
 
 
+
+    
 
     
