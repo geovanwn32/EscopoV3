@@ -29,10 +29,8 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
         >
-          <div className='h-full'>
-            {children}
-            <Toaster />
-          </div>
+          {children}
+          <Toaster />
         </ThemeProvider>
         <Analytics />
       </body>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Building2, Mail, Phone, Users, ShieldCheck, BarChart, Rocket, Menu, X } from 'lucide-react';
