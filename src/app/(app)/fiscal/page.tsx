@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { PackagePlus, Wrench, Upload, FileMinus, Receipt, MoreHorizontal, Search, Filter, Plus, FileUp, Trash2, X, ArrowLeft, ArrowRight, Circle } from "lucide-react";
+import { PackagePlus, Wrench, Upload, FileMinus, Receipt, MoreHorizontal, Search, Filter, Plus, FileUp, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -64,6 +64,8 @@ interface XmlFile {
     file: string;
     date: string;
     status: 'Importado' | 'Lançado' | 'Erro';
+    // This simulates the type of note detected from the XML
+    model?: 'produto' | 'saida';
 }
 
 const mockNotasProduto: any[] = [];
@@ -83,12 +85,19 @@ export default function FiscalPage() {
         if (files && files.length > 0) {
             const fileNames = Array.from(files).map(file => file.name).join(', ');
             
-            const newFiles: XmlFile[] = Array.from(files).map((file, index) => ({
-                id: Date.now() + index,
-                file: file.name,
-                date: new Date().toLocaleDateString('pt-BR'),
-                status: 'Importado'
-            }));
+            const newFiles: XmlFile[] = Array.from(files).map((file, index) => {
+                let model: 'produto' | 'saida' | undefined = undefined;
+                if (file.name.toLowerCase().includes('produto')) model = 'produto';
+                else if (file.name.toLowerCase().includes('saida')) model = 'saida';
+
+                return {
+                    id: Date.now() + index,
+                    file: file.name,
+                    date: new Date().toLocaleDateString('pt-BR'),
+                    status: 'Importado',
+                    model: model
+                }
+            });
 
             setXmls(prevXmls => [...prevXmls, ...newFiles]);
 
@@ -101,15 +110,18 @@ export default function FiscalPage() {
     };
 
     const handleLancarXml = (id: number) => {
-        setXmls(prevXmls => 
-            prevXmls.map(xml => 
-                xml.id === id ? { ...xml, status: 'Lançado' } : xml
-            )
-        );
-        toast({
-            title: 'Arquivo Lançado!',
-            description: `O documento foi lançado com sucesso no sistema.`
-        });
+        const xml = xmls.find(x => x.id === id);
+        if (!xml) return;
+
+        if (xml.model === 'produto' || xml.model === 'saida') {
+             openLancamentoDialog(xml.model);
+        } else {
+             toast({
+                variant: 'destructive',
+                title: 'Modelo de XML não suportado',
+                description: 'Não foi possível identificar o tipo de nota fiscal para este arquivo.'
+            });
+        }
     };
 
     const handleDeleteXml = (id: number) => {
@@ -434,12 +446,12 @@ function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boo
         setProductItems(prev => prev.filter(item => item.id !== id));
     };
     
-    const handleProductChange = (id: number, field: keyof Omit<ProductItem, 'id' | 'total'>, value: string) => {
+    const handleProductChange = (id: number, field: keyof Omit<ProductItem, 'id' | 'total'>, value: string | number) => {
         setProductItems(prev => prev.map(item => {
             if (item.id === id) {
                 const updatedItem = { ...item, [field]: value };
-                const quantity = parseFloat(String(updatedItem.quantity));
-                const price = parseFloat(String(updatedItem.price));
+                const quantity = typeof updatedItem.quantity === 'string' ? parseFloat(updatedItem.quantity) : updatedItem.quantity;
+                const price = typeof updatedItem.price === 'string' ? parseFloat(updatedItem.price) : updatedItem.price;
                 if (!isNaN(quantity) && !isNaN(price)) {
                     updatedItem.total = quantity * price;
                 }
@@ -449,20 +461,27 @@ function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boo
         }));
     };
     
-
     const handleSave = () => {
-        console.log("Saving data...", { productItems });
+        // Logic to save the data would go here
+        // For example, send it to an API endpoint
+        console.log("Saving data...", { 
+            tipo: tipoNota,
+            dados: {
+                // Collect all form data here
+            },
+            items: productItems 
+        });
     
         toast({
           title: "Nota Fiscal Lançada",
-          description: "A nota fiscal foi salva com sucesso.",
+          description: `A nota fiscal ${notaLabel} foi salva com sucesso.`,
         });
     
-        onOpenChange(false);
+        onOpenChange(false); // Close the dialog
     };
 
     const totalProdutos = productItems.reduce((acc, item) => acc + item.total, 0);
-    const totalNota = totalProdutos; // This will be more complex later
+    const totalNota = totalProdutos; // This will be more complex later with taxes, shipping etc.
   
     const renderSection = () => {
         switch (activeSection) {
