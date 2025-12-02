@@ -67,19 +67,16 @@ interface XmlFile {
     model?: 'produto' | 'saida' | 'servico';
 }
 
-const mockNotasProduto: any[] = [];
-const mockNotasSaida: any[] = [];
-const mockNotasServico: any[] = [];
-const mockRecibos: any[] = [];
-
-
 export default function FiscalPage() {
     const { toast } = useToast();
     const [xmls, setXmls] = useState<XmlFile[]>([]);
     const [isLancamentoDialogOpen, setIsLancamentoDialogOpen] = useState(false);
     const [tipoNota, setTipoNota] = useState<'produto' | 'saida' | 'servico' | null>(null);
     const [lancamentoData, setLancamentoData] = useState<any>(null);
-
+    
+    const [notasProduto, setNotasProduto] = useState<any[]>([]);
+    const [notasSaida, setNotasSaida] = useState<any[]>([]);
+    const [notasServico, setNotasServico] = useState<any[]>([]);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
@@ -146,19 +143,19 @@ export default function FiscalPage() {
                  parsedData = {
                     identificacao: {
                         numero: content.match(/<Numero>(.*?)<\/Numero>/)?.[1],
-                        dataEmissao: content.match(/<DataEmissao>(.*?)<\/DataEmissao>/)?.[1].substring(0, 16),
+                        dataEmissao: content.match(/<DataEmissao>(.*?)<\/DataEmissao>/)?.[1]?.substring(0, 16) || content.match(/<dhEmi>(.*?)<\/dhEmi>/)?.[1]?.substring(0, 16),
                     },
                     prestador: {
-                        cnpj: content.match(/<Prestador>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1] || content.match(/<PrestadorServico>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1] ,
-                        razaoSocial: content.match(/<PrestadorServico>[\s\S]*?<RazaoSocial>(.*?)<\/RazaoSocial>/)?.[1],
+                        cnpj: content.match(/<Prestador>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1] || content.match(/<PrestadorServico>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1] || content.match(/<emit>[\s\S]*?<CNPJ>(.*?)<\/CNPJ>/)?.[1],
+                        razaoSocial: content.match(/<PrestadorServico>[\s\S]*?<RazaoSocial>(.*?)<\/RazaoSocial>/)?.[1] || content.match(/<emit>[\s\S]*?<xNome>(.*?)<\/xNome>/)?.[1],
                     },
                     tomador: {
-                        cnpj: content.match(/<TomadorServico>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1],
-                        razaoSocial: content.match(/<TomadorServico>[\s\S]*?<RazaoSocial>(.*?)<\/RazaoSocial>/)?.[1],
+                        cnpj: content.match(/<TomadorServico>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1] || content.match(/<toma>[\s\S]*?<CNPJ>(.*?)<\/CNPJ>/)?.[1],
+                        razaoSocial: content.match(/<TomadorServico>[\s\S]*?<RazaoSocial>(.*?)<\/RazaoSocial>/)?.[1] || content.match(/<toma>[\s\S]*?<xNome>(.*?)<\/xNome>/)?.[1],
                     },
                     servico: {
-                        valor: parseFloat(content.match(/<ValorServicos>(.*?)<\/ValorServicos>/)?.[1] || '0'),
-                        descricao: content.match(/<Discriminacao>(.*?)<\/Discriminacao>/)?.[1],
+                        valor: parseFloat(content.match(/<ValorServicos>(.*?)<\/ValorServicos>/)?.[1] || content.match(/<vServ>(.*?)<\/vServ>/)?.[1] || '0'),
+                        descricao: content.match(/<Discriminacao>(.*?)<\/Discriminacao>/)?.[1] || content.match(/<xDescServ>(.*?)<\/xDescServ>/)?.[1],
                     }
                  };
             }
@@ -200,6 +197,17 @@ export default function FiscalPage() {
         setLancamentoData(data);
         setIsLancamentoDialogOpen(true);
     };
+
+    const handleSaveNota = (savedNota: any) => {
+        const notaComId = {...savedNota, id: Date.now()};
+        if (savedNota.tipo === 'produto' || savedNota.tipo === 'entrada') {
+            setNotasProduto(prev => [...prev, notaComId]);
+        } else if (savedNota.tipo === 'saida') {
+            setNotasSaida(prev => [...prev, notaComId]);
+        } else if (savedNota.tipo === 'servico') {
+            setNotasServico(prev => [...prev, notaComId]);
+        }
+    };
     
     return (
       <div className="space-y-6">
@@ -228,17 +236,17 @@ export default function FiscalPage() {
                     ))}
                 </CardContent>
             </Card>
-            <LancamentoDialog onOpenChange={setIsLancamentoDialogOpen} tipoNota={tipoNota} initialData={lancamentoData} />
+            <LancamentoDialog onOpenChange={setIsLancamentoDialogOpen} tipoNota={tipoNota} initialData={lancamentoData} onSave={handleSaveNota} />
         </Dialog>
 
         <Card>
             <Tabs defaultValue="xmls">
-                 <CardHeader>
+                <CardHeader>
                     <CardTitle>Documentos Fiscais</CardTitle>
                     <CardDescription>
                         Gerencie todos os seus documentos importados e lançados.
                     </CardDescription>
-                    <TabsList className="w-full sm:w-auto mt-4">
+                     <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 mt-4">
                         <TabsTrigger value="xmls">XMLs Importados</TabsTrigger>
                         <TabsTrigger value="produtos">Notas de Produto</TabsTrigger>
                         <TabsTrigger value="saidas">Notas de Saída</TabsTrigger>
@@ -276,22 +284,16 @@ export default function FiscalPage() {
                             onDelete={handleDeleteXml}
                         />
                     </TabsContent>
-                     <TabsContent value="produtos">
-                        <div className="text-center py-10">
-                            <p className="text-muted-foreground">Nenhuma nota de produto encontrada.</p>
-                        </div>
+                    <TabsContent value="produtos">
+                        <NotasFiscaisTable data={notasProduto} tipo="produto" />
                     </TabsContent>
-                     <TabsContent value="saidas">
-                         <div className="text-center py-10">
-                            <p className="text-muted-foreground">Nenhuma nota de saída encontrada.</p>
-                        </div>
+                    <TabsContent value="saidas">
+                        <NotasFiscaisTable data={notasSaida} tipo="saida" />
                     </TabsContent>
-                     <TabsContent value="servicos">
-                         <div className="text-center py-10">
-                            <p className="text-muted-foreground">Nenhuma nota de serviço encontrada.</p>
-                        </div>
+                    <TabsContent value="servicos">
+                        <NotasFiscaisTable data={notasServico} tipo="servico" />
                     </TabsContent>
-                     <TabsContent value="recibos">
+                    <TabsContent value="recibos">
                          <div className="text-center py-10">
                             <p className="text-muted-foreground">Nenhum recibo encontrado.</p>
                         </div>
@@ -463,6 +465,78 @@ function RecentDocumentsTable({
     )
 }
 
+function NotasFiscaisTable({ data, tipo }: { data: any[], tipo: 'produto' | 'saida' | 'servico' }) {
+    const { toast } = useToast();
+
+    if (!data || data.length === 0) {
+        return (
+            <div className="text-center py-10">
+                <p className="text-muted-foreground">Nenhuma nota de {tipo} encontrada.</p>
+            </div>
+        );
+    }
+    
+    const headers = tipo === 'servico' 
+        ? ['Número', 'Prestador', 'Tomador', 'Valor Total']
+        : ['Número', 'Emitente', 'Destinatário', 'Valor Total'];
+
+
+    const renderRow = (item: any) => {
+        const total = tipo === 'servico' 
+            ? item.items.reduce((acc: number, service: ServiceItem) => acc + (Number(service.value) || 0), 0)
+            : item.items.reduce((acc: number, product: ProductItem) => acc + product.total, 0);
+
+        return (
+            <>
+                <TableCell className="font-medium">{item.dados.geral?.numero || item.dados.identificacao?.numero}</TableCell>
+                <TableCell>{item.dados.emitente?.razaoSocial || item.dados.prestador?.razaoSocial}</TableCell>
+                <TableCell>{item.dados.destinatario?.razaoSocial || item.dados.tomador?.razaoSocial}</TableCell>
+                <TableCell className="text-right font-mono">
+                    {total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </TableCell>
+            </>
+        );
+    }
+
+    return (
+        <div className="overflow-x-auto rounded-md border">
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        {headers.map(header => <TableHead key={header}>{header}</TableHead>)}
+                        <TableHead className="w-[64px]"></TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {data.map((item) => (
+                        <TableRow key={item.id}>
+                            {renderRow(item)}
+                            <TableCell>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                                            <MoreHorizontal className="h-4 w-4" />
+                                            <span className="sr-only">Ações</span>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => toast({ title: 'Ação: Visualizar', description: `Visualizando item ${item.id}` })}>Visualizar</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => toast({ title: 'Ação: Editar', description: `Editando item ${item.id}` })}>Editar</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => toast({ variant: "destructive", title: 'Ação: Excluir', description: `Excluindo item ${item.id}` })} className="text-destructive focus:text-destructive">
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Excluir
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        </div>
+    )
+}
+
 interface ProductItem {
     id: number;
     name: string;
@@ -477,8 +551,15 @@ interface ServiceItem {
     value: number;
 }
 
+interface LancamentoDialogProps {
+    onOpenChange: (open: boolean) => void;
+    tipoNota: 'produto' | 'saida' | 'servico' | null;
+    initialData?: any;
+    onSave: (data: any) => void;
+}
 
-function LancamentoDialog({ onOpenChange, tipoNota, initialData }: { onOpenChange: (open: boolean) => void, tipoNota: 'produto' | 'saida' | 'servico' | null, initialData?: any }) {
+
+function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: LancamentoDialogProps) {
     const { toast } = useToast();
     const [productItems, setProductItems] = useState<ProductItem[]>([]);
     const [serviceItems, setServiceItems] = useState<ServiceItem[]>([]);
@@ -486,6 +567,26 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData }: { onOpenChang
     const [tipoNotaValue, setTipoNotaValue] = useState('');
     const [formData, setFormData] = useState<any>({});
 
+    useEffect(() => {
+        if (tipoNota) {
+            const notaType = tipoNota === 'produto' ? 'entrada' : tipoNota;
+            setTipoNotaValue(notaType);
+            setActiveSection(tipoNota === 'servico' ? 'identificacao' : 'geral');
+        }
+        if (initialData) {
+            setFormData(initialData);
+            if (tipoNota === 'produto' || tipoNota === 'saida') {
+                setProductItems(initialData.items || []);
+            } else if (tipoNota === 'servico') {
+                const initialServiceItem = initialData.servico?.descricao ? { id: Date.now(), name: initialData.servico.descricao, value: initialData.servico.valor || 0 } : null;
+                setServiceItems(initialServiceItem ? [initialServiceItem] : []);
+            }
+        } else {
+            setFormData({});
+            setProductItems([]);
+            setServiceItems([]);
+        }
+    }, [tipoNota, initialData]);
 
     const notaLabel = tipoNota === 'servico' ? 'de Serviço' : (tipoNota === 'produto' ? 'de Produto' : 'de Saída');
 
@@ -498,25 +599,6 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData }: { onOpenChang
             }
         }));
     };
-
-    useEffect(() => {
-        if (tipoNota) {
-            setTipoNotaValue(tipoNota === 'produto' ? 'entrada' : tipoNota);
-        }
-        if (initialData) {
-            setFormData(initialData);
-            if (tipoNota === 'produto' || tipoNota === 'saida') {
-                setProductItems(initialData.items || []);
-            } else if (tipoNota === 'servico') {
-                const initialServiceItem = { id: Date.now(), name: initialData.servico?.descricao || '', value: initialData.servico?.valor || 0 };
-                 setServiceItems([initialServiceItem]);
-            }
-        } else {
-            setFormData({});
-            setProductItems([]);
-            setServiceItems([]);
-        }
-    }, [tipoNota, initialData]);
 
     const productSections = [
         { id: 'geral', label: 'Dados Gerais' },
@@ -539,13 +621,6 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData }: { onOpenChang
     ];
 
     const sections = tipoNota === 'servico' ? serviceSections : productSections;
-        
-    useEffect(() => {
-        if(tipoNota) {
-            setActiveSection(sections[0].id);
-        }
-    }, [tipoNota, sections]);
-
 
     // Product Handlers
     const handleAddProduct = () => {
@@ -591,11 +666,13 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData }: { onOpenChang
     };
     
     const handleSave = () => {
-        console.log("Saving data...", { 
-            tipo: tipoNota,
+        const dataToSave = { 
+            tipo: tipoNotaValue,
             dados: formData,
             items: tipoNota === 'servico' ? serviceItems : productItems,
-        });
+        };
+
+        onSave(dataToSave);
     
         toast({
           title: "Nota Fiscal Lançada",
@@ -838,9 +915,11 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData }: { onOpenChang
                     </Card>
                 )
             case 'produtos':
-                return (
+                 return (
                     <Card>
-                        <CardHeader><CardTitle>Itens da Nota</CardTitle></CardHeader>
+                        <CardHeader>
+                            <CardTitle>Itens da Nota</CardTitle>
+                        </CardHeader>
                         <CardContent>
                             <Table>
                                 <TableHeader><TableRow>
@@ -871,6 +950,39 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData }: { onOpenChang
                                 </TableBody>
                             </Table>
                             <div className="mt-4 flex justify-end"><Button variant="outline" onClick={handleAddProduct}><Plus className="mr-2 h-4 w-4" /> Adicionar Produto</Button></div>
+                        </CardContent>
+                    </Card>
+                )
+            case 'serviços': // Corrigido de 'servicos' para 'serviços'
+                return (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Serviços Prestados</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader><TableRow>
+                                    <TableHead className="w-[60%]">Serviço</TableHead>
+                                    <TableHead className="text-right">Valor</TableHead>
+                                    <TableHead className="w-12"></TableHead>
+                                </TableRow></TableHeader>
+                                <TableBody>
+                                    {serviceItems.length > 0 ? serviceItems.map((item) => (
+                                        <TableRow key={item.id} className="has-[:focus-visible]:bg-muted/40">
+                                            <TableCell className="font-medium">
+                                                <Input value={item.name} onChange={(e) => handleServiceChange(item.id, 'name', e.target.value)} className="h-8" />
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Input type="number" value={item.value} onChange={(e) => handleServiceChange(item.id, 'value', e.target.value)} className="h-8 w-32 text-right" />
+                                            </TableCell>
+                                            <TableCell><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveService(item.id)}><X className="h-4 w-4" /></Button></TableCell>
+                                        </TableRow>
+                                    )) : (
+                                        <TableRow><TableCell colSpan={3} className="h-24 text-center">Nenhum serviço adicionado.</TableCell></TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                            <div className="mt-4 flex justify-end"><Button variant="outline" onClick={handleAddService}><Plus className="mr-2 h-4 w-4" /> Adicionar Serviço</Button></div>
                         </CardContent>
                     </Card>
                 )
