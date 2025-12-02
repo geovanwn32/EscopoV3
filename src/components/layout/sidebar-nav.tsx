@@ -102,7 +102,17 @@ const secondaryMenu: NavItem[] = [
         ]
     },
     { href: '/conectividade', label: 'Conectividade', icon: Plug },
-    { href: '/utilitarios', label: 'Utilitários', icon: Wrench },
+    { 
+        href: '/utilitarios', 
+        label: 'Utilitários', 
+        icon: Wrench,
+        subItems: [
+            { href: '/utilitarios/audit-trail', label: 'Trilha de Auditoria', icon: Wrench },
+            { href: '/utilitarios/gov-status', label: 'Status de Serviços', icon: Wrench },
+            { href: '/utilitarios/eventos', label: 'Agenda de Eventos', icon: Wrench },
+            { href: '/utilitarios/arquivos', label: 'Arquivos', icon: Wrench },
+        ]
+    },
 ]
 
 
@@ -115,7 +125,9 @@ export function SidebarNav() {
 
   const isNavItemActive = (href: string) => {
     if (pathname === href) return true;
-    if (href !== '/dashboard' && pathname.startsWith(href)) {
+    // Don't mark the root as active for all sub-paths
+    if (href === '/dashboard' && pathname !== '/dashboard') return false;
+    if (pathname.startsWith(href)) {
         return true;
     }
     return false;
@@ -130,7 +142,7 @@ export function SidebarNav() {
             <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary text-primary-foreground">
                 <Building2 className="h-6 w-6" />
             </div>
-            <div className='flex flex-col group-data-[collapsible=icon]:hidden'>
+            <div className='flex flex-col group-data-[collapsible=icon]:hidden min-w-0'>
                 <span className="font-bold text-lg tracking-tight">EscopoV3</span>
             </div>
         </div>
@@ -204,19 +216,19 @@ export function SidebarNav() {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
                              <a href="tel:+5562998554529">
-                                <Phone className="mr-2" />
+                                <Phone className="mr-2 h-4 w-4" />
                                 Telefone
                             </a>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                              <a href="mailto:geovaniwn@gmail.com">
-                                <Mail className="mr-2" />
+                                <Mail className="mr-2 h-4 w-4" />
                                 E-mail
                             </a>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                             <a href="https://wa.me/5562992127752" target="_blank" rel="noopener noreferrer">
-                                <MessageSquare className="mr-2" />
+                                <MessageSquare className="mr-2 h-4 w-4" />
                                 WhatsApp
                             </a>
                         </DropdownMenuItem>
