@@ -116,7 +116,7 @@ export default function FiscalPage() {
             let parsedData = {};
 
             // Simulating XML parsing
-            if (content.includes('<infNFe')) {
+            if (content.includes('<infNFe') && content.includes('<NFe')) {
                 detectedModel = 'produto';
                 const products = Array.from(content.matchAll(/<det nItem="(\d+)">([\s\S]*?)<\/det>/g)).map(match => {
                     const itemContent = match[2];
@@ -130,29 +130,40 @@ export default function FiscalPage() {
                     };
                 });
                 parsedData = {
-                    numero: content.match(/<nNF>(.*?)<\/nNF>/)?.[1],
-                    serie: content.match(/<serie>(.*?)<\/serie>/)?.[1],
-                    dataEmissao: content.match(/<dhEmi>(.*?)<\/dhEmi>/)?.[1].substring(0, 16),
-                    cnpjEmitente: content.match(/<emit>[\s\S]*?<CNPJ>(.*?)<\/CNPJ>/)?.[1],
-                    razaoSocialEmitente: content.match(/<emit>[\s\S]*?<xNome>(.*?)<\/xNome>/)?.[1],
+                    geral: {
+                        numero: content.match(/<nNF>(.*?)<\/nNF>/)?.[1],
+                        serie: content.match(/<serie>(.*?)<\/serie>/)?.[1],
+                        dataEmissao: content.match(/<dhEmi>(.*?)<\/dhEmi>/)?.[1].substring(0, 16),
+                    },
+                    emitente: {
+                        cnpj: content.match(/<emit>[\s\S]*?<CNPJ>(.*?)<\/CNPJ>/)?.[1],
+                        razaoSocial: content.match(/<emit>[\s\S]*?<xNome>(.*?)<\/xNome>/)?.[1],
+                    },
                     items: products,
                 };
             } else if (content.includes('<infNFSe') || content.includes('<CompNfse')) {
                 detectedModel = 'servico';
                  parsedData = {
-                    numero: content.match(/<Numero>(.*?)<\/Numero>/)?.[1],
-                    dataEmissao: content.match(/<DataEmissao>(.*?)<\/DataEmissao>/)?.[1].substring(0, 16),
-                    cnpjPrestador: content.match(/<Prestador>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1] || content.match(/<PrestadorServico>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1] ,
-                    razaoSocialPrestador: content.match(/<PrestadorServico>[\s\S]*?<RazaoSocial>(.*?)<\/RazaoSocial>/)?.[1],
-                    cnpjTomador: content.match(/<TomadorServico>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1],
-                    razaoSocialTomador: content.match(/<TomadorServico>[\s\S]*?<RazaoSocial>(.*?)<\/RazaoSocial>/)?.[1],
-                    valorServico: parseFloat(content.match(/<ValorServicos>(.*?)<\/ValorServicos>/)?.[1] || '0'),
-                    descricao: content.match(/<Discriminacao>(.*?)<\/Discriminacao>/)?.[1],
+                    identificacao: {
+                        numero: content.match(/<Numero>(.*?)<\/Numero>/)?.[1],
+                        dataEmissao: content.match(/<DataEmissao>(.*?)<\/DataEmissao>/)?.[1].substring(0, 16),
+                    },
+                    prestador: {
+                        cnpj: content.match(/<Prestador>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1] || content.match(/<PrestadorServico>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1] ,
+                        razaoSocial: content.match(/<PrestadorServico>[\s\S]*?<RazaoSocial>(.*?)<\/RazaoSocial>/)?.[1],
+                    },
+                    tomador: {
+                        cnpj: content.match(/<TomadorServico>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1],
+                        razaoSocial: content.match(/<TomadorServico>[\s\S]*?<RazaoSocial>(.*?)<\/RazaoSocial>/)?.[1],
+                    },
+                    servico: {
+                        valor: parseFloat(content.match(/<ValorServicos>(.*?)<\/ValorServicos>/)?.[1] || '0'),
+                        descricao: content.match(/<Discriminacao>(.*?)<\/Discriminacao>/)?.[1],
+                    }
                  };
             }
     
             if (detectedModel) {
-                setLancamentoData(parsedData);
                 openLancamentoDialog(detectedModel, parsedData);
                 setXmls(prevXmls => prevXmls.map(x => x.id === id ? { ...x, status: 'Lançado' } : x));
             } else {
@@ -222,7 +233,7 @@ export default function FiscalPage() {
 
         <Card>
             <Tabs defaultValue="xmls">
-                <CardHeader>
+                 <CardHeader>
                     <CardTitle>Documentos Fiscais</CardTitle>
                     <CardDescription>
                         Gerencie todos os seus documentos importados e lançados.
@@ -476,7 +487,7 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData }: { onOpenChang
     const [formData, setFormData] = useState<any>({});
 
 
-    const notaLabel = tipoNota === 'produto' ? 'de Produto' : tipoNota === 'saida' ? 'de Saída' : 'de Serviço';
+    const notaLabel = tipoNota === 'servico' ? 'de Serviço' : (tipoNota === 'produto' ? 'de Produto' : 'de Saída');
 
     const handleInputChange = (section: string, field: string, value: any) => {
         setFormData((prev: any) => ({
@@ -493,42 +504,14 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData }: { onOpenChang
             setTipoNotaValue(tipoNota === 'produto' ? 'entrada' : tipoNota);
         }
         if (initialData) {
+            setFormData(initialData);
             if (tipoNota === 'produto' || tipoNota === 'saida') {
-                setFormData({
-                    geral: {
-                        numero: initialData.numero,
-                        serie: initialData.serie,
-                        dataEmissao: initialData.dataEmissao,
-                    },
-                    emitente: {
-                        cnpj: initialData.cnpjEmitente,
-                        razaoSocial: initialData.razaoSocialEmitente,
-                    },
-                });
                 setProductItems(initialData.items || []);
             } else if (tipoNota === 'servico') {
-                 setFormData({
-                    identificacao: {
-                        numero: initialData.numero,
-                        dataEmissao: initialData.dataEmissao,
-                    },
-                    prestador: {
-                        cnpj: initialData.cnpjPrestador,
-                        razaoSocial: initialData.razaoSocialPrestador,
-                    },
-                    tomador: {
-                        cnpj: initialData.cnpjTomador,
-                        razaoSocial: initialData.razaoSocialTomador,
-                    },
-                    servico: {
-                        valor: initialData.valorServico,
-                        descricao: initialData.descricao,
-                    }
-                 });
-                 setServiceItems([{ id: Date.now(), name: initialData.descricao, value: initialData.valorServico }]);
+                const initialServiceItem = { id: Date.now(), name: initialData.servico?.descricao || '', value: initialData.servico?.valor || 0 };
+                 setServiceItems([initialServiceItem]);
             }
         } else {
-            // Reset form when opening for manual entry
             setFormData({});
             setProductItems([]);
             setServiceItems([]);
@@ -703,7 +686,7 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData }: { onOpenChang
                             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 items-end">
                                  <div className="space-y-2"><Label>Unidade</Label><Input /></div>
                                  <div className="space-y-2"><Label>Quantidade</Label><Input type="number" /></div>
-                                 <div className="space-y-2"><Label>Valor Unitário</Label><Input type="number" /></div>
+                                 <div className="space-y-2"><Label>Valor Unitário</Label><Input type="number" value={formData.servico?.valor || ''} onChange={(e) => handleInputChange('servico', 'valor', e.target.value)} /></div>
                                  <div className="space-y-2"><Label>Desc. Condic.</Label><Input type="number" /></div>
                                  <div className="space-y-2"><Label>Desc. Incondic.</Label><Input type="number" /></div>
                              </div>
