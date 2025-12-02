@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MoreHorizontal, Plus, Search, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Plus, Search, Trash2, Eye, Pencil } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,6 +20,8 @@ export default function ParceirosPage() {
     const [partners, setPartners] = useState<Partner[]>([]);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<Partner | null>(null);
+    const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
+    const [isReadOnly, setIsReadOnly] = useState(false);
 
     // Load partners from localStorage
     useEffect(() => {
@@ -47,13 +49,24 @@ export default function ParceirosPage() {
         }
     }, [partners]);
     
-    const handleSavePartner = (partner: Omit<Partner, 'id'>) => {
-        const newPartner = { ...partner, id: Date.now() };
-        setPartners(prev => [...prev, newPartner]);
-        toast({
-            title: "Parceiro Salvo!",
-            description: `O parceiro ${newPartner.name} foi adicionado com sucesso.`
-        });
+    const handleSavePartner = (partnerData: Omit<Partner, 'id'>) => {
+        if (editingPartner) {
+            // Update existing partner
+            setPartners(prev => prev.map(p => p.id === editingPartner.id ? { ...p, ...partnerData } : p));
+            toast({
+                title: "Parceiro Atualizado!",
+                description: `O parceiro ${partnerData.name} foi atualizado com sucesso.`
+            });
+            setEditingPartner(null);
+        } else {
+            // Add new partner
+            const newPartner = { ...partnerData, id: Date.now() };
+            setPartners(prev => [...prev, newPartner]);
+            toast({
+                title: "Parceiro Salvo!",
+                description: `O parceiro ${newPartner.name} foi adicionado com sucesso.`
+            });
+        }
         setIsDialogOpen(false);
     };
 
@@ -72,6 +85,26 @@ export default function ParceirosPage() {
             setItemToDelete(null);
         }
     };
+    
+    const handleEditClick = (partner: Partner) => {
+        setEditingPartner(partner);
+        setIsReadOnly(false);
+        setIsDialogOpen(true);
+    };
+
+    const handleViewClick = (partner: Partner) => {
+        setEditingPartner(partner);
+        setIsReadOnly(true);
+        setIsDialogOpen(true);
+    };
+
+    const handleDialogChange = (open: boolean) => {
+        setIsDialogOpen(open);
+        if (!open) {
+            setEditingPartner(null);
+            setIsReadOnly(false);
+        }
+    }
 
 
     return (
@@ -95,14 +128,19 @@ export default function ParceirosPage() {
                                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                                 <Input placeholder="Buscar por nome ou CNPJ..." className="pl-9 w-full sm:w-64" />
                             </div>
-                            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                            <Dialog open={isDialogOpen} onOpenChange={handleDialogChange}>
                                 <DialogTrigger asChild>
                                     <Button>
                                         <Plus className="mr-2 h-4 w-4" />
                                         Novo Parceiro
                                     </Button>
                                 </DialogTrigger>
-                                <PartnerForm onSave={handleSavePartner} onOpenChange={setIsDialogOpen} />
+                                <PartnerForm 
+                                    onSave={handleSavePartner} 
+                                    onOpenChange={handleDialogChange}
+                                    partner={editingPartner}
+                                    isReadOnly={isReadOnly}
+                                />
                             </Dialog>
                         </div>
                     </div>
@@ -136,7 +174,8 @@ export default function ParceirosPage() {
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem>Editar</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleViewClick(partner)}><Eye className="mr-2 h-4 w-4" />Visualizar</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleEditClick(partner)}><Pencil className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
                                                         <DropdownMenuItem 
                                                             className="text-destructive focus:text-destructive"
                                                             onClick={() => handleDeleteClick(partner)}
@@ -184,43 +223,60 @@ export default function ParceirosPage() {
 interface PartnerFormProps {
     onSave: (partner: Omit<Partner, 'id'>) => void;
     onOpenChange: (open: boolean) => void;
+    partner: Partner | null;
+    isReadOnly: boolean;
 }
 
-function PartnerForm({ onSave, onOpenChange }: PartnerFormProps) {
+function PartnerForm({ onSave, onOpenChange, partner, isReadOnly }: PartnerFormProps) {
     const [name, setName] = useState('');
     const [document, setDocument] = useState('');
     const [type, setType] = useState<'Cliente' | 'Fornecedor' | 'Transportadora'>();
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (name && document && type) {
-            onSave({ name, document, type });
+     useEffect(() => {
+        if (partner) {
+            setName(partner.name);
+            setDocument(partner.document);
+            setType(partner.type);
+        } else {
             setName('');
             setDocument('');
             setType(undefined);
         }
+    }, [partner]);
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (name && document && type && !isReadOnly) {
+            onSave({ name, document, type });
+        } else if (isReadOnly) {
+            onOpenChange(false);
+        }
     };
+    
+    const dialogTitle = isReadOnly ? "Visualizar Parceiro" : partner ? "Editar Parceiro" : "Novo Parceiro";
+    const dialogDescription = isReadOnly ? "Visualize os dados do parceiro." : "Preencha os dados para adicionar ou editar um parceiro.";
+
 
     return (
         <DialogContent>
             <DialogHeader>
-                <DialogTitle>Novo Parceiro</DialogTitle>
+                <DialogTitle>{dialogTitle}</DialogTitle>
                 <DialogDescription>
-                    Preencha os dados para adicionar um novo parceiro.
+                    {dialogDescription}
                 </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                     <Label htmlFor="name">Nome / Razão Social</Label>
-                    <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
+                    <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required readOnly={isReadOnly} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="document">CNPJ / CPF</Label>
-                    <Input id="document" value={document} onChange={(e) => setDocument(e.target.value)} required />
+                    <Input id="document" value={document} onChange={(e) => setDocument(e.target.value)} required readOnly={isReadOnly} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="type">Tipo</Label>
-                    <Select onValueChange={(value) => setType(value as any)} required>
+                    <Select value={type} onValueChange={(value) => setType(value as any)} required disabled={isReadOnly}>
                         <SelectTrigger id="type">
                             <SelectValue placeholder="Selecione o tipo" />
                         </SelectTrigger>
@@ -232,8 +288,10 @@ function PartnerForm({ onSave, onOpenChange }: PartnerFormProps) {
                     </Select>
                 </div>
                 <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-                    <Button type="submit">Salvar Parceiro</Button>
+                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                        {isReadOnly ? 'Fechar' : 'Cancelar'}
+                    </Button>
+                    {!isReadOnly && <Button type="submit">Salvar</Button>}
                 </DialogFooter>
             </form>
         </DialogContent>

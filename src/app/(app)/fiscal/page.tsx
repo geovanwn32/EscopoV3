@@ -4,7 +4,7 @@ import { useState, useEffect, ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { PackagePlus, Wrench, Upload, FileMinus, Receipt, MoreHorizontal, Search, Filter, Plus, FileUp, Trash2, X } from "lucide-react";
+import { PackagePlus, Wrench, Upload, FileMinus, Receipt, MoreHorizontal, Search, Filter, Plus, FileUp, Trash2, X, Eye, Pencil } from "lucide-react";
 import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -68,6 +68,13 @@ interface XmlFile {
     status: 'Importado' | 'Lançado' | 'Erro';
 }
 
+type NotaFiscal = {
+    id: number;
+    tipo: 'entrada' | 'saida' | 'servico';
+    dados: any;
+    items: ProductItem[] | ServiceItem[];
+};
+
 export default function FiscalPage() {
     const { toast } = useToast();
     const [xmls, setXmls] = useState<XmlFile[]>([]);
@@ -75,9 +82,12 @@ export default function FiscalPage() {
     const [tipoNota, setTipoNota] = useState<'produto' | 'saida' | 'servico' | null>(null);
     const [lancamentoData, setLancamentoData] = useState<any>(null);
     
-    const [notasProduto, setNotasProduto] = useState<any[]>([]);
-    const [notasSaida, setNotasSaida] = useState<any[]>([]);
-    const [notasServico, setNotasServico] = useState<any[]>([]);
+    const [notasProduto, setNotasProduto] = useState<NotaFiscal[]>([]);
+    const [notasSaida, setNotasSaida] = useState<NotaFiscal[]>([]);
+    const [notasServico, setNotasServico] = useState<NotaFiscal[]>([]);
+
+    const [isReadOnly, setIsReadOnly] = useState(false);
+    const [editingNota, setEditingNota] = useState<NotaFiscal | null>(null);
 
     // Load data from localStorage on initial render
     useEffect(() => {
@@ -180,7 +190,7 @@ export default function FiscalPage() {
                 const storedPartners = localStorage.getItem('partners') || '[]';
                 const partners: Partner[] = JSON.parse(storedPartners);
                 const existingPartner = partners.find(p => p.document === partnerData.document);
-                if (!existingPartner) {
+                if (!existingPartner && partnerData.document && partnerData.name) {
                     const newPartner: Partner = {
                         id: Date.now() + Math.random(),
                         ...partnerData,
@@ -293,21 +303,66 @@ export default function FiscalPage() {
         });
     }
 
-    const openLancamentoDialog = (tipo: 'produto' | 'saida' | 'servico', data: any = null) => {
+    const openLancamentoDialog = (tipo: 'produto' | 'saida' | 'servico', data: any = null, readOnly = false) => {
         setTipoNota(tipo);
         setLancamentoData(data);
+        setIsReadOnly(readOnly);
         setIsLancamentoDialogOpen(true);
     };
 
     const handleSaveNota = (savedNota: any) => {
-        const notaComId = {...savedNota, id: Date.now()};
-        if (savedNota.tipo === 'produto' || savedNota.tipo === 'entrada') {
-            setNotasProduto(prev => [...prev, notaComId]);
-        } else if (savedNota.tipo === 'saida') {
-            setNotasSaida(prev => [...prev, notaComId]);
-        } else if (savedNota.tipo === 'servico') {
-            setNotasServico(prev => [...prev, notaComId]);
+        if (editingNota) {
+            // Update existing note
+            const updateList = (list: NotaFiscal[]) => list.map(n => n.id === editingNota.id ? { ...n, ...savedNota, id: editingNota.id } : n);
+            if (editingNota.tipo === 'entrada' || editingNota.tipo === 'produto') setNotasProduto(updateList);
+            if (editingNota.tipo === 'saida') setNotasSaida(updateList);
+            if (editingNota.tipo === 'servico') setNotasServico(updateList);
+
+            toast({
+                title: "Nota Fiscal Atualizada",
+                description: `A nota fiscal foi atualizada com sucesso.`,
+            });
+            setEditingNota(null);
+
+        } else {
+            // Add new note
+            const notaComId = {...savedNota, id: Date.now()};
+            if (notaComId.tipo === 'entrada') {
+                setNotasProduto(prev => [...prev, notaComId]);
+            } else if (notaComId.tipo === 'saida') {
+                setNotasSaida(prev => [...prev, notaComId]);
+            } else if (notaComId.tipo === 'servico') {
+                setNotasServico(prev => [...prev, notaComId]);
+            }
+             toast({
+              title: "Nota Fiscal Lançada",
+              description: `A nota fiscal foi salva com sucesso.`,
+            });
         }
+        setIsLancamentoDialogOpen(false); 
+    };
+
+    const handleDeleteNota = (nota: NotaFiscal) => {
+        const removeNota = (list: NotaFiscal[]) => list.filter(n => n.id !== nota.id);
+        if (nota.tipo === 'entrada' || nota.tipo === 'produto') setNotasProduto(removeNota);
+        if (nota.tipo === 'saida') setNotasSaida(removeNota);
+        if (nota.tipo === 'servico') setNotasServico(removeNota);
+        toast({
+            variant: "destructive",
+            title: "Nota Excluída!",
+            description: `A nota fiscal foi removida.`
+        });
+    };
+
+    const handleViewNota = (nota: NotaFiscal) => {
+        const tipo = nota.tipo === 'entrada' ? 'produto' : nota.tipo;
+        openLancamentoDialog(tipo as any, nota.dados, true);
+    };
+
+    const handleEditNota = (nota: NotaFiscal) => {
+        const tipo = nota.tipo === 'entrada' ? 'produto' : nota.tipo;
+        setEditingNota(nota);
+        openLancamentoDialog(tipo as any, nota.dados, false);
     };
     
     return (
@@ -319,7 +374,13 @@ export default function FiscalPage() {
           </p>
         </div>
 
-        <Dialog open={isLancamentoDialogOpen} onOpenChange={setIsLancamentoDialogOpen}>
+        <Dialog open={isLancamentoDialogOpen} onOpenChange={(open) => {
+            if (!open) {
+                setEditingNota(null);
+                setIsReadOnly(false);
+            }
+            setIsLancamentoDialogOpen(open);
+        }}>
             <Card>
                 <CardContent className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 pt-6">
                     {actions.map((action) => (
@@ -337,7 +398,14 @@ export default function FiscalPage() {
                     ))}
                 </CardContent>
             </Card>
-            <LancamentoDialog onOpenChange={setIsLancamentoDialogOpen} tipoNota={tipoNota} initialData={lancamentoData} onSave={handleSaveNota} />
+            <LancamentoDialog 
+                onOpenChange={setIsLancamentoDialogOpen} 
+                tipoNota={tipoNota} 
+                initialData={lancamentoData} 
+                onSave={handleSaveNota}
+                isReadOnly={isReadOnly}
+                editingNota={editingNota}
+            />
         </Dialog>
 
         <Card>
@@ -347,8 +415,8 @@ export default function FiscalPage() {
             </CardHeader>
             <CardContent>
                 <Tabs defaultValue="xmls">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 mb-4 sm:mb-0 sm:w-auto">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-none sm:flex">
                             <TabsTrigger value="xmls">XMLs Importados</TabsTrigger>
                             <TabsTrigger value="produtos">Notas de Produto</TabsTrigger>
                             <TabsTrigger value="saidas">Notas de Saída</TabsTrigger>
@@ -387,13 +455,13 @@ export default function FiscalPage() {
                             />
                         </TabsContent>
                         <TabsContent value="produtos">
-                            <NotasFiscaisTable data={notasProduto} tipo="produto" />
+                            <NotasFiscaisTable data={notasProduto} tipo="produto" onDelete={handleDeleteNota} onView={handleViewNota} onEdit={handleEditNota} />
                         </TabsContent>
                         <TabsContent value="saidas">
-                            <NotasFiscaisTable data={notasSaida} tipo="saida" />
+                            <NotasFiscaisTable data={notasSaida} tipo="saida" onDelete={handleDeleteNota} onView={handleViewNota} onEdit={handleEditNota} />
                         </TabsContent>
                         <TabsContent value="servicos">
-                            <NotasFiscaisTable data={notasServico} tipo="servico" />
+                            <NotasFiscaisTable data={notasServico} tipo="servico" onDelete={handleDeleteNota} onView={handleViewNota} onEdit={handleEditNota} />
                         </TabsContent>
                         <TabsContent value="recibos">
                              <div className="text-center py-10">
@@ -476,13 +544,13 @@ function RecentDocumentsTable({
     data, 
     renderRow,
     onLancar,
-    onDelete
+    onDelete,
 }: { 
     headers: string[], 
     data: any[], 
     renderRow: (item: any) => React.ReactNode,
     onLancar?: (id: number) => void,
-    onDelete?: (id: number) => void
+    onDelete?: (id: number) => void,
 }) {
     const { toast } = useToast();
     const [itemToDelete, setItemToDelete] = useState<any | null>(null);
@@ -527,8 +595,6 @@ function RecentDocumentsTable({
                                                 Lançar
                                             </DropdownMenuItem>
                                         )}
-                                        <DropdownMenuItem onClick={() => toast({ title: 'Ação: Visualizar', description: `Visualizando item ${item.id}` })}>Visualizar</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => toast({ title: 'Ação: Editar', description: `Editando item ${item.id}` })}>Editar</DropdownMenuItem>
                                         {onDelete && (
                                             <DropdownMenuItem onClick={() => handleDeleteClick(item)} className="text-destructive focus:text-destructive">
                                                 <Trash2 className="mr-2 h-4 w-4" />
@@ -568,8 +634,32 @@ function RecentDocumentsTable({
     )
 }
 
-function NotasFiscaisTable({ data, tipo }: { data: any[], tipo: 'produto' | 'saida' | 'servico' }) {
-    const { toast } = useToast();
+function NotasFiscaisTable({ 
+    data, 
+    tipo,
+    onDelete,
+    onView,
+    onEdit
+}: { 
+    data: NotaFiscal[], 
+    tipo: 'produto' | 'saida' | 'servico',
+    onDelete: (nota: NotaFiscal) => void,
+    onView: (nota: NotaFiscal) => void,
+    onEdit: (nota: NotaFiscal) => void,
+}) {
+    const [itemToDelete, setItemToDelete] = useState<NotaFiscal | null>(null);
+
+    const handleDeleteClick = (item: NotaFiscal) => {
+        setItemToDelete(item);
+    };
+
+    const handleConfirmDelete = () => {
+        if (itemToDelete) {
+            onDelete(itemToDelete);
+        }
+        setItemToDelete(null);
+    };
+
 
     if (!data || data.length === 0) {
         return (
@@ -602,6 +692,7 @@ function NotasFiscaisTable({ data, tipo }: { data: any[], tipo: 'produto' | 'sai
     }
 
     return (
+        <>
         <div className="overflow-x-auto rounded-md border">
             <Table>
                 <TableHeader>
@@ -623,9 +714,9 @@ function NotasFiscaisTable({ data, tipo }: { data: any[], tipo: 'produto' | 'sai
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                        <DropdownMenuItem onClick={() => toast({ title: 'Ação: Visualizar', description: `Visualizando item ${item.id}` })}>Visualizar</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => toast({ title: 'Ação: Editar', description: `Editando item ${item.id}` })}>Editar</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => toast({ variant: "destructive", title: 'Ação: Excluir', description: `Excluindo item ${item.id}` })} className="text-destructive focus:text-destructive">
+                                        <DropdownMenuItem onClick={() => onView(item)}><Eye className="mr-2 h-4 w-4" />Visualizar</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => onEdit(item)}><Pencil className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleDeleteClick(item)} className="text-destructive focus:text-destructive">
                                             <Trash2 className="mr-2 h-4 w-4" />
                                             Excluir
                                         </DropdownMenuItem>
@@ -637,6 +728,22 @@ function NotasFiscaisTable({ data, tipo }: { data: any[], tipo: 'produto' | 'sai
                 </TableBody>
             </Table>
         </div>
+        <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Essa ação não pode ser desfeita. Isso excluirá permanentemente a nota fiscal
+                         <span className="font-bold"> Nº {itemToDelete?.dados.geral?.numero || itemToDelete?.dados.identificacao?.numero}</span>.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleConfirmDelete}>Confirmar</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+        </>
     )
 }
 
@@ -659,10 +766,12 @@ interface LancamentoDialogProps {
     tipoNota: 'produto' | 'saida' | 'servico' | null;
     initialData?: any;
     onSave: (data: any) => void;
+    isReadOnly: boolean;
+    editingNota: NotaFiscal | null;
 }
 
 
-function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: LancamentoDialogProps) {
+function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave, isReadOnly, editingNota }: LancamentoDialogProps) {
     const { toast } = useToast();
     const [productItems, setProductItems] = useState<ProductItem[]>([]);
     const [serviceItems, setServiceItems] = useState<ServiceItem[]>([]);
@@ -671,29 +780,45 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
     const [formData, setFormData] = useState<any>({});
 
     useEffect(() => {
-        if (tipoNota) {
-            const notaType = tipoNota === 'produto' ? 'entrada' : tipoNota;
+        const data = editingNota ? editingNota.dados : initialData;
+        const items = editingNota ? editingNota.items : initialData?.items;
+        const effectiveTipo = editingNota ? editingNota.tipo : tipoNota;
+
+        if (effectiveTipo) {
+            let notaType = effectiveTipo;
+            if (effectiveTipo === 'produto') notaType = 'entrada';
             setTipoNotaValue(notaType);
-            setActiveSection(tipoNota === 'servico' ? 'identificacao' : 'geral');
+            setActiveSection(notaType === 'servico' ? 'identificacao' : 'geral');
         }
-        if (initialData) {
-            setFormData(initialData);
-            if (tipoNota === 'produto' || tipoNota === 'saida') {
-                setProductItems(initialData.items || []);
-            } else if (tipoNota === 'servico') {
-                const initialServiceItem = initialData.servico?.descricao ? { id: Date.now(), name: initialData.servico.descricao, value: initialData.servico.valor || 0 } : null;
-                setServiceItems(initialServiceItem ? [initialServiceItem] : []);
-            }
+
+        if (data) {
+            setFormData(data);
         } else {
             setFormData({});
-            setProductItems([]);
-            setServiceItems([]);
         }
-    }, [tipoNota, initialData]);
 
-    const notaLabel = tipoNota === 'servico' ? 'de Serviço' : (tipoNota === 'produto' ? 'de Produto (Entrada)' : 'de Saída');
+        if (items) {
+             if (tipoNota === 'produto' || tipoNota === 'saida' || editingNota?.tipo === 'entrada' || editingNota?.tipo === 'saida') {
+                setProductItems(items as ProductItem[] || []);
+            } else if (tipoNota === 'servico' || editingNota?.tipo === 'servico') {
+                const initialServices = Array.isArray(items) 
+                    ? items 
+                    : (initialData?.servico?.descricao ? [{ id: Date.now(), name: initialData.servico.descricao, value: initialData.servico.valor || 0 }] : []);
+                setServiceItems(initialServices as ServiceItem[] || []);
+            }
+        } else {
+             setProductItems([]);
+             setServiceItems([]);
+        }
+
+    }, [tipoNota, initialData, editingNota]);
+
+    const notaLabel = 
+        tipoNotaValue === 'servico' ? 'de Serviço' : 
+        (tipoNotaValue === 'entrada' ? 'de Produto (Entrada)' : 'de Saída');
 
     const handleInputChange = (section: string, field: string, value: any) => {
+        if (isReadOnly) return;
         setFormData((prev: any) => ({
             ...prev,
             [section]: {
@@ -723,19 +848,22 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
         { id: 'info', label: 'Info Adicionais' },
     ];
 
-    const sections = tipoNota === 'servico' ? serviceSections : productSections;
+    const sections = tipoNotaValue === 'servico' ? serviceSections : productSections;
 
     // Product Handlers
     const handleAddProduct = () => {
+        if (isReadOnly) return;
         const newItem: ProductItem = { id: Date.now(), name: 'Novo Produto', quantity: 1, price: 0.0, total: 0.0 };
         setProductItems(prev => [...prev, newItem]);
     };
 
     const handleRemoveProduct = (id: number) => {
+        if (isReadOnly) return;
         setProductItems(prev => prev.filter(item => item.id !== id));
     };
     
     const handleProductChange = (id: number, field: keyof Omit<ProductItem, 'id' | 'total'>, value: string | number) => {
+        if (isReadOnly) return;
         setProductItems(prev => prev.map(item => {
             if (item.id === id) {
                 const updatedItem = { ...item, [field]: value };
@@ -754,17 +882,20 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
 
     // Service Handlers
     const handleAddService = () => {
+        if (isReadOnly) return;
         const newItem: ServiceItem = { id: Date.now(), name: 'Novo Serviço', value: 0.0 };
         setServiceItems(prev => [...prev, newItem]);
     };
 
     const handleRemoveService = (id: number) => {
+        if (isReadOnly) return;
         setServiceItems(prev => prev.filter(item => item.id !== id));
     };
 
     const handleServiceChange = (id: number, field: keyof Omit<ServiceItem, 'id'>, value: string | number) => {
+        if (isReadOnly) return;
         setServiceItems(prev => prev.map(item =>
-            item.id === id ? { ...item, [field]: Number(value) } : item
+            item.id === id ? { ...item, [field]: value === '' ? 0 : Number(value) } : item
         ));
     };
     
@@ -772,17 +903,9 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
         const dataToSave = { 
             tipo: tipoNotaValue,
             dados: formData,
-            items: tipoNota === 'servico' ? serviceItems : productItems,
+            items: tipoNotaValue === 'servico' ? serviceItems : productItems,
         };
-
         onSave(dataToSave);
-    
-        toast({
-          title: "Nota Fiscal Lançada",
-          description: `A nota fiscal ${notaLabel} foi salva com sucesso.`,
-        });
-    
-        onOpenChange(false); 
     };
 
     const totalProdutos = productItems.reduce((acc, item) => acc + item.total, 0);
@@ -790,7 +913,7 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
     
     const totalDescontos = 0; // Placeholder
     const totalImpostos = 0; // Placeholder
-    const totalNota = tipoNota === 'servico' ? totalServicos : totalProdutos;
+    const totalNota = tipoNotaValue === 'servico' ? totalServicos : totalProdutos;
     const totalLiquido = totalNota - totalDescontos - totalImpostos;
 
     const renderServiceForm = () => {
@@ -801,22 +924,22 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
                         <CardHeader><CardTitle>1. Identificação da Nota de Serviço</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div className="space-y-2"><Label>Tipo da Nota</Label><Select><SelectTrigger><SelectValue placeholder="Prestado" /></SelectTrigger><SelectContent><SelectItem value="prestado">Prestado</SelectItem><SelectItem value="tomado">Tomado</SelectItem></SelectContent></Select></div>
-                                <div className="space-y-2"><Label>Número</Label><Input value={formData.identificacao?.numero || ''} onChange={(e) => handleInputChange('identificacao', 'numero', e.target.value)} /></div>
-                                <div className="space-y-2"><Label>Série</Label><Input value={formData.identificacao?.serie || ''} onChange={(e) => handleInputChange('identificacao', 'serie', e.target.value)} /></div>
-                                <div className="space-y-2"><Label>Data de Emissão</Label><Input type="datetime-local" value={formData.identificacao?.dataEmissao || ''} onChange={(e) => handleInputChange('identificacao', 'dataEmissao', e.target.value)} /></div>
-                                <div className="space-y-2"><Label>Competência</Label><Input type="month"/></div>
-                                <div className="space-y-2 col-span-2"><Label>Natureza da Operação</Label><Input /></div>
+                                <div className="space-y-2"><Label>Tipo da Nota</Label><Select><SelectTrigger disabled={isReadOnly}><SelectValue placeholder="Prestado" /></SelectTrigger><SelectContent><SelectItem value="prestado">Prestado</SelectItem><SelectItem value="tomado">Tomado</SelectItem></SelectContent></Select></div>
+                                <div className="space-y-2"><Label>Número</Label><Input value={formData.identificacao?.numero || ''} onChange={(e) => handleInputChange('identificacao', 'numero', e.target.value)} readOnly={isReadOnly}/></div>
+                                <div className="space-y-2"><Label>Série</Label><Input value={formData.identificacao?.serie || ''} onChange={(e) => handleInputChange('identificacao', 'serie', e.target.value)} readOnly={isReadOnly}/></div>
+                                <div className="space-y-2"><Label>Data de Emissão</Label><Input type="datetime-local" value={formData.identificacao?.dataEmissao || ''} onChange={(e) => handleInputChange('identificacao', 'dataEmissao', e.target.value)} readOnly={isReadOnly}/></div>
+                                <div className="space-y-2"><Label>Competência</Label><Input type="month" readOnly={isReadOnly}/></div>
+                                <div className="space-y-2 col-span-2"><Label>Natureza da Operação</Label><Input readOnly={isReadOnly}/></div>
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                <div className="space-y-2"><Label>Município da Prestação</Label><Input /></div>
-                                <div className="space-y-2"><Label>Código IBGE</Label><Input /></div>
-                                <div className="space-y-2"><Label>Regime Tributação</Label><Select><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger><SelectContent><SelectItem value="nenhum">Nenhum</SelectItem></SelectContent></Select></div>
+                                <div className="space-y-2"><Label>Município da Prestação</Label><Input readOnly={isReadOnly}/></div>
+                                <div className="space-y-2"><Label>Código IBGE</Label><Input readOnly={isReadOnly}/></div>
+                                <div className="space-y-2"><Label>Regime Tributação</Label><Select><SelectTrigger disabled={isReadOnly}><SelectValue placeholder="Selecione..." /></SelectTrigger><SelectContent><SelectItem value="nenhum">Nenhum</SelectItem></SelectContent></Select></div>
                             </div>
                             <div className="flex flex-wrap gap-4 pt-2">
-                                <div className="flex items-center space-x-2"><Checkbox id="estimativa" /><Label htmlFor="estimativa">Estimativa</Label></div>
-                                <div className="flex items-center space-x-2"><Checkbox id="unipro" /><Label htmlFor="unipro">Soc. Uniprofissional</Label></div>
-                                <div className="flex items-center space-x-2"><Checkbox id="mei" /><Label htmlFor="mei">MEI</Label></div>
+                                <div className="flex items-center space-x-2"><Checkbox id="estimativa" disabled={isReadOnly}/><Label htmlFor="estimativa">Estimativa</Label></div>
+                                <div className="flex items-center space-x-2"><Checkbox id="unipro" disabled={isReadOnly}/><Label htmlFor="unipro">Soc. Uniprofissional</Label></div>
+                                <div className="flex items-center space-x-2"><Checkbox id="mei" disabled={isReadOnly}/><Label htmlFor="mei">MEI</Label></div>
                             </div>
                         </CardContent>
                     </Card>
@@ -829,24 +952,24 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
                         <CardHeader><CardTitle>{sectionKey === 'prestador' ? '2. Dados do Prestador' : '3. Dados do Tomador'}</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                <div className="space-y-2"><Label>CNPJ / CPF</Label><Input value={formData[sectionKey]?.cnpj || ''} onChange={(e) => handleInputChange(sectionKey, 'cnpj', e.target.value)} /></div>
-                                <div className="space-y-2 col-span-2"><Label>Razão Social</Label><Input value={formData[sectionKey]?.razaoSocial || ''} onChange={(e) => handleInputChange(sectionKey, 'razaoSocial', e.target.value)} /></div>
+                                <div className="space-y-2"><Label>CNPJ / CPF</Label><Input value={formData[sectionKey]?.cnpj || ''} onChange={(e) => handleInputChange(sectionKey, 'cnpj', e.target.value)} readOnly={isReadOnly}/></div>
+                                <div className="space-y-2 col-span-2"><Label>Razão Social</Label><Input value={formData[sectionKey]?.razaoSocial || ''} onChange={(e) => handleInputChange(sectionKey, 'razaoSocial', e.target.value)} readOnly={isReadOnly}/></div>
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                <div className="space-y-2"><Label>Inscrição Municipal</Label><Input /></div>
-                                <div className="space-y-2"><Label>Email</Label><Input type="email" /></div>
-                                <div className="space-y-2"><Label>Telefone</Label><Input type="tel" /></div>
+                                <div className="space-y-2"><Label>Inscrição Municipal</Label><Input readOnly={isReadOnly}/></div>
+                                <div className="space-y-2"><Label>Email</Label><Input type="email" readOnly={isReadOnly}/></div>
+                                <div className="space-y-2"><Label>Telefone</Label><Input type="tel" readOnly={isReadOnly}/></div>
                             </div>
                              <Separator className="my-4"/>
                             <p className="text-sm font-medium text-foreground">Endereço</p>
                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div className="space-y-2"><Label>CEP</Label><Input /></div>
-                                <div className="space-y-2 col-span-2"><Label>Logradouro</Label><Input /></div>
-                                <div className="space-y-2"><Label>Número</Label><Input /></div>
-                                <div className="space-y-2"><Label>Complemento</Label><Input /></div>
-                                <div className="space-y-2"><Label>Bairro</Label><Input /></div>
-                                <div className="space-y-2"><Label>Cidade</Label><Input /></div>
-                                <div className="space-y-2"><Label>UF</Label><Input /></div>
+                                <div className="space-y-2"><Label>CEP</Label><Input readOnly={isReadOnly}/></div>
+                                <div className="space-y-2 col-span-2"><Label>Logradouro</Label><Input readOnly={isReadOnly}/></div>
+                                <div className="space-y-2"><Label>Número</Label><Input readOnly={isReadOnly}/></div>
+                                <div className="space-y-2"><Label>Complemento</Label><Input readOnly={isReadOnly}/></div>
+                                <div className="space-y-2"><Label>Bairro</Label><Input readOnly={isReadOnly}/></div>
+                                <div className="space-y-2"><Label>Cidade</Label><Input readOnly={isReadOnly}/></div>
+                                <div className="space-y-2"><Label>UF</Label><Input readOnly={isReadOnly}/></div>
                             </div>
                         </CardContent>
                     </Card>
@@ -855,21 +978,34 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
                 return (
                      <Card>
                         <CardHeader><CardTitle>4. Dados do Serviço</CardTitle></CardHeader>
-                        <CardContent className="space-y-4">
-                             <div className="space-y-2"><Label>Descrição Detalhada do Serviço</Label><Textarea value={formData.servico?.descricao || ''} onChange={(e) => handleInputChange('servico', 'descricao', e.target.value)} /></div>
-                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                 <div className="space-y-2"><Label>Código do Serviço (Municipal)</Label><Input /></div>
-                                 <div className="space-y-2"><Label>Item da Lista (LC 116)</Label><Input /></div>
-                                 <div className="space-y-2"><Label>Local da Execução</Label><Select><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger><SelectContent><SelectItem value="mesmo">Mesmo Município</SelectItem><SelectItem value="outro">Outro Município</SelectItem><SelectItem value="exterior">Exterior</SelectItem></SelectContent></Select></div>
-                             </div>
-                             <Separator className="my-4"/>
-                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 items-end">
-                                 <div className="space-y-2"><Label>Unidade</Label><Input /></div>
-                                 <div className="space-y-2"><Label>Quantidade</Label><Input type="number" /></div>
-                                 <div className="space-y-2"><Label>Valor Unitário</Label><Input type="number" value={formData.servico?.valor || ''} onChange={(e) => handleInputChange('servico', 'valor', e.target.value)} /></div>
-                                 <div className="space-y-2"><Label>Desc. Condic.</Label><Input type="number" /></div>
-                                 <div className="space-y-2"><Label>Desc. Incondic.</Label><Input type="number" /></div>
-                             </div>
+                        <CardContent>
+                           <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="w-[60%]">Serviço</TableHead>
+                                        <TableHead className="text-right">Valor</TableHead>
+                                        {!isReadOnly && <TableHead className="w-12"></TableHead>}
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {serviceItems.length > 0 ? serviceItems.map((item) => (
+                                        <TableRow key={item.id} className="has-[:focus-visible]:bg-muted/40">
+                                            <TableCell className="font-medium">
+                                                <Input value={item.name || ''} onChange={(e) => handleServiceChange(item.id, 'name', e.target.value)} className="h-8" readOnly={isReadOnly}/>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Input type="number" value={item.value || ''} onChange={(e) => handleServiceChange(item.id, 'value', e.target.value)} className="h-8 w-32 text-right" readOnly={isReadOnly}/>
+                                            </TableCell>
+                                            {!isReadOnly && 
+                                                <TableCell><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveService(item.id)}><X className="h-4 w-4" /></Button></TableCell>
+                                            }
+                                        </TableRow>
+                                    )) : (
+                                        <TableRow><TableCell colSpan={isReadOnly ? 2 : 3} className="h-24 text-center">Nenhum serviço adicionado.</TableCell></TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                            {!isReadOnly && <div className="mt-4 flex justify-end"><Button variant="outline" onClick={handleAddService}><Plus className="mr-2 h-4 w-4" /> Adicionar Serviço</Button></div>}
                         </CardContent>
                     </Card>
                 )
@@ -882,14 +1018,14 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
                             <div>
                                 <h4 className="font-semibold text-primary mb-2">ISS</h4>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 items-end">
-                                    <div className="space-y-2"><Label>Responsável</Label><Select><SelectTrigger><SelectValue placeholder="Prestador" /></SelectTrigger><SelectContent><SelectItem value="prestador">Prestador</SelectItem><SelectItem value="tomador">Tomador (Retenção)</SelectItem></SelectContent></Select></div>
+                                    <div className="space-y-2"><Label>Responsável</Label><Select><SelectTrigger disabled={isReadOnly}><SelectValue placeholder="Prestador" /></SelectTrigger><SelectContent><SelectItem value="prestador">Prestador</SelectItem><SelectItem value="tomador">Tomador (Retenção)</SelectItem></SelectContent></Select></div>
                                     <div className="space-y-2"><Label>Base de Cálculo</Label><Input type="number" readOnly value="0,00"/></div>
-                                    <div className="space-y-2"><Label>Alíquota (%)</Label><Input type="number" /></div>
+                                    <div className="space-y-2"><Label>Alíquota (%)</Label><Input type="number" readOnly={isReadOnly}/></div>
                                     <div className="space-y-2"><Label>Valor ISS</Label><Input type="number" readOnly value="0,00"/></div>
                                 </div>
                                 <div className="flex gap-4 pt-4">
-                                    <div className="flex items-center space-x-2"><Checkbox id="iss-incidencia" defaultChecked /><Label htmlFor="iss-incidencia">Incidência de ISS</Label></div>
-                                    <div className="flex items-center space-x-2"><Checkbox id="simples" /><Label htmlFor="simples">Optante pelo Simples Nacional</Label></div>
+                                    <div className="flex items-center space-x-2"><Checkbox id="iss-incidencia" defaultChecked disabled={isReadOnly}/><Label htmlFor="iss-incidencia">Incidência de ISS</Label></div>
+                                    <div className="flex items-center space-x-2"><Checkbox id="simples" disabled={isReadOnly}/><Label htmlFor="simples">Optante pelo Simples Nacional</Label></div>
                                 </div>
                             </div>
                              <Separator />
@@ -900,8 +1036,8 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
                                     {['IRRF', 'INSS', 'PIS', 'COFINS', 'CSLL'].map(imposto => (
                                         <div key={imposto} className="grid grid-cols-3 md:grid-cols-5 gap-x-4 gap-y-2 items-center">
                                             <Label className="md:col-span-2 font-medium">{imposto}</Label>
-                                            <div className="space-y-1"><Label className="text-xs text-muted-foreground">Base</Label><Input type="number" /></div>
-                                            <div className="space-y-1"><Label className="text-xs text-muted-foreground">Alíquota (%)</Label><Input type="number" /></div>
+                                            <div className="space-y-1"><Label className="text-xs text-muted-foreground">Base</Label><Input type="number" readOnly={isReadOnly}/></div>
+                                            <div className="space-y-1"><Label className="text-xs text-muted-foreground">Alíquota (%)</Label><Input type="number" readOnly={isReadOnly}/></div>
                                             <div className="space-y-1"><Label className="text-xs text-muted-foreground">Valor</Label><Input type="number" readOnly value="0,00"/></div>
                                         </div>
                                     ))}
@@ -918,7 +1054,7 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                                 <div className="space-y-2">
                                     <Label>Forma de Pagamento</Label>
-                                    <Select><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>
+                                    <Select><SelectTrigger disabled={isReadOnly}><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>
                                         <SelectItem value="pix">Pix</SelectItem>
                                         <SelectItem value="boleto">Boleto</SelectItem>
                                         <SelectItem value="dinheiro">Dinheiro</SelectItem>
@@ -926,9 +1062,9 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
                                         <SelectItem value="transferencia">Transferência</SelectItem>
                                     </SelectContent></Select>
                                 </div>
-                                <div className="space-y-2"><Label>Nº de Parcelas</Label><Input type="number"/></div>
-                                <div className="space-y-2"><Label>Valor</Label><Input type="number"/></div>
-                                <div className="space-y-2"><Label>Vencimento</Label><Input type="date"/></div>
+                                <div className="space-y-2"><Label>Nº de Parcelas</Label><Input type="number" readOnly={isReadOnly}/></div>
+                                <div className="space-y-2"><Label>Valor</Label><Input type="number" readOnly={isReadOnly}/></div>
+                                <div className="space-y-2"><Label>Vencimento</Label><Input type="date" readOnly={isReadOnly}/></div>
                             </div>
                         </CardContent>
                     </Card>
@@ -938,11 +1074,11 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
                     <Card>
                         <CardHeader><CardTitle>7. Informações Adicionais</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="space-y-2"><Label>Observações ao Tomador</Label><Textarea rows={3} /></div>
-                            <div className="space-y-2"><Label>Observações ao Fisco</Label><Textarea rows={3} /></div>
+                            <div className="space-y-2"><Label>Observações ao Tomador</Label><Textarea rows={3} readOnly={isReadOnly}/></div>
+                            <div className="space-y-2"><Label>Observações ao Fisco</Label><Textarea rows={3} readOnly={isReadOnly}/></div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2"><Label>Nº do Processo</Label><Input /></div>
-                                <div className="space-y-2"><Label>Código CNAE</Label><Input /></div>
+                                <div className="space-y-2"><Label>Nº do Processo</Label><Input readOnly={isReadOnly}/></div>
+                                <div className="space-y-2"><Label>Código CNAE</Label><Input readOnly={isReadOnly}/></div>
                             </div>
                         </CardContent>
                     </Card>
@@ -974,18 +1110,18 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="nf-finalidade">Finalidade</Label>
-                                    <Select><SelectTrigger id="nf-finalidade"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent><SelectItem value="normal">Normal</SelectItem><SelectItem value="complementar">Complementar</SelectItem><SelectItem value="ajuste">Ajuste</SelectItem><SelectItem value="devolucao">Devolução</SelectItem></SelectContent></Select>
+                                    <Select><SelectTrigger id="nf-finalidade" disabled={isReadOnly}><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent><SelectItem value="normal">Normal</SelectItem><SelectItem value="complementar">Complementar</SelectItem><SelectItem value="ajuste">Ajuste</SelectItem><SelectItem value="devolucao">Devolução</SelectItem></SelectContent></Select>
                                 </div>
                                 <div className="space-y-2 col-span-1 md:col-span-2">
                                     <Label htmlFor="nf-natureza">Natureza da Operação (CFOP)</Label>
-                                    <Input id="nf-natureza" />
+                                    <Input id="nf-natureza" readOnly={isReadOnly}/>
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
-                                <div className="space-y-2"><Label htmlFor="nf-modelo">Modelo</Label><Input id="nf-modelo" /></div>
-                                <div className="space-y-2"><Label htmlFor="nf-serie">Série</Label><Input id="nf-serie" value={formData.geral?.serie || ''} onChange={(e) => handleInputChange('geral', 'serie', e.target.value)}/></div>
-                                <div className="space-y-2"><Label htmlFor="nf-numero">Número</Label><Input id="nf-numero" value={formData.geral?.numero || ''} onChange={(e) => handleInputChange('geral', 'numero', e.target.value)}/></div>
-                                <div className="space-y-2"><Label htmlFor="nf-data-emissao">Data de Emissão</Label><Input id="nf-data-emissao" type="datetime-local" value={formData.geral?.dataEmissao || ''} onChange={(e) => handleInputChange('geral', 'dataEmissao', e.target.value)} /></div>
+                                <div className="space-y-2"><Label htmlFor="nf-modelo">Modelo</Label><Input id="nf-modelo" readOnly={isReadOnly}/></div>
+                                <div className="space-y-2"><Label htmlFor="nf-serie">Série</Label><Input id="nf-serie" value={formData.geral?.serie || ''} onChange={(e) => handleInputChange('geral', 'serie', e.target.value)} readOnly={isReadOnly}/></div>
+                                <div className="space-y-2"><Label htmlFor="nf-numero">Número</Label><Input id="nf-numero" value={formData.geral?.numero || ''} onChange={(e) => handleInputChange('geral', 'numero', e.target.value)} readOnly={isReadOnly}/></div>
+                                <div className="space-y-2"><Label htmlFor="nf-data-emissao">Data de Emissão</Label><Input id="nf-data-emissao" type="datetime-local" value={formData.geral?.dataEmissao || ''} onChange={(e) => handleInputChange('geral', 'dataEmissao', e.target.value)} readOnly={isReadOnly}/></div>
                             </div >
                         </CardContent>
                     </Card>
@@ -1003,9 +1139,9 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
                                 <h3 className="text-lg font-medium text-foreground mb-4">{tipoNotaValue === 'entrada' ? 'Emitente' : 'Destinatário'}</h3>
                                 <div className="space-y-4">
                                      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
-                                        <div className="space-y-2"><Label>CNPJ / CPF</Label><Input value={formData[sectionKey]?.cnpj || ''} onChange={(e) => handleInputChange(sectionKey, 'cnpj', e.target.value)} /></div>
-                                        <div className="space-y-2 col-span-1 md:col-span-2"><Label>Razão Social</Label><Input value={formData[sectionKey]?.razaoSocial || ''} onChange={(e) => handleInputChange(sectionKey, 'razaoSocial', e.target.value)} /></div>
-                                        <div className="space-y-2"><Label>Inscrição Estadual</Label><Input /></div>
+                                        <div className="space-y-2"><Label>CNPJ / CPF</Label><Input value={formData[sectionKey]?.cnpj || ''} onChange={(e) => handleInputChange(sectionKey, 'cnpj', e.target.value)} readOnly={isReadOnly}/></div>
+                                        <div className="space-y-2 col-span-1 md:col-span-2"><Label>Razão Social</Label><Input value={formData[sectionKey]?.razaoSocial || ''} onChange={(e) => handleInputChange(sectionKey, 'razaoSocial', e.target.value)} readOnly={isReadOnly}/></div>
+                                        <div className="space-y-2"><Label>Inscrição Estadual</Label><Input readOnly={isReadOnly}/></div>
                                     </div>
                                 </div>
                             </div>
@@ -1014,9 +1150,9 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
                                 <h3 className="text-lg font-medium text-foreground mb-4">{tipoNotaValue === 'entrada' ? 'Destinatário' : 'Emitente'}</h3>
                                 <div className="space-y-4">
                                      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
-                                        <div className="space-y-2"><Label >CNPJ / CPF</Label><Input value={formData[otherSectionKey]?.cnpj || ''} onChange={(e) => handleInputChange(otherSectionKey, 'cnpj', e.target.value)} /></div>
-                                        <div className="space-y-2 col-span-1 md:col-span-2"><Label>Razão Social</Label><Input value={formData[otherSectionKey]?.razaoSocial || ''} onChange={(e) => handleInputChange(otherSectionKey, 'razaoSocial', e.target.value)} /></div>
-                                        <div className="space-y-2"><Label >Inscrição Estadual</Label><Input /></div>
+                                        <div className="space-y-2"><Label >CNPJ / CPF</Label><Input value={formData[otherSectionKey]?.cnpj || ''} onChange={(e) => handleInputChange(otherSectionKey, 'cnpj', e.target.value)} readOnly={isReadOnly}/></div>
+                                        <div className="space-y-2 col-span-1 md:col-span-2"><Label>Razão Social</Label><Input value={formData[otherSectionKey]?.razaoSocial || ''} onChange={(e) => handleInputChange(otherSectionKey, 'razaoSocial', e.target.value)} readOnly={isReadOnly}/></div>
+                                        <div className="space-y-2"><Label >Inscrição Estadual</Label><Input readOnly={isReadOnly}/></div>
                                     </div>
                                 </div>
                             </div>
@@ -1036,62 +1172,29 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
                                     <TableHead>Qtd.</TableHead>
                                     <TableHead>Vl. Unit.</TableHead>
                                     <TableHead className="text-right">Total</TableHead>
-                                    <TableHead className="w-12"></TableHead>
+                                    {!isReadOnly && <TableHead className="w-12"></TableHead>}
                                 </TableRow></TableHeader>
                                 <TableBody>
                                     {productItems.length > 0 ? productItems.map((item) => (
                                         <TableRow key={item.id} className="has-[:focus-visible]:bg-muted/40">
                                             <TableCell className="font-medium">
-                                                <Input value={item.name} onChange={(e) => handleProductChange(item.id, 'name', e.target.value)} className="h-8" />
+                                                <Input value={item.name} onChange={(e) => handleProductChange(item.id, 'name', e.target.value)} className="h-8" readOnly={isReadOnly}/>
                                             </TableCell>
                                             <TableCell>
-                                                <Input type="number" value={item.quantity} onChange={(e) => handleProductChange(item.id, 'quantity', e.target.value)} className="h-8 w-20" />
+                                                <Input type="number" value={item.quantity} onChange={(e) => handleProductChange(item.id, 'quantity', e.target.value)} className="h-8 w-20" readOnly={isReadOnly}/>
                                             </TableCell>
                                             <TableCell>
-                                                <Input type="number" value={item.price} onChange={(e) => handleProductChange(item.id, 'price', e.target.value)} className="h-8 w-24" />
+                                                <Input type="number" value={item.price} onChange={(e) => handleProductChange(item.id, 'price', e.target.value)} className="h-8 w-24" readOnly={isReadOnly}/>
                                             </TableCell>
                                             <TableCell className="text-right font-mono">{item.total.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</TableCell>
-                                            <TableCell><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveProduct(item.id)}><X className="h-4 w-4" /></Button></TableCell>
+                                            {!isReadOnly && <TableCell><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveProduct(item.id)}><X className="h-4 w-4" /></Button></TableCell>}
                                         </TableRow>
                                     )) : (
-                                        <TableRow><TableCell colSpan={5} className="h-24 text-center">Nenhum produto adicionado.</TableCell></TableRow>
+                                        <TableRow><TableCell colSpan={isReadOnly ? 4 : 5} className="h-24 text-center">Nenhum produto adicionado.</TableCell></TableRow>
                                     )}
                                 </TableBody>
                             </Table>
-                            <div className="mt-4 flex justify-end"><Button variant="outline" onClick={handleAddProduct}><Plus className="mr-2 h-4 w-4" /> Adicionar Produto</Button></div>
-                        </CardContent>
-                    </Card>
-                )
-            case 'servicos':
-                return (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Serviços Prestados</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader><TableRow>
-                                    <TableHead className="w-[60%]">Serviço</TableHead>
-                                    <TableHead className="text-right">Valor</TableHead>
-                                    <TableHead className="w-12"></TableHead>
-                                </TableRow></TableHeader>
-                                <TableBody>
-                                    {serviceItems.length > 0 ? serviceItems.map((item) => (
-                                        <TableRow key={item.id} className="has-[:focus-visible]:bg-muted/40">
-                                            <TableCell className="font-medium">
-                                                <Input value={item.name || ''} onChange={(e) => handleServiceChange(item.id, 'name', e.target.value)} className="h-8" />
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <Input type="number" value={item.value || ''} onChange={(e) => handleServiceChange(item.id, 'value', e.target.value)} className="h-8 w-32 text-right" />
-                                            </TableCell>
-                                            <TableCell><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveService(item.id)}><X className="h-4 w-4" /></Button></TableCell>
-                                        </TableRow>
-                                    )) : (
-                                        <TableRow><TableCell colSpan={3} className="h-24 text-center">Nenhum serviço adicionado.</TableCell></TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                            <div className="mt-4 flex justify-end"><Button variant="outline" onClick={handleAddService}><Plus className="mr-2 h-4 w-4" /> Adicionar Serviço</Button></div>
+                            {!isReadOnly && <div className="mt-4 flex justify-end"><Button variant="outline" onClick={handleAddProduct}><Plus className="mr-2 h-4 w-4" /> Adicionar Produto</Button></div>}
                         </CardContent>
                     </Card>
                 )
@@ -1121,7 +1224,7 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="transp-modalidade">Modalidade do Frete</Label>
-                                    <Select><SelectTrigger id="transp-modalidade"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>
+                                    <Select><SelectTrigger id="transp-modalidade" disabled={isReadOnly}><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>
                                         <SelectItem value="0">Contratação do Frete por conta do Remetente (CIF)</SelectItem>
                                         <SelectItem value="1">Contratação do Frete por conta do Destinatário (FOB)</SelectItem>
                                         <SelectItem value="2">Contratação do Frete por conta de Terceiros</SelectItem>
@@ -1132,22 +1235,22 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
                                 </div>
                                 <div className="space-y-2 col-span-2">
                                     <Label htmlFor="transp-transportadora">Transportadora</Label>
-                                    <Input id="transp-transportadora" placeholder="Razão Social da Transportadora"/>
+                                    <Input id="transp-transportadora" placeholder="Razão Social da Transportadora" readOnly={isReadOnly}/>
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="space-y-2"><Label htmlFor="transp-cnpj">CNPJ</Label><Input id="transp-cnpj"/></div>
-                                <div className="space-y-2"><Label htmlFor="transp-placa">Placa do Veículo</Label><Input id="transp-placa"/></div>
-                                <div className="space-y-2"><Label htmlFor="transp-uf-veiculo">UF do Veículo</Label><Input id="transp-uf-veiculo"/></div>
+                                <div className="space-y-2"><Label htmlFor="transp-cnpj">CNPJ</Label><Input id="transp-cnpj" readOnly={isReadOnly}/></div>
+                                <div className="space-y-2"><Label htmlFor="transp-placa">Placa do Veículo</Label><Input id="transp-placa" readOnly={isReadOnly}/></div>
+                                <div className="space-y-2"><Label htmlFor="transp-uf-veiculo">UF do Veículo</Label><Input id="transp-uf-veiculo" readOnly={isReadOnly}/></div>
                             </div>
                             <Separator className="my-4" />
                             <h4 className="text-md font-semibold">Volumes</h4>
                             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                                <div className="space-y-2"><Label htmlFor="vol-qtd">Quantidade</Label><Input id="vol-qtd" type="number"/></div>
-                                <div className="space-y-2"><Label htmlFor="vol-especie">Espécie</Label><Input id="vol-especie"/></div>
-                                <div className="space-y-2"><Label htmlFor="vol-marca">Marca</Label><Input id="vol-marca"/></div>
-                                <div className="space-y-2"><Label htmlFor="vol-peso-bruto">Peso Bruto</Label><Input id="vol-peso-bruto" type="number"/></div>
-                                <div className="space-y-2"><Label htmlFor="vol-peso-liquido">Peso Líquido</Label><Input id="vol-peso-liquido" type="number"/></div>
+                                <div className="space-y-2"><Label htmlFor="vol-qtd">Quantidade</Label><Input id="vol-qtd" type="number" readOnly={isReadOnly}/></div>
+                                <div className="space-y-2"><Label htmlFor="vol-especie">Espécie</Label><Input id="vol-especie" readOnly={isReadOnly}/></div>
+                                <div className="space-y-2"><Label htmlFor="vol-marca">Marca</Label><Input id="vol-marca" readOnly={isReadOnly}/></div>
+                                <div className="space-y-2"><Label htmlFor="vol-peso-bruto">Peso Bruto</Label><Input id="vol-peso-bruto" type="number" readOnly={isReadOnly}/></div>
+                                <div className="space-y-2"><Label htmlFor="vol-peso-liquido">Peso Líquido</Label><Input id="vol-peso-liquido" type="number" readOnly={isReadOnly}/></div>
                             </div>
                         </CardContent>
                     </Card>
@@ -1160,7 +1263,7 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                                 <div className="space-y-2">
                                     <Label htmlFor="fat-tipo-pag">Tipo de Pagamento</Label>
-                                    <Select><SelectTrigger id="fat-tipo-pag"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>
+                                    <Select><SelectTrigger id="fat-tipo-pag" disabled={isReadOnly}><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>
                                         <SelectItem value="dinheiro">Dinheiro</SelectItem>
                                         <SelectItem value="cartao">Cartão</SelectItem>
                                         <SelectItem value="boleto">Boleto</SelectItem>
@@ -1168,9 +1271,9 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
                                         <SelectItem value="outros">Outros</SelectItem>
                                     </SelectContent></Select>
                                 </div>
-                                <div className="space-y-2"><Label htmlFor="fat-valor">Valor</Label><Input id="fat-valor" type="number"/></div>
-                                <div className="space-y-2"><Label htmlFor="fat-numero">Nº da Fatura</Label><Input id="fat-numero"/></div>
-                                <div className="space-y-2"><Label htmlFor="fat-vencimento">Vencimento</Label><Input id="fat-vencimento" type="date"/></div>
+                                <div className="space-y-2"><Label htmlFor="fat-valor">Valor</Label><Input id="fat-valor" type="number" readOnly={isReadOnly}/></div>
+                                <div className="space-y-2"><Label htmlFor="fat-numero">Nº da Fatura</Label><Input id="fat-numero" readOnly={isReadOnly}/></div>
+                                <div className="space-y-2"><Label htmlFor="fat-vencimento">Vencimento</Label><Input id="fat-vencimento" type="date" readOnly={isReadOnly}/></div>
                             </div>
                             <div className="text-center pt-4">
                                 <p className="text-sm text-muted-foreground">Funcionalidade de parcelas em desenvolvimento.</p>
@@ -1185,15 +1288,15 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
                                 <Label htmlFor="info-complementares">Informações Complementares de Interesse do Contribuinte</Label>
-                                <Textarea id="info-complementares" rows={4} />
+                                <Textarea id="info-complementares" rows={4} readOnly={isReadOnly}/>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="info-fisco">Informações Adicionais de Interesse do Fisco</Label>
-                                <Textarea id="info-fisco" rows={4} />
+                                <Textarea id="info-fisco" rows={4} readOnly={isReadOnly}/>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="info-obs">Observações Internas</Label>
-                                <Textarea id="info-obs" rows={2} />
+                                <Textarea id="info-obs" rows={2} readOnly={isReadOnly}/>
                             </div>
                         </CardContent>
                     </Card>
@@ -1205,12 +1308,16 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
 
     if (!tipoNota) return null;
 
+    const dialogTitle = isReadOnly ? `Visualizar Nota Fiscal ${notaLabel}` :
+                        editingNota ? `Editar Nota Fiscal ${notaLabel}` :
+                        `Lançamento de Nota Fiscal ${notaLabel}`;
+
     return (
       <DialogContent className="max-w-6xl h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Lançamento de Nota Fiscal {notaLabel}</DialogTitle>
+          <DialogTitle>{dialogTitle}</DialogTitle>
           <DialogDescription>
-            Preencha os dados abaixo para realizar o lançamento da nota fiscal.
+            {isReadOnly ? "Visualize os dados da nota fiscal." : "Preencha os dados abaixo para realizar o lançamento da nota fiscal."}
           </DialogDescription>
         </DialogHeader>
         
@@ -1231,7 +1338,7 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
             </aside>
             <main className="overflow-y-auto">
                 <ScrollArea className="h-full pr-6">
-                    {tipoNota === 'servico' ? renderServiceForm() : renderProductForm()}
+                    {tipoNotaValue === 'servico' ? renderServiceForm() : renderProductForm()}
                 </ScrollArea>
             </main>
         </div>
@@ -1239,7 +1346,7 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
         <DialogFooter className="border-t pt-4 mt-auto">
             <div className="flex w-full justify-between items-center">
                 <div className="text-sm text-muted-foreground space-y-1">
-                   {tipoNota === 'servico' ? (
+                   {tipoNotaValue === 'servico' ? (
                         <>
                             <p>Total Serviços: <span className="font-semibold text-foreground">{totalServicos.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span></p>
                             <p>Total Descontos: <span className="font-semibold text-foreground">({totalDescontos.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})})</span></p>
@@ -1257,7 +1364,7 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
                     <DialogClose asChild>
                         <Button variant="outline">Cancelar</Button>
                     </DialogClose>
-                    <Button onClick={handleSave}>Salvar Lançamento</Button>
+                    {!isReadOnly && <Button onClick={handleSave}>Salvar Lançamento</Button>}
                 </div>
             </div>
         </DialogFooter>
