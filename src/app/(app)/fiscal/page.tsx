@@ -15,30 +15,35 @@ import { useToast } from "@/hooks/use-toast";
 
 const actions = [
     {
+        id: "importar-xml",
         icon: <Upload className="h-8 w-8" />,
         label: "Importar XML",
         href: "#",
         color: "text-sky-600 bg-sky-100/80 group-hover:bg-sky-600 dark:bg-sky-900/40 dark:text-sky-400 dark:group-hover:bg-sky-500",
     },
     {
+        id: "nota-produto",
         icon: <PackagePlus className="h-8 w-8" />,
         label: "Nota Produto",
         href: "#",
         color: "text-emerald-600 bg-emerald-100/80 group-hover:bg-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400 dark:group-hover:bg-emerald-500",
     },
     {
+        id: "nota-saida",
         icon: <FileMinus className="h-8 w-8" />,
         label: "Nota Saída",
         href: "#",
         color: "text-amber-600 bg-amber-100/80 group-hover:bg-amber-600 dark:bg-amber-900/40 dark:text-amber-400 dark:group-hover:bg-amber-500",
     },
     {
+        id: "nota-servico",
         icon: <Wrench className="h-8 w-8" />,
         label: "Nota Serviço",
         href: "#",
         color: "text-indigo-600 bg-indigo-100/80 group-hover:bg-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400 dark:group-hover:bg-indigo-500",
     },
     {
+        id: "recibos",
         icon: <Receipt className="h-8 w-8" />,
         label: "Recibos/Cupons",
         href: "#",
@@ -71,6 +76,21 @@ const mockRecibos = [
 
 
 export default function FiscalPage() {
+    const { toast } = useToast();
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = event.target.files;
+        if (files && files.length > 0) {
+            const fileNames = Array.from(files).map(file => file.name).join(', ');
+            toast({
+                title: "Arquivos Selecionados",
+                description: `Você selecionou: ${fileNames}`,
+            });
+            // Reset the input value to allow selecting the same file again
+            event.target.value = '';
+        }
+    };
+    
     return (
       <div className="space-y-6">
         <div className="space-y-1">
@@ -83,7 +103,7 @@ export default function FiscalPage() {
         <Card>
             <CardContent className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 pt-6">
                 {actions.map((action) => (
-                    <ActionTile key={action.label} {...action} />
+                    <ActionTile key={action.label} {...action} onFileChange={action.id === 'importar-xml' ? handleFileChange : undefined} />
                 ))}
             </CardContent>
         </Card>
@@ -211,9 +231,22 @@ export default function FiscalPage() {
     );
 }
 
-function ActionTile({ icon, label, href = "#", color }: { icon: React.ReactNode, label: string, href?: string, color: string }) {
-  return (
-    <Link href={href}>
+function ActionTile({ 
+    id,
+    icon, 
+    label, 
+    href = "#", 
+    color,
+    onFileChange
+}: { 
+    id: string,
+    icon: React.ReactNode, 
+    label: string, 
+    href?: string, 
+    color: string,
+    onFileChange?: (event: React.ChangeEvent<HTMLInputElement>) => void
+}) {
+    const tileContent = (
         <div className="group flex h-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border bg-card p-6 text-card-foreground shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
             <div className={cn(
                 "rounded-full p-3 transition-colors group-hover:text-primary-foreground",
@@ -223,8 +256,32 @@ function ActionTile({ icon, label, href = "#", color }: { icon: React.ReactNode,
             </div>
             <span className="text-center text-sm font-semibold">{label}</span>
         </div>
-    </Link>
-  )
+    );
+
+    if (id === 'importar-xml' && onFileChange) {
+        const inputId = "xml-upload";
+        return (
+            <div>
+                <label htmlFor={inputId} className="cursor-pointer">
+                    {tileContent}
+                </label>
+                <Input 
+                    id={inputId} 
+                    type="file" 
+                    className="sr-only" 
+                    accept=".xml" 
+                    multiple 
+                    onChange={onFileChange}
+                />
+            </div>
+        );
+    }
+
+    return (
+        <Link href={href}>
+           {tileContent}
+        </Link>
+    )
 }
 
 function ListHeader({ title, description, searchPlaceholder, buttonLabel, buttonIcon }: { title: string, description: string, searchPlaceholder: string, buttonLabel: string, buttonIcon: React.ReactNode}) {
@@ -290,3 +347,5 @@ function RecentDocumentsTable({ headers, data, renderRow }: { headers: string[],
         </div>
     )
 }
+
+    
