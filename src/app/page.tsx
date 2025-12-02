@@ -2,13 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Building2, Mail, Lock, User, Phone, MessageSquare } from 'lucide-react';
+import { Building2, Mail, Lock, Eye, EyeOff, Phone, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -38,114 +37,114 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
-      <Card className="w-full max-w-4xl grid lg:grid-cols-2 shadow-2xl overflow-hidden rounded-2xl">
-        {/* Left Panel */}
-        <div className="hidden lg:flex flex-col justify-center p-12 bg-primary text-primary-foreground relative overflow-hidden">
-          <div className="relative z-10 space-y-4">
-            <div className="flex items-center gap-3 text-white">
-              <Building2 className="h-10 w-10" />
-              <h1 className="text-4xl font-bold font-headline">EscopoV3</h1>
+    <div className="flex min-h-screen w-full flex-col items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md space-y-8">
+        <div className="flex flex-col items-center text-center">
+            <div className="flex items-center gap-3 text-foreground mb-4">
+                <Building2 className="h-8 w-8" />
+                <h1 className="text-3xl font-bold font-headline">EscopoV3</h1>
             </div>
-            <h2 className="text-3xl font-bold">Bem-vindo(a) de volta!</h2>
-            <p className="text-primary-foreground/80">
-              Acesse sua conta para gerenciar sua contabilidade com eficiência e segurança.
-            </p>
-          </div>
+            <p className="text-muted-foreground">Sua plataforma completa de gestão contábil.</p>
         </div>
-        
-        {/* Right Panel */}
-        <div className="p-8 sm:p-12 bg-card flex flex-col justify-center">
-            <div className="space-y-2 mb-8">
-              <h2 className="text-3xl font-bold">{isLogin ? 'Login' : 'Criar Conta'}</h2>
-              <p className="text-muted-foreground">
-                {isLogin ? 'Insira seus dados para acessar o sistema.' : 'Preencha os campos para se registrar.'}
-              </p>
+
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-2xl">{isLogin ? 'Login' : 'Criar Conta'}</CardTitle>
+            <CardDescription>
+              {isLogin ? 'Insira seus dados para acessar o sistema.' : 'Preencha os campos para se registrar.'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-4">
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input id="email" type="email" placeholder="E-mail" required className="pl-10" />
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input id="password" type={showPassword ? "text" : "password"} placeholder="Senha" required className="pl-10 pr-10" />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
+              {!isLogin && (
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input id="confirmPassword" type="password" placeholder="Confirmar Senha" required className="pl-10" />
+                </div>
+              )}
             </div>
 
-            <div className="space-y-6">
-                <div className="space-y-4">
-                    <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <Input id="email" type="email" placeholder="E-mail" required className="pl-10" />
-                    </div>
-                    <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <Input id="password" type={showPassword ? "text" : "password"} placeholder="Senha" required className="pl-10" />
-                    </div>
-                     {!isLogin && (
-                        <div className="relative">
-                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                            <Input id="confirmPassword" type="password" placeholder="Confirmar Senha" required className="pl-10" />
-                        </div>
-                    )}
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center space-x-2">
+                <Checkbox id="remember-me" />
+                <Label htmlFor="remember-me" className="font-normal text-muted-foreground">Lembrar-me</Label>
+              </div>
+              {isLogin && (
+                <Link href="#" className="font-medium text-primary hover:underline">
+                  Esqueceu sua senha?
+                </Link>
+              )}
+            </div>
+
+            <div className="space-y-4 pt-4">
+              <Button asChild type="submit" className="w-full font-semibold text-lg py-6">
+                <Link href="/dashboard">{isLogin ? 'Entrar' : 'Cadastrar'}</Link>
+              </Button>
+              
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
                 </div>
-
-                <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center space-x-2">
-                    <Checkbox id="remember-me" />
-                    <Label htmlFor="remember-me" className="font-normal text-muted-foreground">Lembrar-me</Label>
-                    </div>
-                    {isLogin && (
-                    <Link href="#" className="font-medium text-primary hover:underline">
-                        Esqueceu sua senha?
-                    </Link>
-                    )}
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">
+                    Ou continue com
+                  </span>
                 </div>
-
-                <div className="space-y-4">
-                    <Button asChild type="submit" className="w-full font-semibold text-lg py-6">
-                        <Link href="/dashboard">{isLogin ? 'Entrar' : 'Cadastrar'}</Link>
-                    </Button>
-                    
-                    <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-card px-2 text-muted-foreground">
-                            Ou continue com
-                            </span>
-                        </div>
-                    </div>
-
-                    <Button variant="outline" className="w-full">
-                    <GoogleIcon className="mr-2 h-5 w-5" />
-                    Login com Google
-                    </Button>
-                </div>
-
-                <p className="text-center text-sm text-muted-foreground">
-                    {isLogin ? 'Não tem uma conta?' : 'Já tem uma conta?'}{' '}
-                    <button
-                        onClick={() => setIsLogin(!isLogin)}
-                        className="font-medium text-primary hover:underline"
-                    >
-                        {isLogin ? 'Crie uma agora' : 'Faça login'}
-                    </button>
-                </p>
-                
-                <div className="mt-8 text-center text-sm text-muted-foreground">
-                  <p className="mb-4">Precisa de Ajuda?</p>
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
-                      <a href="tel:+5562998554529" className="flex items-center gap-2 hover:text-primary transition-colors">
-                          <Phone className="h-4 w-4" />
-                          +55 (62) 99855-4529
-                      </a>
-                      <a href="mailto:geovaniwn@gmail.com" className="flex items-center gap-2 hover:text-primary transition-colors">
-                          <Mail className="h-4 w-4" />
-                          geovaniwn@gmail.com
-                      </a>
-                      <a href="https://wa.me/5562992127752" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-primary transition-colors">
-                          <MessageSquare className="h-4 w-4" />
-                          WhatsApp
-                      </a>
-                  </div>
               </div>
 
+              <Button variant="outline" className="w-full">
+                <GoogleIcon className="mr-2 h-5 w-5" />
+                Login com Google
+              </Button>
             </div>
-        </div>
-      </Card>
+
+          </CardContent>
+        </Card>
+
+        <p className="text-center text-sm text-muted-foreground">
+          {isLogin ? 'Não tem uma conta?' : 'Já tem uma conta?'}{' '}
+          <button
+            onClick={() => setIsLogin(!isLogin)}
+            className="font-medium text-primary hover:underline"
+          >
+            {isLogin ? 'Crie uma agora' : 'Faça login'}
+          </button>
+        </p>
+      </div>
+
+       <footer className="mt-16 text-center text-sm text-muted-foreground">
+            <p className="mb-4">Precisa de Ajuda?</p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
+                <a href="tel:+5562998554529" className="flex items-center gap-2 hover:text-primary transition-colors">
+                    <Phone className="h-4 w-4" />
+                    +55 (62) 99855-4529
+                </a>
+                <a href="mailto:geovaniwn@gmail.com" className="flex items-center gap-2 hover:text-primary transition-colors">
+                    <Mail className="h-4 w-4" />
+                    geovaniwn@gmail.com
+                </a>
+                <a href="https://wa.me/5562992127752" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-primary transition-colors">
+                    <MessageSquare className="h-4 w-4" />
+                    WhatsApp
+                </a>
+            </div>
+             <p className="mt-8 text-xs">&copy; {new Date().getFullYear()} EscopoV3. Todos os direitos reservados.</p>
+        </footer>
     </div>
   );
 }
