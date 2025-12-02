@@ -8,6 +8,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
+import { ptBR } from 'date-fns/locale';
 
 interface AgendaEvent {
     id: number;
@@ -58,6 +59,7 @@ export default function Agenda() {
             selected={date}
             onSelect={setDate}
             className="rounded-2xl border bg-card"
+            locale={ptBR}
             classNames={{
                 day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
                 day_today: "bg-primary/20 text-primary",
