@@ -97,6 +97,16 @@
       transform: translateY(-2000px);
     }
   }
+
+  @keyframes pulse-slow {
+    0%, 100% { transform: scale(1); opacity: 0.2; }
+    50% { transform: scale(1.1); opacity: 0.3; }
+  }
+
+  @keyframes pulse-slower {
+    0%, 100% { transform: scale(1); opacity: 0.15; }
+    50% { transform: scale(1.05); opacity: 0.25; }
+  }
   
   .stars, .stars2, .stars3 {
     position: absolute;
@@ -115,13 +125,15 @@
     background-repeat: repeat;
     background-size: 200px 200px;
     animation: move-stars 200s linear infinite;
+    opacity: 0.7;
   }
 
   .stars2 {
-    background-image: radial-gradient(1px 1px at 50px 50px, #eee, rgba(0,0,0,0)), radial-gradient(1px 1px at 100px 100px, #fff, rgba(0,0,0,0)), radial-gradient(2px 2px at 150px 150px, #ddd, rgba(0,0,0,0));
+    background-image: radial-gradient(1px 1px at 50px 50px, #eee, rgba(0,0d,0,0)), radial-gradient(1px 1px at 100px 100px, #fff, rgba(0,0,0,0)), radial-gradient(2px 2px at 150px 150px, #ddd, rgba(0,0,0,0));
     background-repeat: repeat;
     background-size: 300px 300px;
     animation: move-stars 150s linear infinite;
+     opacity: 0.5;
   }
   
   .stars3 {
@@ -129,5 +141,13 @@
     background-repeat: repeat;
     background-size: 400px 400px;
     animation: move-stars 100s linear infinite;
+     opacity: 0.4;
+  }
+
+  .animate-pulse-slow {
+    animation: pulse-slow 8s infinite ease-in-out;
+  }
+  .animate-pulse-slower {
+    animation: pulse-slower 10s infinite ease-in-out;
   }
 }
