@@ -476,7 +476,7 @@ function LancamentoProdutoDialog() {
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
-            <Accordion type="multiple" collapsible className="w-full" defaultValue={['item-1']}>
+            <Accordion type="multiple" className="w-full" defaultValue={['item-1']}>
                 {/* 1. Dados Gerais */}
                 <AccordionItem value="item-1">
                     <AccordionTrigger className="text-lg font-semibold text-primary">Dados Gerais da Nota</AccordionTrigger>
@@ -746,3 +746,6 @@ function LancamentoProdutoDialog() {
 
 
 
+
+
+    
