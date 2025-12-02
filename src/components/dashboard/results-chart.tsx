@@ -1,6 +1,5 @@
 'use client';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { useCompany } from '@/hooks/use-company';
 
 import {
   Card,
@@ -15,14 +14,7 @@ import {
     ChartTooltipContent,
   } from "@/components/ui/chart"
 
-const defaultChartData: { month: string; revenue: number; expenses: number }[] = [
-    { month: 'Jan', revenue: 186, expenses: 80 },
-    { month: 'Fev', revenue: 305, expenses: 200 },
-    { month: 'Mar', revenue: 237, expenses: 120 },
-    { month: 'Abr', revenue: 73, expenses: 190 },
-    { month: 'Mai', revenue: 209, expenses: 130 },
-    { month: 'Jun', revenue: 214, expenses: 140 },
-];
+type ChartData = { month: string; revenue: number; expenses: number };
 
 const chartConfig = {
     revenue: {
@@ -35,10 +27,11 @@ const chartConfig = {
     },
   }
 
-export default function ResultsChart() {
-  const { useScopedData } = useCompany();
-  const [chartData, setChartData] = useScopedData('dashboard-chart-data', defaultChartData);
-  
+interface ResultsChartProps {
+    data: ChartData[];
+}
+
+export default function ResultsChart({ data }: ResultsChartProps) {
   return (
     <Card>
       <CardHeader>
@@ -47,9 +40,9 @@ export default function ResultsChart() {
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[250px] w-full">
-            {chartData.length > 0 ? (
+            {data.length > 0 ? (
                 <AreaChart
-                    data={chartData}
+                    data={data}
                     margin={{
                         top: 10,
                         right: 30,
