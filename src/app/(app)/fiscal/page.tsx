@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from "react";
@@ -369,16 +370,6 @@ function RecentDocumentsTable({
     )
 }
 
-const sections = [
-    { id: 'geral', name: 'Dados Gerais' },
-    { id: 'emitente', name: 'Emitente / Dest.' },
-    { id: 'produtos', name: 'Itens da Nota' },
-    { id: 'tributos', name: 'Tributos' },
-    { id: 'transporte', name: 'Transporte' },
-    { id: 'faturas', name: 'Faturas' },
-    { id: 'info', name: 'Informações Adicionais' },
-];
-
 interface ProductItem {
     id: number;
     name: string;
@@ -390,7 +381,6 @@ interface ProductItem {
 
 function LancamentoProdutoDialog({ onOpenChange }: { onOpenChange: (open: boolean) => void }) {
     const { toast } = useToast();
-    const [currentSection, setCurrentSection] = useState('geral');
     const [productItems, setProductItems] = useState<ProductItem[]>([]);
 
     const handleAddProduct = () => {
@@ -414,7 +404,9 @@ function LancamentoProdutoDialog({ onOpenChange }: { onOpenChange: (open: boolea
                 const updatedItem = { ...item, [field]: value };
                 const quantity = typeof updatedItem.quantity === 'string' ? parseFloat(updatedItem.quantity) : updatedItem.quantity;
                 const price = typeof updatedItem.price === 'string' ? parseFloat(updatedItem.price) : updatedItem.price;
-                updatedItem.total = (quantity || 0) * (price || 0);
+                if (!isNaN(quantity) && !isNaN(price)) {
+                    updatedItem.total = quantity * price;
+                }
                 return updatedItem;
             }
             return item;
@@ -436,7 +428,7 @@ function LancamentoProdutoDialog({ onOpenChange }: { onOpenChange: (open: boolea
     const totalNota = totalProdutos;
   
     return (
-      <DialogContent className="max-w-6xl h-[90vh] flex flex-col">
+      <DialogContent className="max-w-6xl">
         <DialogHeader>
           <DialogTitle>Lançamento de Nota Fiscal de Produto</DialogTitle>
           <DialogDescription>
@@ -444,221 +436,216 @@ function LancamentoProdutoDialog({ onOpenChange }: { onOpenChange: (open: boolea
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-6 flex-1 min-h-0">
-            <aside className="hidden md:flex flex-col gap-1 border-r pr-4">
-                {sections.map((section) => (
-                    <Button 
-                        key={section.id} 
-                        variant={currentSection === section.id ? "secondary" : "ghost"}
-                        className="justify-start"
-                        onClick={() => setCurrentSection(section.id)}
-                    >
-                        {section.name}
-                    </Button>
-                ))}
-            </aside>
+        <Tabs defaultValue="geral" className="w-full">
+          <TabsList className="grid w-full grid-cols-7">
+            <TabsTrigger value="geral">Dados Gerais</TabsTrigger>
+            <TabsTrigger value="emitente">Emitente / Dest.</TabsTrigger>
+            <TabsTrigger value="produtos">Itens da Nota</TabsTrigger>
+            <TabsTrigger value="tributos">Tributos</TabsTrigger>
+            <TabsTrigger value="transporte">Transporte</TabsTrigger>
+            <TabsTrigger value="faturas">Faturas</TabsTrigger>
+            <TabsTrigger value="info">Info. Adicionais</TabsTrigger>
+          </TabsList>
+          
+          <div className="max-h-[60vh] overflow-y-auto p-1">
+            <TabsContent value="geral">
+              <Card>
+                  <CardHeader><CardTitle>Dados Gerais da Nota</CardTitle></CardHeader>
+                  <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
+                          <div className="space-y-2">
+                              <Label htmlFor="nf-tipo">Tipo da Nota</Label>
+                              <Select><SelectTrigger id="nf-tipo"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent><SelectItem value="entrada">Entrada</SelectItem><SelectItem value="saida">Saída</SelectItem></SelectContent></Select>
+                          </div>
+                          <div className="space-y-2">
+                              <Label htmlFor="nf-finalidade">Finalidade</Label>
+                              <Select><SelectTrigger id="nf-finalidade"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent><SelectItem value="normal">Normal</SelectItem><SelectItem value="complementar">Complementar</SelectItem><SelectItem value="ajuste">Ajuste</SelectItem><SelectItem value="devolucao">Devolução</SelectItem></SelectContent></Select>
+                          </div>
+                          <div className="space-y-2 col-span-1 md:col-span-2">
+                              <Label htmlFor="nf-natureza">Natureza da Operação (CFOP)</Label>
+                              <Input id="nf-natureza" />
+                          </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
+                          <div className="space-y-2"><Label htmlFor="nf-modelo">Modelo</Label><Input id="nf-modelo" /></div>
+                          <div className="space-y-2"><Label htmlFor="nf-serie">Série</Label><Input id="nf-serie" /></div>
+                          <div className="space-y-2"><Label htmlFor="nf-numero">Número</Label><Input id="nf-numero" /></div>
+                          <div className="space-y-2"><Label htmlFor="nf-data-emissao">Data de Emissão</Label><Input id="nf-data-emissao" type="datetime-local" /></div>
+                      </div >
+                  </CardContent>
+              </Card>
+            </TabsContent>
 
-            <ScrollArea className="h-full">
-                <div className="space-y-6 pr-4">
-                    {currentSection === 'geral' && (
-                        <Card>
-                            <CardHeader><CardTitle>Dados Gerais da Nota</CardTitle></CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="nf-tipo">Tipo da Nota</Label>
-                                        <Select><SelectTrigger id="nf-tipo"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent><SelectItem value="entrada">Entrada</SelectItem><SelectItem value="saida">Saída</SelectItem></SelectContent></Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="nf-finalidade">Finalidade</Label>
-                                        <Select><SelectTrigger id="nf-finalidade"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent><SelectItem value="normal">Normal</SelectItem><SelectItem value="complementar">Complementar</SelectItem><SelectItem value="ajuste">Ajuste</SelectItem><SelectItem value="devolucao">Devolução</SelectItem></SelectContent></Select>
-                                    </div>
-                                    <div className="space-y-2 col-span-1 md:col-span-2">
-                                        <Label htmlFor="nf-natureza">Natureza da Operação (CFOP)</Label>
-                                        <Input id="nf-natureza" />
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
-                                    <div className="space-y-2"><Label htmlFor="nf-modelo">Modelo</Label><Input id="nf-modelo" /></div>
-                                    <div className="space-y-2"><Label htmlFor="nf-serie">Série</Label><Input id="nf-serie" /></div>
-                                    <div className="space-y-2"><Label htmlFor="nf-numero">Número</Label><Input id="nf-numero" /></div>
-                                    <div className="space-y-2"><Label htmlFor="nf-data-emissao">Data de Emissão</Label><Input id="nf-data-emissao" type="datetime-local" /></div>
-                                </div >
-                            </CardContent>
-                        </Card>
-                    )}
+            <TabsContent value="emitente">
+              <Card>
+                  <CardHeader><CardTitle>Dados do Emitente / Destinatário</CardTitle></CardHeader>
+                  <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
+                          <div className="space-y-2"><Label htmlFor="emit-cnpj">CNPJ / CPF</Label><Input id="emit-cnpj" /></div>
+                          <div className="space-y-2 col-span-1 md:col-span-2"><Label htmlFor="emit-razao-social">Razão Social</Label><Input id="emit-razao-social" /></div>
+                          <div className="space-y-2"><Label htmlFor="emit-ie">Inscrição Estadual</Label><Input id="emit-ie" /></div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
+                          <div className="space-y-2"><Label htmlFor="emit-cep">CEP</Label><Input id="emit-cep" /></div>
+                          <div className="space-y-2 col-span-1 md:col-span-2"><Label htmlFor="emit-logradouro">Logradouro</Label><Input id="emit-logradouro" /></div>
+                          <div className="space-y-2"><Label htmlFor="emit-numero">Número</Label><Input id="emit-numero" /></div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
+                          <div className="space-y-2"><Label htmlFor="emit-bairro">Bairro</Label><Input id="emit-bairro" /></div>
+                          <div className="space-y-2"><Label htmlFor="emit-cidade">Cidade</Label><Input id="emit-cidade" /></div>
+                          <div className="space-y-2"><Label htmlFor="emit-uf">UF</Label><Input id="emit-uf" /></div>
+                          <div className="space-y-2">
+                              <Label htmlFor="emit-regime">Regime Tributário</Label>
+                              <Select><SelectTrigger id="emit-regime"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent><SelectItem value="simples">Simples Nacional</SelectItem><SelectItem value="presumido">Lucro Presumido</SelectItem><SelectItem value="real">Lucro Real</SelectItem></SelectContent></Select>
+                          </div>
+                      </div>
+                  </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="produtos">
+              <Card>
+                  <CardHeader><CardTitle>Itens da Nota</CardTitle></CardHeader>
+                  <CardContent>
+                      <Table>
+                          <TableHeader><TableRow>
+                              <TableHead className="w-[40%]">Produto</TableHead>
+                              <TableHead>Qtd.</TableHead>
+                              <TableHead>Vl. Unit.</TableHead>
+                              <TableHead className="text-right">Total</TableHead>
+                              <TableHead className="w-12"></TableHead>
+                          </TableRow></TableHeader>
+                          <TableBody>
+                              {productItems.length > 0 ? productItems.map((item) => (
+                                  <TableRow key={item.id} className="has-[:focus-visible]:bg-muted/40">
+                                      <TableCell className="font-medium">
+                                          <Input value={item.name} onChange={(e) => handleProductChange(item.id, 'name', e.target.value)} className="h-8" />
+                                      </TableCell>
+                                      <TableCell>
+                                          <Input type="number" value={item.quantity} onChange={(e) => handleProductChange(item.id, 'quantity', e.target.value)} className="h-8 w-20" />
+                                      </TableCell>
+                                      <TableCell>
+                                          <Input type="number" value={item.price} onChange={(e) => handleProductChange(item.id, 'price', e.target.value)} className="h-8 w-24" />
+                                      </TableCell>
+                                      <TableCell className="text-right font-mono">{item.total.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</TableCell>
+                                      <TableCell><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveProduct(item.id)}><X className="h-4 w-4" /></Button></TableCell>
+                                  </TableRow>
+                              )) : (
+                                  <TableRow><TableCell colSpan={5} className="h-24 text-center">Nenhum produto adicionado.</TableCell></TableRow>
+                              )}
+                          </TableBody>
+                      </Table>
+                      <div className="mt-4 flex justify-end"><Button variant="outline" onClick={handleAddProduct}><Plus className="mr-2 h-4 w-4" /> Adicionar Produto</Button></div>
+                  </CardContent>
+              </Card>
+            </TabsContent>
 
-                    {currentSection === 'emitente' && (
-                         <Card>
-                            <CardHeader><CardTitle>Dados do Emitente / Destinatário</CardTitle></CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
-                                    <div className="space-y-2"><Label htmlFor="emit-cnpj">CNPJ / CPF</Label><Input id="emit-cnpj" /></div>
-                                    <div className="space-y-2 col-span-1 md:col-span-2"><Label htmlFor="emit-razao-social">Razão Social</Label><Input id="emit-razao-social" /></div>
-                                    <div className="space-y-2"><Label htmlFor="emit-ie">Inscrição Estadual</Label><Input id="emit-ie" /></div>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
-                                    <div className="space-y-2"><Label htmlFor="emit-cep">CEP</Label><Input id="emit-cep" /></div>
-                                    <div className="space-y-2 col-span-1 md:col-span-2"><Label htmlFor="emit-logradouro">Logradouro</Label><Input id="emit-logradouro" /></div>
-                                    <div className="space-y-2"><Label htmlFor="emit-numero">Número</Label><Input id="emit-numero" /></div>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
-                                    <div className="space-y-2"><Label htmlFor="emit-bairro">Bairro</Label><Input id="emit-bairro" /></div>
-                                    <div className="space-y-2"><Label htmlFor="emit-cidade">Cidade</Label><Input id="emit-cidade" /></div>
-                                    <div className="space-y-2"><Label htmlFor="emit-uf">UF</Label><Input id="emit-uf" /></div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="emit-regime">Regime Tributário</Label>
-                                        <Select><SelectTrigger id="emit-regime"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent><SelectItem value="simples">Simples Nacional</SelectItem><SelectItem value="presumido">Lucro Presumido</SelectItem><SelectItem value="real">Lucro Real</SelectItem></SelectContent></Select>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
+            <TabsContent value="tributos">
+              <Card>
+                  <CardHeader><CardTitle>Tributos da Nota</CardTitle></CardHeader>
+                  <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="space-y-2"><Label htmlFor="trib-bc-icms">Base ICMS</Label><Input id="trib-bc-icms" readOnly value="R$ 0,00" /></div>
+                          <div className="space-y-2"><Label htmlFor="trib-valor-icms">Valor ICMS</Label><Input id="trib-valor-icms" readOnly value="R$ 0,00" /></div>
+                          <div className="space-y-2"><Label htmlFor="trib-bc-st">Base ICMS ST</Label><Input id="trib-bc-st" readOnly value="R$ 0,00" /></div>
+                          <div className="space-y-2"><Label htmlFor="trib-valor-st">Valor ICMS ST</Label><Input id="trib-valor-st" readOnly value="R$ 0,00" /></div>
+                          <div className="space-y-2"><Label htmlFor="trib-valor-ipi">Valor IPI</Label><Input id="trib-valor-ipi" readOnly value="R$ 0,00" /></div>
+                          <div className="space-y-2"><Label htmlFor="trib-valor-pis">Valor PIS</Label><Input id="trib-valor-pis" readOnly value="R$ 0,00" /></div>
+                          <div className="space-y-2"><Label htmlFor="trib-valor-cofins">Valor COFINS</Label><Input id="trib-valor-cofins" readOnly value="R$ 0,00" /></div>
+                          <div className="space-y-2"><Label htmlFor="trib-valor-total">Valor Total Tributos</Label><Input id="trib-valor-total" readOnly value="R$ 0,00" /></div>
+                      </div>
+                  </CardContent>
+              </Card>
+            </TabsContent>
 
-                    {currentSection === 'produtos' && (
-                        <Card>
-                            <CardHeader><CardTitle>Itens da Nota</CardTitle></CardHeader>
-                            <CardContent>
-                                <Table>
-                                    <TableHeader><TableRow>
-                                        <TableHead className="w-[40%]">Produto</TableHead>
-                                        <TableHead>Qtd.</TableHead>
-                                        <TableHead>Vl. Unit.</TableHead>
-                                        <TableHead className="text-right">Total</TableHead>
-                                        <TableHead className="w-12"></TableHead>
-                                    </TableRow></TableHeader>
-                                    <TableBody>
-                                        {productItems.length > 0 ? productItems.map((item) => (
-                                            <TableRow key={item.id} className="has-[:focus-visible]:bg-muted/40">
-                                                <TableCell className="font-medium">
-                                                    <Input value={item.name} onChange={(e) => handleProductChange(item.id, 'name', e.target.value)} className="h-8" />
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Input type="number" value={item.quantity} onChange={(e) => handleProductChange(item.id, 'quantity', e.target.value)} className="h-8 w-20" />
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Input type="number" value={item.price} onChange={(e) => handleProductChange(item.id, 'price', e.target.value)} className="h-8 w-24" />
-                                                </TableCell>
-                                                <TableCell className="text-right font-mono">{item.total.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</TableCell>
-                                                <TableCell><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveProduct(item.id)}><X className="h-4 w-4" /></Button></TableCell>
-                                            </TableRow>
-                                        )) : (
-                                            <TableRow><TableCell colSpan={5} className="h-24 text-center">Nenhum produto adicionado.</TableCell></TableRow>
-                                        )}
-                                    </TableBody>
-                                </Table>
-                                <div className="mt-4 flex justify-end"><Button variant="outline" onClick={handleAddProduct}><Plus className="mr-2 h-4 w-4" /> Adicionar Produto</Button></div>
-                            </CardContent>
-                        </Card>
-                    )}
-                    
-                    {currentSection === 'tributos' && (
-                        <Card>
-                            <CardHeader><CardTitle>Tributos da Nota</CardTitle></CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <div className="space-y-2"><Label htmlFor="trib-bc-icms">Base ICMS</Label><Input id="trib-bc-icms" readOnly value="R$ 0,00" /></div>
-                                    <div className="space-y-2"><Label htmlFor="trib-valor-icms">Valor ICMS</Label><Input id="trib-valor-icms" readOnly value="R$ 0,00" /></div>
-                                    <div className="space-y-2"><Label htmlFor="trib-bc-st">Base ICMS ST</Label><Input id="trib-bc-st" readOnly value="R$ 0,00" /></div>
-                                    <div className="space-y-2"><Label htmlFor="trib-valor-st">Valor ICMS ST</Label><Input id="trib-valor-st" readOnly value="R$ 0,00" /></div>
-                                    <div className="space-y-2"><Label htmlFor="trib-valor-ipi">Valor IPI</Label><Input id="trib-valor-ipi" readOnly value="R$ 0,00" /></div>
-                                    <div className="space-y-2"><Label htmlFor="trib-valor-pis">Valor PIS</Label><Input id="trib-valor-pis" readOnly value="R$ 0,00" /></div>
-                                    <div className="space-y-2"><Label htmlFor="trib-valor-cofins">Valor COFINS</Label><Input id="trib-valor-cofins" readOnly value="R$ 0,00" /></div>
-                                    <div className="space-y-2"><Label htmlFor="trib-valor-total">Valor Total Tributos</Label><Input id="trib-valor-total" readOnly value="R$ 0,00" /></div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
+            <TabsContent value="transporte">
+              <Card>
+                  <CardHeader><CardTitle>Dados do Transporte</CardTitle></CardHeader>
+                  <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="space-y-2">
+                              <Label htmlFor="transp-modalidade">Modalidade do Frete</Label>
+                              <Select><SelectTrigger id="transp-modalidade"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>
+                                  <SelectItem value="0">Contratação do Frete por conta do Remetente (CIF)</SelectItem>
+                                  <SelectItem value="1">Contratação do Frete por conta do Destinatário (FOB)</SelectItem>
+                                  <SelectItem value="2">Contratação do Frete por conta de Terceiros</SelectItem>
+                                  <SelectItem value="3">Transporte Próprio por conta do Remetente</SelectItem>
+                                  <SelectItem value="4">Transporte Próprio por conta do Destinatário</SelectItem>
+                                  <SelectItem value="9">Sem Ocorrência de Transporte</SelectItem>
+                              </SelectContent></Select>
+                          </div>
+                          <div className="space-y-2 col-span-2">
+                              <Label htmlFor="transp-transportadora">Transportadora</Label>
+                              <Input id="transp-transportadora" placeholder="Razão Social da Transportadora"/>
+                          </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="space-y-2"><Label htmlFor="transp-cnpj">CNPJ</Label><Input id="transp-cnpj"/></div>
+                          <div className="space-y-2"><Label htmlFor="transp-placa">Placa do Veículo</Label><Input id="transp-placa"/></div>
+                          <div className="space-y-2"><Label htmlFor="transp-uf-veiculo">UF do Veículo</Label><Input id="transp-uf-veiculo"/></div>
+                      </div>
+                      <Separator className="my-4" />
+                      <h4 className="text-md font-semibold">Volumes</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                          <div className="space-y-2"><Label htmlFor="vol-qtd">Quantidade</Label><Input id="vol-qtd" type="number"/></div>
+                          <div className="space-y-2"><Label htmlFor="vol-especie">Espécie</Label><Input id="vol-especie"/></div>
+                          <div className="space-y-2"><Label htmlFor="vol-marca">Marca</Label><Input id="vol-marca"/></div>
+                          <div className="space-y-2"><Label htmlFor="vol-peso-bruto">Peso Bruto</Label><Input id="vol-peso-bruto" type="number"/></div>
+                          <div className="space-y-2"><Label htmlFor="vol-peso-liquido">Peso Líquido</Label><Input id="vol-peso-liquido" type="number"/></div>
+                      </div>
+                  </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="faturas">
+              <Card>
+                  <CardHeader><CardTitle>Faturas e Pagamentos</CardTitle></CardHeader>
+                  <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                          <div className="space-y-2">
+                              <Label htmlFor="fat-tipo-pag">Tipo de Pagamento</Label>
+                              <Select><SelectTrigger id="fat-tipo-pag"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>
+                                  <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                                  <SelectItem value="cartao">Cartão</SelectItem>
+                                  <SelectItem value="boleto">Boleto</SelectItem>
+                                  <SelectItem value="pix">Pix</SelectItem>
+                                  <SelectItem value="outros">Outros</SelectItem>
+                              </SelectContent></Select>
+                          </div>
+                          <div className="space-y-2"><Label htmlFor="fat-valor">Valor</Label><Input id="fat-valor" type="number"/></div>
+                          <div className="space-y-2"><Label htmlFor="fat-numero">Nº da Fatura</Label><Input id="fat-numero"/></div>
+                          <div className="space-y-2"><Label htmlFor="fat-vencimento">Vencimento</Label><Input id="fat-vencimento" type="date"/></div>
+                      </div>
+                      <div className="text-center pt-4">
+                          <p className="text-sm text-muted-foreground">Funcionalidade de parcelas em desenvolvimento.</p>
+                      </div>
+                  </CardContent>
+              </Card>
+            </TabsContent>
 
-                    {currentSection === 'transporte' && (
-                        <Card>
-                            <CardHeader><CardTitle>Dados do Transporte</CardTitle></CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="transp-modalidade">Modalidade do Frete</Label>
-                                        <Select><SelectTrigger id="transp-modalidade"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>
-                                            <SelectItem value="0">Contratação do Frete por conta do Remetente (CIF)</SelectItem>
-                                            <SelectItem value="1">Contratação do Frete por conta do Destinatário (FOB)</SelectItem>
-                                            <SelectItem value="2">Contratação do Frete por conta de Terceiros</SelectItem>
-                                            <SelectItem value="3">Transporte Próprio por conta do Remetente</SelectItem>
-                                            <SelectItem value="4">Transporte Próprio por conta do Destinatário</SelectItem>
-                                            <SelectItem value="9">Sem Ocorrência de Transporte</SelectItem>
-                                        </SelectContent></Select>
-                                    </div>
-                                    <div className="space-y-2 col-span-2">
-                                        <Label htmlFor="transp-transportadora">Transportadora</Label>
-                                        <Input id="transp-transportadora" placeholder="Razão Social da Transportadora"/>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div className="space-y-2"><Label htmlFor="transp-cnpj">CNPJ</Label><Input id="transp-cnpj"/></div>
-                                    <div className="space-y-2"><Label htmlFor="transp-placa">Placa do Veículo</Label><Input id="transp-placa"/></div>
-                                    <div className="space-y-2"><Label htmlFor="transp-uf-veiculo">UF do Veículo</Label><Input id="transp-uf-veiculo"/></div>
-                                </div>
-                                <Separator className="my-4" />
-                                <h4 className="text-md font-semibold">Volumes</h4>
-                                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                                    <div className="space-y-2"><Label htmlFor="vol-qtd">Quantidade</Label><Input id="vol-qtd" type="number"/></div>
-                                    <div className="space-y-2"><Label htmlFor="vol-especie">Espécie</Label><Input id="vol-especie"/></div>
-                                    <div className="space-y-2"><Label htmlFor="vol-marca">Marca</Label><Input id="vol-marca"/></div>
-                                    <div className="space-y-2"><Label htmlFor="vol-peso-bruto">Peso Bruto</Label><Input id="vol-peso-bruto" type="number"/></div>
-                                    <div className="space-y-2"><Label htmlFor="vol-peso-liquido">Peso Líquido</Label><Input id="vol-peso-liquido" type="number"/></div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
+            <TabsContent value="info">
+              <Card>
+                  <CardHeader><CardTitle>Informações Adicionais</CardTitle></CardHeader>
+                  <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                          <Label htmlFor="info-complementares">Informações Complementares de Interesse do Contribuinte</Label>
+                          <Textarea id="info-complementares" rows={4} />
+                      </div>
+                      <div className="space-y-2">
+                          <Label htmlFor="info-fisco">Informações Adicionais de Interesse do Fisco</Label>
+                          <Textarea id="info-fisco" rows={4} />
+                      </div>
+                      <div className="space-y-2">
+                          <Label htmlFor="info-obs">Observações Internas</Label>
+                          <Textarea id="info-obs" rows={2} />
+                      </div>
+                  </CardContent>
+              </Card>
+            </TabsContent>
+          </div>
+        </Tabs>
 
-                    {currentSection === 'faturas' && (
-                        <Card>
-                            <CardHeader><CardTitle>Faturas e Pagamentos</CardTitle></CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="fat-tipo-pag">Tipo de Pagamento</Label>
-                                        <Select><SelectTrigger id="fat-tipo-pag"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>
-                                            <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                                            <SelectItem value="cartao">Cartão</SelectItem>
-                                            <SelectItem value="boleto">Boleto</SelectItem>
-                                            <SelectItem value="pix">Pix</SelectItem>
-                                            <SelectItem value="outros">Outros</SelectItem>
-                                        </SelectContent></Select>
-                                    </div>
-                                    <div className="space-y-2"><Label htmlFor="fat-valor">Valor</Label><Input id="fat-valor" type="number"/></div>
-                                    <div className="space-y-2"><Label htmlFor="fat-numero">Nº da Fatura</Label><Input id="fat-numero"/></div>
-                                    <div className="space-y-2"><Label htmlFor="fat-vencimento">Vencimento</Label><Input id="fat-vencimento" type="date"/></div>
-                                </div>
-                                <div className="text-center pt-4">
-                                    <p className="text-sm text-muted-foreground">Funcionalidade de parcelas em desenvolvimento.</p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {currentSection === 'info' && (
-                        <Card>
-                            <CardHeader><CardTitle>Informações Adicionais</CardTitle></CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="info-complementares">Informações Complementares de Interesse do Contribuinte</Label>
-                                    <Textarea id="info-complementares" rows={4} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="info-fisco">Informações Adicionais de Interesse do Fisco</Label>
-                                    <Textarea id="info-fisco" rows={4} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="info-obs">Observações Internas</Label>
-                                    <Textarea id="info-obs" rows={2} />
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-                </div>
-            </ScrollArea>
-        </div>
-
-        <DialogFooter className="border-t pt-4">
+        <DialogFooter className="border-t pt-4 mt-4">
             <div className="flex w-full justify-between items-center">
                 <div className="text-sm text-muted-foreground">
                     <p>Total Produtos: <span className="font-bold text-foreground">{totalProdutos.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span></p>
@@ -675,10 +662,3 @@ function LancamentoProdutoDialog({ onOpenChange }: { onOpenChange: (open: boolea
       </DialogContent>
     );
 }
-    
-
-    
-
-    
-
-    
