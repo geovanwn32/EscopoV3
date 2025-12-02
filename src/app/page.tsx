@@ -111,7 +111,18 @@ export default function LoginPage() {
                 className="h-full w-full object-cover"
             />
         )}
-        <div className='absolute inset-0 bg-gradient-to-t from-background/60 to-background/10' />
+        <div className='absolute inset-0 bg-gradient-to-t from-background/80 via-background/40 to-background/20' />
+        <div className="absolute inset-0 flex flex-col items-start justify-end p-12 text-background">
+            <div className="max-w-xl space-y-4">
+                <h2 className="text-3xl font-bold leading-tight text-white shadow-2xl">Bem-vindo(a) ao EscopoV3</h2>
+                <p className="text-lg text-white/90 leading-relaxed shadow-xl">
+                Aqui sua contabilidade ganha vida: organizada, atualizada e sempre segura. Acesse sua empresa com poucos cliques e tenha o controle total das finanças, obrigações fiscais e relatórios na palma da mão — a qualquer hora, de qualquer lugar.
+                </p>
+                <p className="text-lg text-white/90 leading-relaxed shadow-xl pt-2">
+                Digite suas credenciais e comece agora a transformar números em decisões estratégicas. Estamos felizes por ter você de volta! 🚀
+                </p>
+            </div>
+        </div>
       </div>
     </div>
   )
