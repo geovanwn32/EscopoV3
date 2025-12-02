@@ -119,8 +119,8 @@ export default function LoginPage() {
               <a href='tel:+5562998554529' className='flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors'>
                 <Phone className='h-4 w-4'/> +55 (62) 99855-4529
               </a>
-              <a href='mailto:suporte@escopo.com' className='flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors'>
-                <Mail className='h-4 w-4'/> suporte@escopo.com
+              <a href='mailto:geovaniwn@gmail.com' className='flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors'>
+                <Mail className='h-4 w-4'/> geovaniwn@gmail.com
               </a>
               <a href='https://wa.me/5562998554529' target='_blank' rel='noopener noreferrer' className='flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors'>
                 <MessageSquare className='h-4 w-4'/> WhatsApp
