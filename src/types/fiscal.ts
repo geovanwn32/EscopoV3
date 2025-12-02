@@ -1,3 +1,4 @@
+
 export interface ProductItem {
     id: number;
     name: string;
@@ -18,3 +19,5 @@ export interface NotaFiscal {
     dados: any; // Could be more specific, e.g., NotaProdutoDados | NotaServicoDados
     items: ProductItem[] | ServiceItem[];
 }
+
+    
