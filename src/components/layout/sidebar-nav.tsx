@@ -107,8 +107,7 @@ const navGroups: NavGroup[] = [
     label: 'Conectividade',
     icon: Plug,
     items: [
-        { href: '/conectividade/esocial', label: 'eSocial', icon: FileText },
-        { href: '~/conectividade/efd-reinf', label: 'EFD-Reinf', icon: FileText },
+        { href: '/conectividade', label: 'eSocial & Reinf', icon: FileText },
     ],
   },
    {
@@ -143,10 +142,10 @@ export function SidebarNav() {
   return (
     <>
       <SidebarHeader>
-        <Button variant="ghost" asChild className="h-12 justify-start px-2 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center">
+        <Button variant="ghost" asChild className="h-12 justify-start px-3 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center">
             <Link href="/dashboard" className="flex items-center gap-2">
-                <Building2 className="h-6 w-6 text-sidebar-primary" />
-                <span className="text-lg font-semibold font-headline text-sidebar-primary-foreground group-data-[collapsible=icon]:hidden">
+                <Building2 className="h-6 w-6 text-primary" />
+                <span className="text-lg font-semibold font-headline text-foreground group-data-[collapsible=icon]:hidden">
                 EscopoV3
                 </span>
             </Link>
@@ -168,12 +167,12 @@ export function SidebarNav() {
           </SidebarMenuItem>
         </SidebarMenu>
         
-        <Separator className='my-2 bg-sidebar-border/50' />
+        <Separator className='my-2 bg-border/50' />
 
         <SidebarMenu>
           {navGroups.map((group) => (
             <div key={group.label} className="group/nav-group">
-                <p className="px-2 py-1 text-xs font-medium text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">
+                <p className="px-3 py-1 text-xs font-medium text-muted-foreground/80 group-data-[collapsible=icon]:hidden">
                     {group.label}
                 </p>
                 {group.items.map((item) => (
@@ -181,7 +180,7 @@ export function SidebarNav() {
                         <SidebarMenuButton
                         asChild
                         size="sm"
-                        isActive={pathname === item.href}
+                        isActive={isNavItemActive(item.href)}
                         tooltip={item.label}
                         >
                         <Link href={item.href}>
@@ -191,8 +190,7 @@ export function SidebarNav() {
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 ))}
-                 {/* Only show separator if not in collapsed mode */}
-                <Separator className='my-2 bg-sidebar-border/50 last:hidden group-data-[collapsible=icon]:hidden' />
+                <Separator className='my-2 bg-border/50 last:hidden group-data-[collapsible=icon]:hidden' />
             </div>
            ))}
         </SidebarMenu>

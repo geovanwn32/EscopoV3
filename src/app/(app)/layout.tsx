@@ -7,7 +7,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <CompanyProvider>
       <SidebarProvider>
-        <Sidebar collapsible="icon" variant="floating" className="bg-sidebar text-sidebar-foreground">
+        <Sidebar>
           <SidebarNav />
         </Sidebar>
         <SidebarInset>
