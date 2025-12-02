@@ -423,8 +423,6 @@ function LancamentoProdutoDialog({ onOpenChange }: { onOpenChange: (open: boolea
     };
 
     const handleSave = () => {
-        // Here you would typically handle the form submission,
-        // e.g., send the data to your backend.
         console.log("Saving data...", { productItems });
     
         toast({
@@ -432,12 +430,11 @@ function LancamentoProdutoDialog({ onOpenChange }: { onOpenChange: (open: boolea
           description: "A nota fiscal de produto foi salva com sucesso.",
         });
     
-        // Close the dialog after saving
         onOpenChange(false);
       };
 
     const totalProdutos = productItems.reduce((acc, item) => acc + item.total, 0);
-    const totalNota = totalProdutos; // Simplified for now
+    const totalNota = totalProdutos;
   
     return (
       <DialogContent className="max-w-6xl h-[90vh] flex flex-col">
@@ -679,6 +676,8 @@ function LancamentoProdutoDialog({ onOpenChange }: { onOpenChange: (open: boolea
       </DialogContent>
     );
 }
+    
+
     
 
     
