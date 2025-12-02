@@ -108,7 +108,7 @@ const navGroups: NavGroup[] = [
     icon: Plug,
     items: [
         { href: '/conectividade/esocial', label: 'eSocial', icon: FileText },
-        { href: '/conectividade/efd-reinf', label: 'EFD-Reinf', icon: FileText },
+        { href: '~/conectividade/efd-reinf', label: 'EFD-Reinf', icon: FileText },
     ],
   },
    {
@@ -143,14 +143,14 @@ export function SidebarNav() {
   return (
     <>
       <SidebarHeader>
-        <Link href="/dashboard" className="flex items-center gap-2">
-            <Button variant="ghost" className="h-12 w-12 p-0 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10">
+        <Button variant="ghost" asChild className="h-12 justify-start px-2 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center">
+            <Link href="/dashboard" className="flex items-center gap-2">
                 <Building2 className="h-6 w-6 text-sidebar-primary" />
-            </Button>
-            <span className="text-lg font-semibold font-headline text-sidebar-primary-foreground group-data-[collapsible=icon]:hidden">
-            EscopoV3
-            </span>
-        </Link>
+                <span className="text-lg font-semibold font-headline text-sidebar-primary-foreground group-data-[collapsible=icon]:hidden">
+                EscopoV3
+                </span>
+            </Link>
+        </Button>
       </SidebarHeader>
       <SidebarContent className="p-2">
         <SidebarMenu>
