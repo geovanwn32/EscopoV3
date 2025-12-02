@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -16,7 +16,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
@@ -62,7 +61,7 @@ const actions = [
 
 interface XmlFile {
     id: number;
-    file: string;
+    file: File;
     date: string;
     status: 'Importado' | 'Lançado' | 'Erro';
     model?: 'produto' | 'saida' | 'servico';
@@ -86,18 +85,11 @@ export default function FiscalPage() {
             const fileNames = Array.from(files).map(file => file.name).join(', ');
             
             const newFiles: XmlFile[] = Array.from(files).map((file, index) => {
-                let model: 'produto' | 'saida' | 'servico' | undefined = undefined;
-                const lowerCaseName = file.name.toLowerCase();
-                if (lowerCaseName.includes('produto')) model = 'produto';
-                else if (lowerCaseName.includes('saida')) model = 'saida';
-                else if (lowerCaseName.includes('servico')) model = 'servico';
-
                 return {
                     id: Date.now() + index,
-                    file: file.name,
+                    file: file,
                     date: new Date().toLocaleDateString('pt-BR'),
                     status: 'Importado',
-                    model: model
                 }
             });
 
@@ -110,20 +102,42 @@ export default function FiscalPage() {
             event.target.value = '';
         }
     };
-
+    
     const handleLancarXml = (id: number) => {
-        const xml = xmls.find(x => x.id === id);
-        if (!xml) return;
-
-        if (xml.model === 'produto' || xml.model === 'saida' || xml.model === 'servico') {
-             openLancamentoDialog(xml.model);
-        } else {
-             toast({
+        const xmlFile = xmls.find(x => x.id === id);
+        if (!xmlFile) return;
+    
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const content = e.target?.result as string;
+            let detectedModel: 'produto' | 'saida' | 'servico' | null = null;
+    
+            if (content.includes('<NFe') && content.includes('<infNFe')) {
+                detectedModel = 'produto'; 
+            } else if (content.includes('<infNFSe') || content.includes('<CompNfse')) {
+                detectedModel = 'servico';
+            }
+    
+            if (detectedModel) {
+                openLancamentoDialog(detectedModel);
+                // Optionally update status
+                setXmls(prevXmls => prevXmls.map(x => x.id === id ? { ...x, status: 'Lançado' } : x));
+            } else {
+                toast({
+                    variant: 'destructive',
+                    title: 'Modelo de XML não suportado',
+                    description: 'Não foi possível identificar o tipo de nota fiscal para este arquivo. O lançamento manual está disponível.'
+                });
+            }
+        };
+        reader.onerror = () => {
+            toast({
                 variant: 'destructive',
-                title: 'Modelo de XML não suportado',
-                description: 'Não foi possível identificar o tipo de nota fiscal para este arquivo.'
+                title: 'Erro ao ler arquivo',
+                description: 'Não foi possível ler o conteúdo do arquivo XML.'
             });
-        }
+        };
+        reader.readAsText(xmlFile.file);
     };
 
     const handleDeleteXml = (id: number) => {
@@ -172,23 +186,24 @@ export default function FiscalPage() {
 
         <Card>
             <Tabs defaultValue="xmls">
-                 <CardHeader>
+                <CardHeader>
                     <CardTitle>Documentos Fiscais</CardTitle>
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
-                        <TabsList className="w-full sm:w-auto">
-                            <TabsTrigger value="xmls">XMLs Importados</TabsTrigger>
-                            <TabsTrigger value="produtos">Notas de Produto</TabsTrigger>
-                            <TabsTrigger value="saidas">Notas de Saída</TabsTrigger>
-                            <TabsTrigger value="servicos">Notas de Serviço</TabsTrigger>
-                            <TabsTrigger value="recibos">Recibos/Cupons</TabsTrigger>
-                        </TabsList>
-                        <div className="flex w-full sm:w-auto items-center gap-2">
-                             <div className="relative flex-grow">
-                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input placeholder="Buscar..." className="pl-9 w-full" />
-                            </div>
-                            <Button variant="outline"><Filter className="mr-2 h-4 w-4"/>Filtrar</Button>
+                    <CardDescription>
+                        Gerencie todos os seus documentos importados e lançados.
+                    </CardDescription>
+                    <TabsList className="w-full sm:w-auto mt-4">
+                        <TabsTrigger value="xmls">XMLs Importados</TabsTrigger>
+                        <TabsTrigger value="produtos">Notas de Produto</TabsTrigger>
+                        <TabsTrigger value="saidas">Notas de Saída</TabsTrigger>
+                        <TabsTrigger value="servicos">Notas de Serviço</TabsTrigger>
+                        <TabsTrigger value="recibos">Recibos/Cupons</TabsTrigger>
+                    </TabsList>
+                    <div className="flex w-full items-center gap-2 pt-4">
+                        <div className="relative flex-grow">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="Buscar em todos os documentos..." className="pl-9 w-full" />
                         </div>
+                        <Button variant="outline"><Filter className="mr-2 h-4 w-4"/>Filtrar</Button>
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -198,7 +213,7 @@ export default function FiscalPage() {
                             data={xmls}
                             renderRow={(item: XmlFile) => (
                                 <>
-                                    <TableCell className="font-medium">{item.file}</TableCell>
+                                    <TableCell className="font-medium">{item.file.name}</TableCell>
                                     <TableCell>{item.date}</TableCell>
                                     <TableCell>
                                         <Badge variant={
@@ -388,7 +403,7 @@ function RecentDocumentsTable({
                         <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
                         <AlertDialogDescription>
                             Essa ação não pode ser desfeita. Isso excluirá permanentemente o documento
-                             <span className="font-bold"> "{itemToDelete?.file}"</span>.
+                             <span className="font-bold"> "{itemToDelete?.file?.name}"</span>.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -427,28 +442,31 @@ function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boo
 
     useEffect(() => {
         if (tipoNota) {
-            setTipoNotaValue(tipoNota === 'produto' ? 'entrada' : tipoNota === 'saida' ? 'saida' : 'servico');
+            setTipoNotaValue(tipoNota === 'produto' ? 'entrada' : tipoNota);
         }
     }, [tipoNota]);
 
-    const sections = 
-        tipoNota === 'servico' ? [
-            { id: 'identificacao', label: 'Identificação' },
-            { id: 'prestador', label: 'Prestador' },
-            { id: 'tomador', label: 'Tomador' },
-            { id: 'servico', label: 'Dados do Serviço' },
-            { id: 'tributos', label: 'Tributos' },
-            { id: 'pagamento', label: 'Pagamento' },
-            { id: 'info', label: 'Info Adicionais' },
-        ] : [
-            { id: 'geral', label: 'Dados Gerais' },
-            { id: 'emitente', label: 'Emitente / Dest.' },
-            { id: 'produtos', label: 'Itens da Nota' },
-            { id: 'tributos', label: 'Tributos' },
-            { id: 'transporte', label: 'Transporte' },
-            { id: 'faturas', label: 'Faturas' },
-            { id: 'info', label: 'Informações Adicionais' },
-        ];
+    const productSections = [
+        { id: 'geral', label: 'Dados Gerais' },
+        { id: 'emitente', label: 'Emitente / Dest.' },
+        { id: 'produtos', label: 'Itens da Nota' },
+        { id: 'tributos', label: 'Tributos' },
+        { id: 'transporte', label: 'Transporte' },
+        { id: 'faturas', label: 'Faturas' },
+        { id: 'info', label: 'Informações Adicionais' },
+    ];
+    
+    const serviceSections = [
+        { id: 'identificacao', label: 'Identificação' },
+        { id: 'prestador', label: 'Prestador' },
+        { id: 'tomador', label: 'Tomador' },
+        { id: 'servico', label: 'Dados do Serviço' },
+        { id: 'tributos', label: 'Tributos' },
+        { id: 'pagamento', label: 'Pagamento' },
+        { id: 'info', label: 'Info Adicionais' },
+    ];
+
+    const sections = tipoNota === 'servico' ? serviceSections : productSections;
         
     useEffect(() => {
         setActiveSection(sections[0].id);
@@ -469,16 +487,22 @@ function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boo
         setProductItems(prev => prev.map(item => {
             if (item.id === id) {
                 const updatedItem = { ...item, [field]: value };
-                const quantity = typeof updatedItem.quantity === 'string' ? parseFloat(updatedItem.quantity) : updatedItem.quantity;
-                const price = typeof updatedItem.price === 'string' ? parseFloat(updatedItem.price) : updatedItem.price;
-                if (!isNaN(quantity) && !isNaN(price)) {
-                    updatedItem.total = quantity * price;
+                const quantity = typeof value === 'string' && (field === 'quantity' || field === 'price') ? parseFloat(value) : (field === 'quantity' || field === 'price' ? value as number : updatedItem[field]);
+                const price = field === 'price' ? quantity : updatedItem.price;
+                const itemQuantity = field === 'quantity' ? quantity : updatedItem.quantity;
+    
+                const numQuantity = Number(itemQuantity);
+                const numPrice = Number(price);
+
+                if (!isNaN(numQuantity) && !isNaN(numPrice)) {
+                    updatedItem.total = numQuantity * numPrice;
                 }
                 return updatedItem;
             }
             return item;
         }));
     };
+    
 
     // Service Handlers
     const handleAddService = () => {
@@ -497,7 +521,6 @@ function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boo
     };
     
     const handleSave = () => {
-        // Logic to save the data would go here
         console.log("Saving data...", { 
             tipo: tipoNota,
             dados: {
@@ -511,7 +534,7 @@ function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boo
           description: `A nota fiscal ${notaLabel} foi salva com sucesso.`,
         });
     
-        onOpenChange(false); // Close the dialog
+        onOpenChange(false); 
     };
 
     const totalProdutos = productItems.reduce((acc, item) => acc + item.total, 0);
@@ -782,37 +805,6 @@ function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boo
                         </CardContent>
                     </Card>
                 )
-            case 'servicos':
-                return (
-                    <Card>
-                        <CardHeader><CardTitle>Serviços Prestados</CardTitle></CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader><TableRow>
-                                    <TableHead className="w-[60%]">Serviço</TableHead>
-                                    <TableHead className="text-right">Valor</TableHead>
-                                    <TableHead className="w-12"></TableHead>
-                                </TableRow></TableHeader>
-                                <TableBody>
-                                    {serviceItems.length > 0 ? serviceItems.map((item) => (
-                                        <TableRow key={item.id} className="has-[:focus-visible]:bg-muted/40">
-                                            <TableCell className="font-medium">
-                                                <Input value={item.name} onChange={(e) => handleServiceChange(item.id, 'name', e.target.value)} className="h-8" />
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <Input type="number" value={item.value} onChange={(e) => handleServiceChange(item.id, 'value', e.target.value)} className="h-8 w-32 ml-auto text-right" />
-                                            </TableCell>
-                                            <TableCell><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveService(item.id)}><X className="h-4 w-4" /></Button></TableCell>
-                                        </TableRow>
-                                    )) : (
-                                        <TableRow><TableCell colSpan={3} className="h-24 text-center">Nenhum serviço adicionado.</TableCell></TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                            <div className="mt-4 flex justify-end"><Button variant="outline" onClick={handleAddService}><Plus className="mr-2 h-4 w-4" /> Adicionar Serviço</Button></div>
-                        </CardContent>
-                    </Card>
-                )
             case 'tributos':
                 return (
                     <Card>
@@ -957,17 +949,17 @@ function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boo
         <DialogFooter className="border-t pt-4 mt-auto">
             <div className="flex w-full justify-between items-center">
                 <div className="text-sm text-muted-foreground space-y-1">
-                   {tipoNota !== 'servico' ? (
-                        <>
-                            <p>Total Produtos: <span className="font-bold text-foreground">{totalProdutos.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span></p>
-                            <p>Total Nota: <span className="font-bold text-foreground text-lg">{totalNota.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span></p>
-                        </>
-                   ) : (
+                   {tipoNota === 'servico' ? (
                         <>
                             <p>Total Serviços: <span className="font-semibold text-foreground">{totalServicos.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span></p>
                             <p>Total Descontos: <span className="font-semibold text-foreground">({totalDescontos.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})})</span></p>
                             <p>Total Impostos Retidos: <span className="font-semibold text-red-600">({totalImpostos.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})})</span></p>
                             <p className="text-base">Total Líquido: <span className="font-bold text-foreground text-lg">{totalLiquido.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span></p>
+                        </>
+                   ) : (
+                        <>
+                            <p>Total Produtos: <span className="font-bold text-foreground">{totalProdutos.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span></p>
+                            <p>Total Nota: <span className="font-bold text-foreground text-lg">{totalNota.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span></p>
                         </>
                    )}
                 </div>
