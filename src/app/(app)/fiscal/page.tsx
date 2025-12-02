@@ -1,12 +1,14 @@
 
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { PackagePlus, FileText, Wrench, Upload, FileMinus, Receipt, MoreHorizontal } from "lucide-react";
+import { PackagePlus, FileText, Wrench, Upload, FileMinus, Receipt, MoreHorizontal, Search, Filter, Plus } from "lucide-react";
 import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 
 const actions = [
     {
@@ -85,9 +87,19 @@ export default function FiscalPage() {
 
         <div className="space-y-6">
             <Card>
-                <CardHeader>
-                    <CardTitle>XMLs Importados</CardTitle>
-                    <CardDescription>Documentos fiscais importados recentemente.</CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between gap-4">
+                    <div className="space-y-1.5">
+                        <CardTitle>XMLs Importados</CardTitle>
+                        <CardDescription>Documentos fiscais importados recentemente.</CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="relative">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="Buscar por arquivo..." className="pl-9" />
+                        </div>
+                        <Button variant="outline"><Filter className="mr-2 h-4 w-4"/>Filtrar</Button>
+                        <Button><Upload className="mr-2 h-4 w-4"/>Importar</Button>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <RecentDocumentsTable
@@ -105,9 +117,19 @@ export default function FiscalPage() {
             </Card>
 
             <Card>
-                <CardHeader>
-                    <CardTitle>Notas de Produto</CardTitle>
-                    <CardDescription>Notas fiscais de produto emitidas recentemente.</CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between gap-4">
+                     <div className="space-y-1.5">
+                        <CardTitle>Notas de Produto</CardTitle>
+                        <CardDescription>Notas fiscais de produto emitidas recentemente.</CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="relative">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="Buscar por cliente ou nº..." className="pl-9" />
+                        </div>
+                        <Button variant="outline"><Filter className="mr-2 h-4 w-4"/>Filtrar</Button>
+                        <Button><Plus className="mr-2 h-4 w-4"/>Nova Nota</Button>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <RecentDocumentsTable
@@ -126,9 +148,19 @@ export default function FiscalPage() {
             </Card>
 
              <Card>
-                <CardHeader>
-                    <CardTitle>Notas de Saída</CardTitle>
-                    <CardDescription>Notas fiscais de saída emitidas recentemente.</CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between gap-4">
+                     <div className="space-y-1.5">
+                        <CardTitle>Notas de Saída</CardTitle>
+                        <CardDescription>Notas fiscais de saída emitidas recentemente.</CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="relative">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="Buscar por destinatário..." className="pl-9" />
+                        </div>
+                        <Button variant="outline"><Filter className="mr-2 h-4 w-4"/>Filtrar</Button>
+                        <Button><Plus className="mr-2 h-4 w-4"/>Nova Nota</Button>
+                    </div>
                 </CardHeader>
                 <CardContent>
                      <RecentDocumentsTable
@@ -147,9 +179,19 @@ export default function FiscalPage() {
             </Card>
             
             <Card>
-                <CardHeader>
-                    <CardTitle>Notas de Serviço</CardTitle>
-                    <CardDescription>Notas fiscais de serviço emitidas recentemente.</CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between gap-4">
+                     <div className="space-y-1.5">
+                        <CardTitle>Notas de Serviço</CardTitle>
+                        <CardDescription>Notas fiscais de serviço emitidas recentemente.</CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="relative">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="Buscar por tomador..." className="pl-9" />
+                        </div>
+                        <Button variant="outline"><Filter className="mr-2 h-4 w-4"/>Filtrar</Button>
+                        <Button><Plus className="mr-2 h-4 w-4"/>Nova Nota</Button>
+                    </div>
                 </CardHeader>
                 <CardContent>
                      <RecentDocumentsTable
@@ -168,9 +210,19 @@ export default function FiscalPage() {
             </Card>
 
             <Card>
-                <CardHeader>
-                    <CardTitle>Recibos/Cupons</CardTitle>
-                    <CardDescription>Recibos e cupons fiscais emitidos recentemente.</CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between gap-4">
+                    <div className="space-y-1.5">
+                        <CardTitle>Recibos/Cupons</CardTitle>
+                        <CardDescription>Recibos e cupons fiscais emitidos recentemente.</CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="relative">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="Buscar por cliente..." className="pl-9" />
+                        </div>
+                        <Button variant="outline"><Filter className="mr-2 h-4 w-4"/>Filtrar</Button>
+                        <Button><Plus className="mr-2 h-4 w-4"/>Novo Recibo</Button>
+                    </div>
                 </CardHeader>
                 <CardContent>
                      <RecentDocumentsTable
