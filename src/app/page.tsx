@@ -33,17 +33,32 @@ export default function LoginPage() {
         
         {/* Left Panel */}
         <div className="relative hidden lg:flex flex-col justify-between items-center p-12 bg-primary text-primary-foreground text-center">
-            <div className="absolute top-12 left-12 flex items-center gap-3">
+            <div className="absolute top-0 left-0 right-0 bottom-0 data-block-container" aria-hidden="true">
+                {[...Array(15)].map((_, i) => (
+                    <div 
+                        key={i} 
+                        className="data-block" 
+                        style={{ 
+                            left: `${Math.random() * 100}%`, 
+                            height: `${Math.random() * 200 + 50}px`,
+                            animationDuration: `${Math.random() * 5 + 3}s`,
+                            animationDelay: `${Math.random() * 2}s`,
+                        }}
+                    />
+                ))}
+            </div>
+
+            <div className="absolute top-12 left-12 flex items-center gap-3 z-10">
                 <Building2 className="h-8 w-8" />
                 <h1 className="text-2xl font-bold">EscopoV3</h1>
             </div>
-            <div className='my-auto'>
+            <div className='my-auto z-10'>
                  <h2 className="text-4xl font-bold mb-4">Sua plataforma completa de gestão contábil.</h2>
                 <p className="text-primary-foreground/80 max-w-md mx-auto">
                     Acesse todas as ferramentas que você precisa para gerenciar sua empresa com eficiência e precisão.
                 </p>
             </div>
-             <p className='text-sm text-primary-foreground/60'>© 2025 EscopoV3. Todos os direitos reservados.</p>
+             <p className='text-sm text-primary-foreground/60 z-10'>© 2025 EscopoV3. Todos os direitos reservados.</p>
         </div>
 
         {/* Right Panel */}
@@ -145,3 +160,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    
