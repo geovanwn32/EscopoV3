@@ -21,13 +21,23 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 }
 
 function DataBlocksAnimation() {
+    const [isClient, setIsClient] = useState(false);
+  
+    useEffect(() => {
+      setIsClient(true);
+    }, []);
+  
+    if (!isClient) {
+      return null;
+    }
+  
     return (
         <div className="absolute top-0 left-0 right-0 bottom-0 data-block-container" aria-hidden="true">
             {[...Array(15)].map((_, i) => (
-                <div
-                    key={i}
-                    className="data-block"
-                    style={{
+                <div 
+                    key={i} 
+                    className="data-block" 
+                    style={{ 
                         left: `${Math.random() * 100}%`,
                         height: `${Math.random() * 200 + 50}px`,
                         animationDuration: `${Math.random() * 5 + 3}s`,
@@ -42,11 +52,6 @@ function DataBlocksAnimation() {
 export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center p-4 lg:p-8 animated-gradient">
@@ -54,15 +59,26 @@ export default function LoginPage() {
         
         {/* Left Panel */}
         <div className="relative hidden lg:flex flex-col justify-between items-center p-12 bg-primary text-primary-foreground text-center">
-            {isClient && <DataBlocksAnimation />}
+            <DataBlocksAnimation />
             <div className="absolute top-12 left-12 flex items-center gap-3 z-10">
                 <Building2 className="h-8 w-8" />
                 <h1 className="text-2xl font-bold">EscopoV3</h1>
             </div>
             <div className='my-auto z-10'>
-                 <h2 className="text-4xl font-bold mb-4">Sua plataforma completa de gestão contábil.</h2>
-                <p className="text-primary-foreground/80 max-w-md mx-auto">
-                    Acesse todas as ferramentas que você precisa para gerenciar sua empresa com eficiência e precisão.
+                 <h2 className="text-3xl font-bold mb-4">Bem-vindo ao EscopoV3.</h2>
+                 <p className="text-primary-foreground/80 max-w-lg mx-auto text-left text-sm">
+                    Seu sistema profissional de gestão contábil, desenvolvido para atender contadores, empresas e MEIs com eficiência, precisão e segurança. Acesse rapidamente as principais funcionalidades:
+                    <br/><br/>
+                    <ul className="list-disc list-inside space-y-1">
+                        <li>Lançamento de notas fiscais</li>
+                        <li>Apuração de folha de pagamento</li>
+                        <li>Cálculo automático de impostos</li>
+                        <li>Módulo Financeiro completo</li>
+                        <li>Contas a receber e contas a pagar</li>
+                        <li>Relatórios específicos para MEI</li>
+                    </ul>
+                    <br/>
+                    Organize sua rotina, acompanhe indicadores e mantenha a contabilidade sempre em dia. Utilize o menu principal para navegar entre os módulos e otimizar suas operações.
                 </p>
             </div>
              <p className='text-sm text-primary-foreground/60 z-10'>© 2025 EscopoV3. Todos os direitos reservados.</p>
@@ -72,7 +88,7 @@ export default function LoginPage() {
         <div className="p-8 sm:p-12 flex flex-col justify-center">
             <div className="max-w-md w-full mx-auto">
 
-                <h2 className="text-3xl font-bold mb-2">{isSignUp ? "Crie uma Conta" : "Login"}</h2>
+                <h2 className="text-3xl font-bold mb-2">{isSignUp ? "Criar Conta" : "Login"}</h2>
                 <p className="text-muted-foreground mb-8">{isSignUp ? "Insira seus dados para começar." : "Insira seus dados para acessar o sistema."}</p>
 
                 <form className="space-y-4">
@@ -168,5 +184,3 @@ export default function LoginPage() {
   );
 }
 
-
-    
