@@ -2,7 +2,7 @@
 "use client";
 
 import { useRouter } from 'next/navigation';
-import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, ReactNode, useRef } from 'react';
 
 // Define the shape of a company and its data
 interface CompanyData {
@@ -84,12 +84,14 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
         try {
             localStorage.setItem(LS_CURRENT_COMPANY_KEY, JSON.stringify(companyId));
             if (navigate) {
-                // router.push('/dashboard');
+                 if (window.location.pathname !== '/dashboard') {
+                    router.push('/dashboard');
+                }
             }
         } catch (error) {
             console.error("Failed to save current company to localStorage", error);
         }
-    }, []);
+    }, [router]);
 
     const addCompany = useCallback(() => {
         const newCompanyId = Date.now();
@@ -123,7 +125,7 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
                 const nextCompanyId = newCompanies.length > 0 ? newCompanies[0].id : null;
                 setCurrentCompany(nextCompanyId);
                 localStorage.setItem(LS_CURRENT_COMPANY_KEY, JSON.stringify(nextCompanyId));
-                if (nextCompanyId) {
+                if (!nextCompanyId) {
                      router.push('/selecionar-empresa');
                 }
             }
@@ -136,14 +138,17 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
     const useScopedData = <T,>(key: string, defaultValue: T): [T, (value: T) => void] => {
         const scopedKey = `company-${currentCompany}-${key}`;
         
+        // Use a ref to store the defaultValue so it doesn't trigger useEffect on every render
+        const defaultValueRef = useRef(defaultValue);
+
         const [data, setData] = useState<T>(() => {
-            if (typeof window === 'undefined' || !currentCompany) return defaultValue;
+            if (typeof window === 'undefined' || !currentCompany) return defaultValueRef.current;
             try {
                 const item = localStorage.getItem(scopedKey);
-                return item ? JSON.parse(item) : defaultValue;
+                return item ? JSON.parse(item) : defaultValueRef.current;
             } catch (error) {
                 console.error(`Error reading ${scopedKey} from localStorage`, error);
-                return defaultValue;
+                return defaultValueRef.current;
             }
         });
 
@@ -152,15 +157,18 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
             if (isLoaded && currentCompany) {
                  try {
                     const item = localStorage.getItem(scopedKey);
-                    setData(item ? JSON.parse(item) : defaultValue);
+                    // Use the ref for the default value
+                    const value = item ? JSON.parse(item) : defaultValueRef.current;
+                    setData(value);
                 } catch (error) {
                     console.error(`Error re-reading ${scopedKey} from localStorage on company switch`, error);
-                    setData(defaultValue);
+                    setData(defaultValueRef.current);
                 }
             } else if (!currentCompany) {
-                setData(defaultValue);
+                setData(defaultValueRef.current);
             }
-        }, [currentCompany, isLoaded, scopedKey, defaultValue]);
+        // Only depend on stable values. defaultValue is now in a ref.
+        }, [currentCompany, isLoaded, scopedKey]);
 
 
         const setScopedData = useCallback((value: T | ((prev: T) => T)) => {
