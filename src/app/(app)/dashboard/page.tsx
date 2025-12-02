@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Settings, User, Briefcase, FileText, ArrowRight, MoreHorizontal } from 'lucide-react';
@@ -91,7 +92,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="grid flex-1 grid-cols-12 gap-6">
+    <div className="grid grid-cols-12 gap-6">
         <div className="col-span-12 xl:col-span-9 flex flex-col gap-6">
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                 {allKpis.map((kpi) => (
