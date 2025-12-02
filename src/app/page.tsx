@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Building2, Mail, Lock, User } from 'lucide-react';
+import { Building2, Mail, Lock, User, Phone, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import Image from 'next/image';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -34,38 +36,46 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
+  const background = PlaceHolderImages.find(p => p.id === 'login-background');
+
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
-      <Card className="w-full max-w-4xl grid lg:grid-cols-2 shadow-2xl overflow-hidden">
+      <Card className="w-full max-w-4xl grid lg:grid-cols-2 shadow-2xl overflow-hidden rounded-2xl">
         {/* Left Panel */}
-        <div className="hidden lg:flex flex-col justify-center p-12 bg-primary text-primary-foreground relative">
-            {/* Abstract Shapes */}
-            <div className="absolute top-0 left-0 -translate-x-1/4 -translate-y-1/4 w-48 h-48 bg-primary-foreground/5 rounded-full" />
-            <div className="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4 w-32 h-32 bg-primary-foreground/5 rounded-full" />
-            
-            <div className="relative z-10 space-y-4">
-                <div className="flex items-center gap-3 text-white">
-                    <Building2 className="h-10 w-10" />
-                    <h1 className="text-4xl font-bold font-headline">EscopoV3</h1>
-                </div>
-                <h2 className="text-3xl font-bold">Bem-vindo(a) de volta!</h2>
-                <p className="text-primary-foreground/80">
-                  Acesse sua conta para gerenciar sua contabilidade com eficiência e segurança.
-                </p>
+        <div className="hidden lg:flex flex-col justify-center p-12 bg-primary text-primary-foreground relative overflow-hidden">
+          {background && (
+             <Image
+              src={background.imageUrl}
+              alt={background.description}
+              fill
+              className="object-cover brightness-50"
+              data-ai-hint={background.imageHint}
+            />
+          )}
+          <div className="relative z-10 space-y-4">
+            <div className="flex items-center gap-3 text-white">
+              <Building2 className="h-10 w-10" />
+              <h1 className="text-4xl font-bold font-headline">EscopoV3</h1>
             </div>
+            <h2 className="text-3xl font-bold">Bem-vindo(a) de volta!</h2>
+            <p className="text-primary-foreground/80">
+              Acesse sua conta para gerenciar sua contabilidade com eficiência e segurança.
+            </p>
+          </div>
         </div>
         
         {/* Right Panel */}
-        <div className="p-8 sm:p-12 bg-card">
-            <div className="space-y-4">
+        <div className="p-8 sm:p-12 bg-card flex flex-col justify-center">
+            <div className="space-y-2 mb-8">
               <h2 className="text-3xl font-bold">{isLogin ? 'Login' : 'Criar Conta'}</h2>
               <p className="text-muted-foreground">
                 {isLogin ? 'Insira seus dados para acessar o sistema.' : 'Preencha os campos para se registrar.'}
               </p>
             </div>
 
-            <div className="mt-8 space-y-6">
+            <div className="space-y-6">
                 <div className="space-y-4">
                     <div className="relative">
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -73,7 +83,7 @@ export default function LoginPage() {
                     </div>
                     <div className="relative">
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <Input id="password" type="password" placeholder="Senha" required className="pl-10" />
+                        <Input id="password" type={showPassword ? "text" : "password"} placeholder="Senha" required className="pl-10" />
                     </div>
                      {!isLogin && (
                         <div className="relative">
@@ -126,6 +136,25 @@ export default function LoginPage() {
                         {isLogin ? 'Crie uma agora' : 'Faça login'}
                     </button>
                 </p>
+                
+                <div className="mt-8 text-center text-sm text-muted-foreground">
+                  <p className="mb-4">Precisa de Ajuda?</p>
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
+                      <a href="tel:+5562998554529" className="flex items-center gap-2 hover:text-primary transition-colors">
+                          <Phone className="h-4 w-4" />
+                          +55 (62) 99855-4529
+                      </a>
+                      <a href="mailto:geovaniwn@gmail.com" className="flex items-center gap-2 hover:text-primary transition-colors">
+                          <Mail className="h-4 w-4" />
+                          geovaniwn@gmail.com
+                      </a>
+                      <a href="https://wa.me/5562992127752" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-primary transition-colors">
+                          <MessageSquare className="h-4 w-4" />
+                          WhatsApp
+                      </a>
+                  </div>
+              </div>
+
             </div>
         </div>
       </Card>
