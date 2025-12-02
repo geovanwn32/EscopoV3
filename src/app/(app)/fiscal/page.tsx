@@ -76,7 +76,7 @@ interface XmlFile {
 
 export default function FiscalPage() {
     const { toast } = useToast();
-    const { useScopedData, currentCompany } = useCompany();
+    const { useScopedData, companies, currentCompany } = useCompany();
 
     const [xmls, setXmls] = useScopedData<XmlFile[]>('fiscal-xmls', []);
     const [notasProduto, setNotasProduto] = useScopedData<NotaFiscal[]>('fiscal-notasProduto', []);
@@ -99,11 +99,21 @@ export default function FiscalPage() {
             return;
         }
 
+        const activeCompany = companies.find(c => c.id === currentCompany);
+        const companyCnpj = activeCompany?.data?.cnpj?.replace(/\D/g, '');
+
+        if (!companyCnpj) {
+             toast({ variant: 'destructive', title: 'CNPJ da empresa não encontrado', description: 'Cadastre o CNPJ na tela "Minha Empresa" para validar os arquivos.' });
+            return;
+        }
+
+
         const files = event.target.files;
         if (!files || files.length === 0) return;
 
         const newFiles: XmlFile[] = [];
         const rejectedFiles: string[] = [];
+        const invalidCnpjFiles: string[] = [];
         let successCount = 0;
 
         const allNotaNumeros = [
@@ -118,27 +128,61 @@ export default function FiscalPage() {
                 reader.onload = (e) => {
                     const content = e.target?.result as string;
 
+                    // 1. Check for duplicates (file name and content)
                     const isDuplicate = xmls.some(
                         existingFile => existingFile.fileName === file.name && existingFile.fileContent === content
                     );
-                    
+
+                    // 2. Check if already launched (by nota number)
                     const numeroNotaMatch = content.match(/<nNF>(.*?)<\/nNF>/) || content.match(/<Numero>(.*?)<\/Numero>/);
                     const numeroNota = numeroNotaMatch ? numeroNotaMatch[1] : null;
-
                     const isAlreadyLaunched = numeroNota ? allNotaNumeros.includes(numeroNota) : false;
 
                     if (isDuplicate || isAlreadyLaunched) {
                         rejectedFiles.push(file.name);
-                    } else {
-                        newFiles.push({
-                            id: Date.now() + Math.random(),
-                            fileName: file.name,
-                            fileContent: content,
-                            date: new Date().toLocaleDateString('pt-BR'),
-                            status: 'Importado',
-                        });
-                        successCount++;
+                        resolve();
+                        return;
                     }
+                    
+                    // 3. Professional CNPJ Validation
+                    const getCnpjsFromXml = (xmlContent: string): string[] => {
+                        const cnpjs: Set<string> = new Set();
+                        
+                        // NFe (emitente/destinatario)
+                        const emitCnpj = xmlContent.match(/<emit>[\s\S]*?<CNPJ>(.*?)<\/CNPJ>/)?.[1];
+                        const destCnpj = xmlContent.match(/<dest>[\s\S]*?<CNPJ>(.*?)<\/CNPJ>/)?.[1];
+                        
+                        if (emitCnpj) cnpjs.add(emitCnpj.replace(/\D/g, ''));
+                        if (destCnpj) cnpjs.add(destCnpj.replace(/\D/g, ''));
+
+                        // NFSe (prestador/tomador) - various formats
+                        const prestadorCnpj = xmlContent.match(/<Prestador(?:Servico)?>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1] || xmlContent.match(/<emit>[\s\S]*?<CNPJ>(.*?)<\/CNPJ>/)?.[1];
+                        const tomadorCnpj = xmlContent.match(/<Tomador(?:Servico)?>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1] || xmlContent.match(/<(?:dest|toma)>[\s\S]*?<CNPJ>(.*?)<\/CNPJ>/)?.[1];
+
+                        if (prestadorCnpj) cnpjs.add(prestadorCnpj.replace(/\D/g, ''));
+                        if (tomadorCnpj) cnpjs.add(tomadorCnpj.replace(/\D/g, ''));
+                        
+                        return Array.from(cnpjs);
+                    }
+
+                    const xmlCnpjs = getCnpjsFromXml(content);
+                    const isCnpjValid = xmlCnpjs.includes(companyCnpj);
+
+                    if (!isCnpjValid) {
+                        invalidCnpjFiles.push(file.name);
+                        resolve();
+                        return;
+                    }
+
+                    // If all checks pass
+                    newFiles.push({
+                        id: Date.now() + Math.random(),
+                        fileName: file.name,
+                        fileContent: content,
+                        date: new Date().toLocaleDateString('pt-BR'),
+                        status: 'Importado',
+                    });
+                    successCount++;
                     resolve();
                 };
                 reader.readAsText(file);
@@ -160,6 +204,14 @@ export default function FiscalPage() {
                     variant: 'destructive',
                     title: 'Arquivos Duplicados ou Já Lançados',
                     description: `Estes arquivos já existem ou foram lançados: ${rejectedFiles.join(', ')}`,
+                });
+            }
+
+            if (invalidCnpjFiles.length > 0) {
+                toast({
+                    variant: 'destructive',
+                    title: 'CNPJ Inválido',
+                    description: `Estes arquivos não pertencem à empresa ativa: ${invalidCnpjFiles.join(', ')}`,
                 });
             }
 
@@ -1382,5 +1434,7 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave, isReadO
     
 
 
+
+    
 
     
