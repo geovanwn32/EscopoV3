@@ -93,6 +93,7 @@ const secondaryMenu: NavItem[] = [
         label: 'Cadastros', 
         icon: Archive,
         subItems: [
+            { href: '/minha-empresa', label: 'Minha Empresa', icon: Building },
             { href: '/parceiros', label: 'Parceiros', icon: Archive },
             { href: '/funcionarios', label: 'Funcionários', icon: Archive },
             { href: '/socios', label: 'Sócios', icon: Archive },
@@ -236,9 +237,17 @@ export function SidebarNav() {
             </SidebarMenuItem>
              <SidebarMenuItem>
                 <SidebarMenuButton asChild size="lg" tooltip="Suporte" isActive={isNavItemActive('/suporte')}>
-                    <Link href="/suporte">
+                    <Link href="#">
                         <LifeBuoy />
                         <span className='group-data-[collapsible=icon]:hidden'>Suporte</span>
+                    </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+                <SidebarMenuButton asChild size="lg" tooltip="Admin" isActive={isNavItemActive('/admin')}>
+                    <Link href="/admin">
+                        <Shield />
+                        <span className='group-data-[collapsible=icon]:hidden'>Admin</span>
                     </Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
