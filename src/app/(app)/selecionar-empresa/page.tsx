@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -35,8 +35,7 @@ export default function SelecionarEmpresaPage() {
   };
 
   const handleEditCompany = (company: Company) => {
-    setEditingCompany(company);
-    setIsFormOpen(true);
+    router.push('/minha-empresa');
   };
   
   const handleDeleteCompany = (companyId: number) => {
@@ -277,4 +276,3 @@ function CompanyForm({ company, onSave, onCancel }: CompanyFormProps) {
     </DialogContent>
   );
 }
-
