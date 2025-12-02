@@ -54,16 +54,6 @@ export default function LoginPage() {
                 <p className="text-primary-foreground/80 mb-8 max-w-sm">
                     Lorem ipsum é que ele tem uma distribuição mais ou menos normal de letras, ao contrário de usar 'Conteúdo aqui, conteúdo aqui', fazendo com que pareça inglês legível.
                 </p>
-                {characterImage && 
-                    <Image 
-                        src={characterImage.imageUrl}
-                        alt={characterImage.description}
-                        width={300}
-                        height={400}
-                        className="mx-auto"
-                        data-ai-hint={characterImage.imageHint}
-                    />
-                }
             </div>
         </div>
 
@@ -141,5 +131,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    
