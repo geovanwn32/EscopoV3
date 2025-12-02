@@ -21,6 +21,10 @@ import {
   HelpCircle,
   ChevronsUpDown,
   Building,
+  Shield,
+  LayoutGrid,
+  PlusCircle,
+  Check,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -46,8 +50,8 @@ const mainNav: NavItem[] = [
 const additionalNav: NavItem[] = [
   { href: '/financeiro', label: 'Financeiro', icon: Banknote },
   { href: '/cadastros', label: 'Cadastros', icon: Archive },
-  { href: '/configuracoes', label: 'Settings', icon: Settings },
-  { href: '/utilitarios/gov-status', label: 'Call Support', icon: HelpCircle },
+  { href: '/configuracoes', label: 'Configurações', icon: Settings },
+  { href: '/utilitarios/gov-status', label: 'Suporte', icon: HelpCircle },
 ];
 
 
@@ -73,6 +77,10 @@ export function SidebarNav() {
   const handleGoToSelection = () => {
     router.push('/selecionar-empresa');
   }
+  
+  const handleGoToAdmin = () => {
+    router.push('/admin');
+  };
 
   return (
     <>
@@ -84,44 +92,16 @@ export function SidebarNav() {
               </Link>
           </Button>
           <span className="text-xl font-semibold font-headline text-foreground group-data-[collapsible=icon]:hidden">
-              Square
+              EscopoV3
           </span>
         </div>
       </SidebarHeader>
 
       <SidebarContent className="p-4">
         
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="w-full justify-between items-center group-data-[collapsible=icon]:hidden">
-                    <div className="flex items-center gap-3 text-left">
-                        <Avatar className='h-8 w-8'>
-                            <AvatarFallback className='text-xs bg-muted text-muted-foreground'>
-                                {activeCompany?.name.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                        </Avatar>
-                        <div className='flex flex-col'>
-                            <span className="font-semibold text-sm">{activeCompany?.name}</span>
-                            <span className="text-xs text-muted-foreground">ID: {activeCompany?.id}</span>
-                        </div>
-                    </div>
-                    <ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
-                {companies.map(company => (
-                    <DropdownMenuItem key={company.id} onSelect={() => handleCompanySwitch(company.id)}>
-                        {company.name}
-                    </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={handleGoToSelection}>Manage Companies</DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
-
         <SidebarMenu className="mt-6">
             <p className="px-3 py-2 text-xs font-semibold text-muted-foreground/80 group-data-[collapsible=icon]:hidden">
-                MAIN MENU
+                MENU PRINCIPAL
             </p>
             {mainNav.map((item) => (
                 <SidebarMenuItem key={item.href}>
@@ -142,7 +122,7 @@ export function SidebarNav() {
         
         <SidebarMenu className="mt-6">
             <p className="px-3 py-2 text-xs font-semibold text-muted-foreground/80 group-data-[collapsible=icon]:hidden">
-                ADDITIONAL
+                ADICIONAL
             </p>
             {additionalNav.map((item) => (
                 <SidebarMenuItem key={item.href}>
