@@ -61,7 +61,7 @@ function DataBlocksAnimation() {
     );
 }
 
-export default function LoginPage() {
+export default function LoginPage({}: { params: unknown; searchParams: unknown }) {
   const router = useRouter();
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -208,6 +208,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-
-    
