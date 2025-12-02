@@ -2,7 +2,7 @@
 'use client';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { User, Bell, ChevronsUpDown, Check, PlusCircle, Building2, Search, Settings, LogOut } from 'lucide-react';
+import { User, Bell, ChevronsUpDown, Check, PlusCircle, Building2, Search, Settings, LogOut, AlertTriangle, ArrowRightCircle } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,7 +11,6 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
   Popover,
@@ -24,8 +23,9 @@ import { cn } from '@/lib/utils';
 import { Input } from '../ui/input';
 import { useRouter } from 'next/navigation';
 import { Badge } from '../ui/badge';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { NAV_TITLES } from '@/lib/nav-titles';
+import { Conta } from '@/types/financeiro';
 
 export default function Header() {
   const avatar = PlaceHolderImages.find((img) => img.id === 'user-avatar-1');
@@ -51,10 +51,20 @@ export default function Header() {
 }
 
 function Notifications() {
-  const notifications = [
-    { id: 1, title: 'Nova atualização disponível', description: 'Versão 3.1.0 já pode ser instalada.' },
-    { id: 2, title: 'Fatura #1234 vence amanhã', description: 'Cliente: Soluções Inovadoras S.A.' },
-  ];
+  const { useScopedData } = useCompany();
+  const [contasReceber] = useScopedData<Conta[]>('financeiro-contas-a-receber', []);
+  
+  const notifications = useMemo(() => {
+    return contasReceber
+      .filter(c => c.status === 'Atrasado')
+      .map(c => ({
+        id: `cr-${c.id}`,
+        title: 'Conta a receber atrasada',
+        description: `${c.description} - ${c.partnerName}`,
+        link: '/financeiro/contas-a-receber',
+      }));
+  }, [contasReceber]);
+
   const hasUnread = notifications.length > 0;
 
   return (
@@ -72,14 +82,19 @@ function Notifications() {
       <DropdownMenuContent className="w-80" align="end">
         <DropdownMenuLabel className='flex justify-between items-center'>
             Notificações
-            <Badge variant="secondary">{notifications.length}</Badge>
+            {hasUnread && <Badge variant="secondary">{notifications.length}</Badge>}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         {notifications.length > 0 ? (
           notifications.map(n => (
-            <DropdownMenuItem key={n.id} className="flex flex-col items-start gap-1">
-              <p className="font-semibold">{n.title}</p>
-              <p className="text-xs text-muted-foreground">{n.description}</p>
+            <DropdownMenuItem key={n.id} asChild>
+              <Link href={n.link} className="flex items-start gap-3">
+                 <AlertTriangle className="h-4 w-4 text-destructive mt-1" />
+                <div className="flex-1">
+                  <p className="font-semibold text-sm">{n.title}</p>
+                  <p className="text-xs text-muted-foreground">{n.description}</p>
+                </div>
+              </Link>
             </DropdownMenuItem>
           ))
         ) : (
@@ -87,10 +102,14 @@ function Notifications() {
             Nenhuma notificação nova.
           </div>
         )}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild className='justify-center'>
-            <Link href="#">Ver todas as notificações</Link>
-        </DropdownMenuItem>
+        {hasUnread && (
+            <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild className='justify-center'>
+                    <Link href="/dashboard">Ver todas no dashboard</Link>
+                </DropdownMenuItem>
+            </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )
@@ -144,5 +163,3 @@ function UserMenu({ avatar }: { avatar?: { imageUrl: string; imageHint: string }
     </DropdownMenu>
   );
 }
-
-    
