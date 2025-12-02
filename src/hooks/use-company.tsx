@@ -97,14 +97,14 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
         const newCompanyId = Date.now();
         const newCompany: Company = {
             id: newCompanyId,
-            name: `Nova Empresa ${companies.length + 1}`,
+            name: ``, // Start with an empty name
             data: {},
         };
         setCompanies(prev => [...prev, newCompany]);
         // Switch to the new company and navigate to the edit page
         switchCompany(newCompanyId, false);
         router.push('/minha-empresa');
-    }, [companies.length, router, switchCompany]);
+    }, [router, switchCompany]);
 
     const updateCompany = useCallback((companyId: number, companyData: Company) => {
         setCompanies(prev => prev.map(c => c.id === companyId ? companyData : c));
