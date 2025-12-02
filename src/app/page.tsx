@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { PlaceHolderImages } from '@/lib/placeholder-images'
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -35,7 +34,6 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true)
-  const bgImage = PlaceHolderImages.find(img => img.id === 'login-background');
 
   return (
     <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
@@ -103,16 +101,7 @@ export default function LoginPage() {
         </div>
       </div>
       <div className="hidden bg-muted lg:block relative">
-        {bgImage && (
-             <img
-                src={bgImage.imageUrl}
-                data-ai-hint={bgImage.imageHint}
-                alt={bgImage.description}
-                className="h-full w-full object-cover"
-            />
-        )}
-        <div className='absolute inset-0 bg-gradient-to-t from-background/80 via-background/40 to-background/20' />
-        <div className="absolute inset-0 flex flex-col items-start justify-end p-12 text-background">
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-12 text-background text-center">
             <div className="max-w-xl space-y-4">
                 <h2 className="text-3xl font-bold leading-tight text-white shadow-2xl">Bem-vindo(a) ao EscopoV3</h2>
                 <p className="text-lg text-white/90 leading-relaxed shadow-xl">
