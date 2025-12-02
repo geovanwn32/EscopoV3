@@ -2,7 +2,7 @@
 
 'use client';
 
-import { Settings, User, Briefcase, FileText, ArrowRight, MoreHorizontal } from 'lucide-react';
+import { Settings, User, Briefcase, FileText, ArrowRight, MoreHorizontal, AlertTriangle, CheckCircle, ArrowRightCircle } from 'lucide-react';
 import { useCompany } from '@/hooks/use-company';
 import KpiCard from '@/components/dashboard/kpi-card';
 import ResultsChart from '@/components/dashboard/results-chart';
@@ -12,6 +12,9 @@ import { Conta } from '@/types/financeiro';
 import { NotaFiscal } from '@/types/fiscal';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DonutChart } from '@/components/ui/donut-chart';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 const defaultKpiSettings = [
   { id: 'faturamento', title: 'Faturamento', enabled: true },
@@ -80,6 +83,22 @@ export default function DashboardPage() {
       { id: 'notas', title: 'Notas Emitidas', value: kpiData.notasEmitidas.toString(), icon: <FileText />, variant: 'default' },
       { id: 'resultado', title: 'Resultado', value: kpiData.resultado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL'}), icon: <ArrowRight />, variant: 'primary' },
   ];
+  
+  const overdueNotifications = useMemo(() => {
+    return contasReceber
+      .filter(c => c.status === 'Atrasado')
+      .map(c => ({
+        id: `cr-${c.id}`,
+        type: 'overdue-receivable' as const,
+        title: 'Conta atrasada',
+        description: `${c.description} - ${c.partnerName}`,
+        amount: c.amount,
+        link: '/financeiro/contas-a-receber',
+      }));
+  }, [contasReceber]);
+
+  const allNotifications = [...overdueNotifications];
+
 
   return (
     <div className="grid grid-cols-12 gap-6">
@@ -113,12 +132,46 @@ export default function DashboardPage() {
             </div>
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-1">
                 <div className="lg:col-span-1">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Notificações</CardTitle>
+                    <Card className='flex flex-col h-full'>
+                         <CardHeader>
+                            <CardTitle className="flex items-center justify-between">
+                                <span>Notificações</span>
+                                {allNotifications.length > 0 && (
+                                    <span className="flex items-center text-sm font-medium text-muted-foreground">
+                                        <AlertTriangle className="mr-2 h-4 w-4 text-amber-500" />
+                                        {allNotifications.length} Pendência(s)
+                                    </span>
+                                )}
+                            </CardTitle>
                         </CardHeader>
-                        <CardContent className="text-center text-muted-foreground pt-8">
-                            <p>Nenhuma notificação no momento.</p>
+                        <CardContent className="flex-grow">
+                             {allNotifications.length > 0 ? (
+                                <ScrollArea className="h-48">
+                                    <div className="space-y-3">
+                                    {allNotifications.map(notification => (
+                                        <div key={notification.id} className="flex items-center gap-4 rounded-lg border p-3">
+                                            <AlertTriangle className="h-6 w-6 text-destructive" />
+                                            <div className="flex-1">
+                                                <p className="font-semibold">{notification.title}</p>
+                                                <p className="text-sm text-muted-foreground">{notification.description}</p>
+                                                <p className="text-sm font-mono text-destructive">{notification.amount?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                                            </div>
+                                            <Button variant="ghost" size="icon" asChild>
+                                                <Link href={notification.link}>
+                                                    <ArrowRightCircle className="h-5 w-5 text-muted-foreground" />
+                                                </Link>
+                                            </Button>
+                                        </div>
+                                    ))}
+                                    </div>
+                                </ScrollArea>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                                    <CheckCircle className="h-10 w-10 text-emerald-500 mb-2" />
+                                    <p className="font-medium text-foreground">Tudo em ordem!</p>
+                                    <p>Nenhuma notificação ou pendência no momento.</p>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>
