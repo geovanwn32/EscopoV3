@@ -20,6 +20,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const actions = [
     {
@@ -64,7 +65,6 @@ interface XmlFile {
     file: string;
     date: string;
     status: 'Importado' | 'Lançado' | 'Erro';
-    // This simulates the type of note detected from the XML
     model?: 'produto' | 'saida' | 'servico';
 }
 
@@ -431,15 +431,29 @@ function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boo
         }
     }, [tipoNota]);
 
-    const sections = [
-        { id: 'geral', label: 'Dados Gerais' },
-        { id: 'emitente', label: 'Emitente / Dest.' },
-        { id: tipoNota === 'servico' ? 'servicos' : 'produtos', label: tipoNota === 'servico' ? 'Serviços' : 'Itens da Nota' },
-        { id: 'tributos', label: 'Tributos' },
-        { id: 'transporte', label: 'Transporte' },
-        { id: 'faturas', label: 'Faturas' },
-        { id: 'info', label: 'Informações Adicionais' },
-    ];
+    const sections = 
+        tipoNota === 'servico' ? [
+            { id: 'identificacao', label: 'Identificação' },
+            { id: 'prestador', label: 'Prestador' },
+            { id: 'tomador', label: 'Tomador' },
+            { id: 'servico', label: 'Dados do Serviço' },
+            { id: 'tributos', label: 'Tributos' },
+            { id: 'pagamento', label: 'Pagamento' },
+            { id: 'info', label: 'Info Adicionais' },
+        ] : [
+            { id: 'geral', label: 'Dados Gerais' },
+            { id: 'emitente', label: 'Emitente / Dest.' },
+            { id: 'produtos', label: 'Itens da Nota' },
+            { id: 'tributos', label: 'Tributos' },
+            { id: 'transporte', label: 'Transporte' },
+            { id: 'faturas', label: 'Faturas' },
+            { id: 'info', label: 'Informações Adicionais' },
+        ];
+        
+    useEffect(() => {
+        setActiveSection(sections[0].id);
+    }, [tipoNota]);
+
 
     // Product Handlers
     const handleAddProduct = () => {
@@ -478,7 +492,7 @@ function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boo
 
     const handleServiceChange = (id: number, field: keyof Omit<ServiceItem, 'id'>, value: string | number) => {
         setServiceItems(prev => prev.map(item =>
-            item.id === id ? { ...item, [field]: value } : item
+            item.id === id ? { ...item, [field]: typeof value === 'string' ? parseFloat(value) || 0 : value } : item
         ));
     };
     
@@ -502,9 +516,170 @@ function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boo
 
     const totalProdutos = productItems.reduce((acc, item) => acc + item.total, 0);
     const totalServicos = serviceItems.reduce((acc, item) => acc + (Number(item.value) || 0), 0);
+    
+    const totalDescontos = 0; // Placeholder
+    const totalImpostos = 0; // Placeholder
     const totalNota = tipoNota === 'servico' ? totalServicos : totalProdutos;
+    const totalLiquido = totalNota - totalDescontos - totalImpostos;
+
+    const renderServiceForm = () => {
+        switch (activeSection) {
+            case 'identificacao':
+                return (
+                    <Card>
+                        <CardHeader><CardTitle>1. Identificação da Nota de Serviço</CardTitle></CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="space-y-2"><Label>Tipo da Nota</Label><Select><SelectTrigger><SelectValue placeholder="Prestado" /></SelectTrigger><SelectContent><SelectItem value="prestado">Prestado</SelectItem><SelectItem value="tomado">Tomado</SelectItem></SelectContent></Select></div>
+                                <div className="space-y-2"><Label>Número</Label><Input /></div>
+                                <div className="space-y-2"><Label>Série</Label><Input /></div>
+                                <div className="space-y-2"><Label>Data de Emissão</Label><Input type="date"/></div>
+                                <div className="space-y-2"><Label>Competência</Label><Input type="month"/></div>
+                                <div className="space-y-2 col-span-2"><Label>Natureza da Operação</Label><Input /></div>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                <div className="space-y-2"><Label>Município da Prestação</Label><Input /></div>
+                                <div className="space-y-2"><Label>Código IBGE</Label><Input /></div>
+                                <div className="space-y-2"><Label>Regime Tributação</Label><Select><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger><SelectContent><SelectItem value="nenhum">Nenhum</SelectItem></SelectContent></Select></div>
+                            </div>
+                            <div className="flex flex-wrap gap-4 pt-2">
+                                <div className="flex items-center space-x-2"><Checkbox id="estimativa" /><Label htmlFor="estimativa">Estimativa</Label></div>
+                                <div className="flex items-center space-x-2"><Checkbox id="unipro" /><Label htmlFor="unipro">Soc. Uniprofissional</Label></div>
+                                <div className="flex items-center space-x-2"><Checkbox id="mei" /><Label htmlFor="mei">MEI</Label></div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )
+            case 'prestador':
+            case 'tomador':
+                return (
+                     <Card>
+                        <CardHeader><CardTitle>{activeSection === 'prestador' ? '2. Dados do Prestador' : '3. Dados do Tomador'}</CardTitle></CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                <div className="space-y-2"><Label>CNPJ / CPF</Label><Input /></div>
+                                <div className="space-y-2 col-span-2"><Label>Razão Social</Label><Input /></div>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                <div className="space-y-2"><Label>Inscrição Municipal</Label><Input /></div>
+                                <div className="space-y-2"><Label>Email</Label><Input type="email" /></div>
+                                <div className="space-y-2"><Label>Telefone</Label><Input type="tel" /></div>
+                            </div>
+                             <Separator className="my-4"/>
+                            <p className="text-sm font-medium text-foreground">Endereço</p>
+                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="space-y-2"><Label>CEP</Label><Input /></div>
+                                <div className="space-y-2 col-span-2"><Label>Logradouro</Label><Input /></div>
+                                <div className="space-y-2"><Label>Número</Label><Input /></div>
+                                <div className="space-y-2"><Label>Complemento</Label><Input /></div>
+                                <div className="space-y-2"><Label>Bairro</Label><Input /></div>
+                                <div className="space-y-2"><Label>Cidade</Label><Input /></div>
+                                <div className="space-y-2"><Label>UF</Label><Input /></div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )
+            case 'servico':
+                return (
+                     <Card>
+                        <CardHeader><CardTitle>4. Dados do Serviço</CardTitle></CardHeader>
+                        <CardContent className="space-y-4">
+                             <div className="space-y-2"><Label>Descrição Detalhada do Serviço</Label><Textarea /></div>
+                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                 <div className="space-y-2"><Label>Código do Serviço (Municipal)</Label><Input /></div>
+                                 <div className="space-y-2"><Label>Item da Lista (LC 116)</Label><Input /></div>
+                                 <div className="space-y-2"><Label>Local da Execução</Label><Select><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger><SelectContent><SelectItem value="mesmo">Mesmo Município</SelectItem><SelectItem value="outro">Outro Município</SelectItem><SelectItem value="exterior">Exterior</SelectItem></SelectContent></Select></div>
+                             </div>
+                             <Separator className="my-4"/>
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 items-end">
+                                 <div className="space-y-2"><Label>Unidade</Label><Input /></div>
+                                 <div className="space-y-2"><Label>Quantidade</Label><Input type="number" /></div>
+                                 <div className="space-y-2"><Label>Valor Unitário</Label><Input type="number" /></div>
+                                 <div className="space-y-2"><Label>Desc. Condic.</Label><Input type="number" /></div>
+                                 <div className="space-y-2"><Label>Desc. Incondic.</Label><Input type="number" /></div>
+                             </div>
+                        </CardContent>
+                    </Card>
+                )
+            case 'tributos':
+                return (
+                    <Card>
+                        <CardHeader><CardTitle>5. Tributos da NFS-e</CardTitle></CardHeader>
+                        <CardContent className="space-y-6">
+                            {/* ISS */}
+                            <div>
+                                <h4 className="font-semibold text-primary mb-2">ISS</h4>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 items-end">
+                                    <div className="space-y-2"><Label>Responsável</Label><Select><SelectTrigger><SelectValue placeholder="Prestador" /></SelectTrigger><SelectContent><SelectItem value="prestador">Prestador</SelectItem><SelectItem value="tomador">Tomador (Retenção)</SelectItem></SelectContent></Select></div>
+                                    <div className="space-y-2"><Label>Base de Cálculo</Label><Input type="number" readOnly value="0,00"/></div>
+                                    <div className="space-y-2"><Label>Alíquota (%)</Label><Input type="number" /></div>
+                                    <div className="space-y-2"><Label>Valor ISS</Label><Input type="number" readOnly value="0,00"/></div>
+                                </div>
+                                <div className="flex gap-4 pt-4">
+                                    <div className="flex items-center space-x-2"><Checkbox id="iss-incidencia" defaultChecked /><Label htmlFor="iss-incidencia">Incidência de ISS</Label></div>
+                                    <div className="flex items-center space-x-2"><Checkbox id="simples" /><Label htmlFor="simples">Optante pelo Simples Nacional</Label></div>
+                                </div>
+                            </div>
+                             <Separator />
+                            {/* Retenções Federais */}
+                            <div>
+                                <h4 className="font-semibold text-primary mb-2">Retenções Federais (RFB)</h4>
+                                <div className="space-y-3">
+                                    {['IRRF', 'INSS', 'PIS', 'COFINS', 'CSLL'].map(imposto => (
+                                        <div key={imposto} className="grid grid-cols-3 md:grid-cols-5 gap-x-4 gap-y-2 items-center">
+                                            <Label className="md:col-span-2 font-medium">{imposto}</Label>
+                                            <div className="space-y-1"><Label className="text-xs text-muted-foreground">Base</Label><Input type="number" /></div>
+                                            <div className="space-y-1"><Label className="text-xs text-muted-foreground">Alíquota (%)</Label><Input type="number" /></div>
+                                            <div className="space-y-1"><Label className="text-xs text-muted-foreground">Valor</Label><Input type="number" readOnly value="0,00"/></div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )
+            case 'pagamento':
+                 return (
+                    <Card>
+                        <CardHeader><CardTitle>6. Dados de Pagamento</CardTitle></CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                                <div className="space-y-2">
+                                    <Label>Forma de Pagamento</Label>
+                                    <Select><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>
+                                        <SelectItem value="pix">Pix</SelectItem>
+                                        <SelectItem value="boleto">Boleto</SelectItem>
+                                        <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                                        <SelectItem value="cartao">Cartão</SelectItem>
+                                        <SelectItem value="transferencia">Transferência</SelectItem>
+                                    </SelectContent></Select>
+                                </div>
+                                <div className="space-y-2"><Label>Nº de Parcelas</Label><Input type="number"/></div>
+                                <div className="space-y-2"><Label>Valor</Label><Input type="number"/></div>
+                                <div className="space-y-2"><Label>Vencimento</Label><Input type="date"/></div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )
+            case 'info':
+                 return (
+                    <Card>
+                        <CardHeader><CardTitle>7. Informações Adicionais</CardTitle></CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2"><Label>Observações ao Tomador</Label><Textarea rows={3} /></div>
+                            <div className="space-y-2"><Label>Observações ao Fisco</Label><Textarea rows={3} /></div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2"><Label>Nº do Processo</Label><Input /></div>
+                                <div className="space-y-2"><Label>Código CNAE</Label><Input /></div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                );
+            default: return null;
+        }
+    }
   
-    const renderSection = () => {
+    const renderProductForm = () => {
         switch (activeSection) {
             case 'geral':
                 return (
@@ -757,7 +932,7 @@ function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boo
           </DialogDescription>
         </DialogHeader>
         
-        <div className="flex-1 grid grid-cols-[200px_1fr] gap-6 overflow-hidden">
+        <div className="flex-1 grid grid-cols-[240px_1fr] gap-6 overflow-hidden">
             <aside className="border-r pr-4">
                 <nav className="flex flex-col gap-1">
                     {sections.map(section => (
@@ -774,17 +949,27 @@ function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boo
             </aside>
             <main className="overflow-y-auto">
                 <ScrollArea className="h-full pr-6">
-                    {renderSection()}
+                    {tipoNota === 'servico' ? renderServiceForm() : renderProductForm()}
                 </ScrollArea>
             </main>
         </div>
 
         <DialogFooter className="border-t pt-4 mt-auto">
             <div className="flex w-full justify-between items-center">
-                <div className="text-sm text-muted-foreground">
-                   {tipoNota !== 'servico' && <p>Total Produtos: <span className="font-bold text-foreground">{totalProdutos.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span></p>}
-                   {tipoNota === 'servico' && <p>Total Serviços: <span className="font-bold text-foreground">{totalServicos.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span></p>}
-                    <p>Total Nota: <span className="font-bold text-foreground text-lg">{totalNota.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span></p>
+                <div className="text-sm text-muted-foreground space-y-1">
+                   {tipoNota !== 'servico' ? (
+                        <>
+                            <p>Total Produtos: <span className="font-bold text-foreground">{totalProdutos.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span></p>
+                            <p>Total Nota: <span className="font-bold text-foreground text-lg">{totalNota.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span></p>
+                        </>
+                   ) : (
+                        <>
+                            <p>Total Serviços: <span className="font-semibold text-foreground">{totalServicos.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span></p>
+                            <p>Total Descontos: <span className="font-semibold text-foreground">({totalDescontos.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})})</span></p>
+                            <p>Total Impostos Retidos: <span className="font-semibold text-red-600">({totalImpostos.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})})</span></p>
+                            <p className="text-base">Total Líquido: <span className="font-bold text-foreground text-lg">{totalLiquido.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span></p>
+                        </>
+                   )}
                 </div>
                 <div className="flex gap-2">
                     <DialogClose asChild>
