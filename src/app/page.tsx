@@ -2,11 +2,13 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Building2 } from 'lucide-react'
+import { Building2, ShieldCheck, TrendingUp, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel'
+import Autoplay from 'embla-carousel-autoplay'
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -34,6 +36,24 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true)
+
+  const featureSlides = [
+    {
+      icon: <TrendingUp className="h-12 w-12 text-primary" />,
+      title: "Decisões Estratégicas",
+      description: "Transforme números em insights valiosos para o crescimento do seu negócio. Tenha o controle total das finanças e obrigações fiscais."
+    },
+    {
+      icon: <Zap className="h-12 w-12 text-primary" />,
+      title: "Contabilidade em Tempo Real",
+      description: "Sua contabilidade ganha vida: organizada, atualizada e sempre acessível. Acesse sua empresa com poucos cliques, de qualquer lugar."
+    },
+    {
+      icon: <ShieldCheck className="h-12 w-12 text-primary" />,
+      title: "Segurança e Confiança",
+      description: "Gerencie seus dados com a tranquilidade de uma plataforma robusta e segura, projetada para proteger suas informações mais valiosas."
+    }
+  ]
 
   return (
     <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
@@ -100,18 +120,26 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-      <div className="hidden bg-muted lg:block relative">
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-12 text-background text-center">
-            <div className="max-w-xl space-y-4">
-                <h2 className="text-3xl font-bold leading-tight text-white shadow-2xl">Bem-vindo(a) ao EscopoV3</h2>
-                <p className="text-lg text-white/90 leading-relaxed shadow-xl">
-                Aqui sua contabilidade ganha vida: organizada, atualizada e sempre segura. Acesse sua empresa com poucos cliques e tenha o controle total das finanças, obrigações fiscais e relatórios na palma da mão — a qualquer hora, de qualquer lugar.
-                </p>
-                <p className="text-lg text-white/90 leading-relaxed shadow-xl pt-2">
-                Digite suas credenciais e comece agora a transformar números em decisões estratégicas. Estamos felizes por ter você de volta! 🚀
-                </p>
-            </div>
-        </div>
+      <div className="hidden bg-muted lg:flex items-center justify-center p-10">
+        <Carousel
+          className="w-full max-w-md"
+          plugins={[Autoplay({delay: 5000})]}
+          opts={{loop: true}}
+        >
+          <CarouselContent>
+            {featureSlides.map((slide, index) => (
+              <CarouselItem key={index} className="text-center">
+                <div className="flex flex-col items-center justify-center gap-4 p-6">
+                  {slide.icon}
+                  <h3 className="text-2xl font-bold text-foreground">{slide.title}</h3>
+                  <p className="text-muted-foreground leading-relaxed">{slide.description}</p>
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious />
+          <CarouselNext />
+        </Carousel>
       </div>
     </div>
   )
