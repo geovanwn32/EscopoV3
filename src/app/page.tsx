@@ -26,25 +26,31 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const characterImage = PlaceHolderImages.find(img => img.id === 'login-character');
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center p-4 lg:p-8 bg-[#F5F5F5] dark:bg-background">
+    <div className="flex min-h-screen w-full items-center justify-center p-4 lg:p-8 animated-gradient">
       <div className="grid grid-cols-1 lg:grid-cols-2 max-w-6xl w-full mx-auto bg-card text-card-foreground rounded-3xl shadow-2xl overflow-hidden">
         
         {/* Left Panel */}
         <div className="relative hidden lg:flex flex-col justify-between items-center p-12 bg-primary text-primary-foreground text-center">
+            <div className="absolute top-12 left-12 flex items-center gap-3">
+                <Building2 className="h-8 w-8" />
+                <h1 className="text-2xl font-bold">EscopoV3</h1>
+            </div>
+            <div className='my-auto'>
+                 <h2 className="text-4xl font-bold mb-4">Sua plataforma completa de gestão contábil.</h2>
+                <p className="text-primary-foreground/80 max-w-md mx-auto">
+                    Acesse todas as ferramentas que você precisa para gerenciar sua empresa com eficiência e precisão.
+                </p>
+            </div>
+             <p className='text-sm text-primary-foreground/60'>© 2025 EscopoV3. Todos os direitos reservados.</p>
         </div>
 
         {/* Right Panel */}
         <div className="p-8 sm:p-12 flex flex-col justify-center">
             <div className="max-w-md w-full mx-auto">
-                <div className="flex items-center gap-3 mb-4">
-                    <Building2 className="h-8 w-8 text-primary" />
-                    <h1 className="text-2xl font-bold text-foreground">EscopoV3</h1>
-                </div>
 
-                <h2 className="text-3xl font-bold mb-2">{isSignUp ? "Crie uma Conta" : "Bem-vindo"}</h2>
+                <h2 className="text-3xl font-bold mb-2">{isSignUp ? "Crie uma Conta" : "Login"}</h2>
                 <p className="text-muted-foreground mb-8">{isSignUp ? "Insira seus dados para começar." : "Insira seus dados para acessar o sistema."}</p>
 
                 <form className="space-y-4">
@@ -77,7 +83,7 @@ export default function LoginPage() {
                              <div className="flex items-start">
                                 <Checkbox id="terms" />
                                 <Label htmlFor="terms" className="ml-2 font-normal text-muted-foreground text-xs">
-                                    Envie-me ofertas especiais, recomendações personalizadas e dicas de aprendizado.
+                                    Envie-me ofertas especiais e dicas de aprendizado.
                                 </Label>
                              </div>
                            ) : (
@@ -101,11 +107,11 @@ export default function LoginPage() {
 
                 <div className="relative my-8">
                     <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-                    <div className="relative flex justify-center text-xs"><span className="bg-card px-2 text-muted-foreground">Outras opções de login</span></div>
+                    <div className="relative flex justify-center text-xs"><span className="bg-card px-2 text-muted-foreground">Ou continue com</span></div>
                 </div>
 
                 <div className="flex justify-center">
-                    <Button variant="outline" className="gap-2 bg-white hover:bg-gray-100 text-gray-700 border-gray-300 shadow-sm">
+                    <Button variant="outline" className="gap-2 bg-white text-gray-700 border-gray-300 shadow-sm hover:bg-gray-100 dark:bg-card-foreground/5 dark:border-border dark:text-foreground dark:hover:bg-card-foreground/10 transition-colors">
                         <GoogleIcon/>
                         Login com Google
                     </Button>
@@ -122,13 +128,13 @@ export default function LoginPage() {
                     <p className="text-sm text-muted-foreground mb-4">Precisa de Ajuda?</p>
                     <div className="flex justify-center gap-4">
                         <Button variant="ghost" asChild className='text-muted-foreground hover:text-primary'>
-                            <a href="mailto:geovaniwn@gmail.com" aria-label="Enviar email para o suporte">
-                                <Mail className="h-5 w-5" />
-                            </a>
-                        </Button>
-                        <Button variant="ghost" asChild className='text-muted-foreground hover:text-primary'>
                             <a href="https://wa.me/5562998554529" target="_blank" rel="noopener noreferrer" aria-label="Entrar em contato via WhatsApp">
                                 <MessageSquare className="h-5 w-5" />
+                            </a>
+                        </Button>
+                         <Button variant="ghost" asChild className='text-muted-foreground hover:text-primary'>
+                            <a href="mailto:geovaniwn@gmail.com" aria-label="Enviar email para o suporte">
+                                <Mail className="h-5 w-5" />
                             </a>
                         </Button>
                     </div>
