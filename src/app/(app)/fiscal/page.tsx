@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const actions = [
     {
@@ -340,7 +341,9 @@ function ListHeader({ title, description, searchPlaceholder, buttonLabel, button
                 </div>
                 <Button variant="outline" className="hidden sm:inline-flex"><Filter className="mr-2 h-4 w-4"/>Filtrar</Button>
                 {buttonLabel && buttonIcon && (
-                     <Button className="flex-grow sm:flex-grow-0">{buttonIcon}{buttonLabel}</Button>
+                     <DialogTrigger asChild>
+                        <Button className="flex-grow sm:flex-grow-0">{buttonIcon}{buttonLabel}</Button>
+                     </DialogTrigger>
                 )}
             </div>
         </div>
@@ -445,74 +448,169 @@ function RecentDocumentsTable({
     )
 }
 
+function SectionTitle({ children }: { children: React.ReactNode }) {
+    return (
+        <h3 className="text-lg font-semibold text-primary mb-4 pb-2 border-b">{children}</h3>
+    )
+}
+
+function FormRow({ children }: { children: React.ReactNode }) {
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
+            {children}
+        </div>
+    )
+}
+
 function LancamentoProdutoDialog() {
     // Mock data, in a real scenario this would come from an API or the XML file
     const productItems = [
-        { id: 1, name: 'AMEND CROC CEB SAL 20X40G', quantity: 20, price: '12.60' },
-        { id: 2, name: 'AMEND CROC TRADIC 20X40G', quantity: 5, price: '11.86' },
-        { id: 3, name: 'AMENDOIM JAP 20X40G', quantity: 20, price: '13.13' },
+        { id: 1, name: 'AMEND CROC CEB SAL 20X40G', quantity: 20, price: '12.60', total: 252.00 },
+        { id: 2, name: 'AMEND CROC TRADIC 20X40G', quantity: 5, price: '11.86', total: 59.30 },
+        { id: 3, name: 'AMENDOIM JAP 20X40G', quantity: 20, price: '13.13', total: 262.60 },
     ];
+
+    const totalNota = productItems.reduce((acc, item) => acc + item.total, 0);
   
     return (
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-6xl">
         <DialogHeader>
           <DialogTitle>Lançamento de Nota Fiscal de Produto</DialogTitle>
           <DialogDescription>
             Preencha os dados abaixo para realizar o lançamento da nota fiscal.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-6 py-4">
+        <div className="grid gap-6 py-4 max-h-[70vh] overflow-y-auto pr-4">
             <Tabs defaultValue="geral">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-7">
                     <TabsTrigger value="geral">Geral</TabsTrigger>
-                    <TabsTrigger value="emitente">Emitente</TabsTrigger>
-                    <TabsTrigger value="destinatario">Destinatário</TabsTrigger>
+                    <TabsTrigger value="emitente-destinatario">Emitente/Dest.</TabsTrigger>
                     <TabsTrigger value="produtos">Produtos</TabsTrigger>
+                    <TabsTrigger value="tributacao">Tributação</TabsTrigger>
+                    <TabsTrigger value="transporte">Transporte</TabsTrigger>
+                    <TabsTrigger value="faturas">Faturas</TabsTrigger>
+                    <TabsTrigger value="adicionais">Info. Adicionais</TabsTrigger>
                 </TabsList>
-                <TabsContent value="geral" className="mt-4">
-                    <div className="grid grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="nf-numero">Nº da Nota</Label>
-                            <Input id="nf-numero" defaultValue="2" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="nf-serie">Série</Label>
-                            <Input id="nf-serie" defaultValue="1" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="nf-data">Data de Emissão</Label>
-                            <Input id="nf-data" type="date" defaultValue="2025-11-06" />
-                        </div>
-                    </div>
-                    <div className="mt-4 space-y-2">
-                        <Label htmlFor="nf-natureza">Natureza da Operação</Label>
-                        <Input id="nf-natureza" defaultValue="Baixa de estoque por perda, roubo ou deterioracao" />
-                    </div>
+
+                {/* 1. Dados Gerais */}
+                <TabsContent value="geral" className="mt-4 space-y-6">
+                   <Card>
+                       <CardHeader>
+                           <CardTitle>Dados Gerais da Nota</CardTitle>
+                       </CardHeader>
+                       <CardContent className="space-y-4">
+                            <FormRow>
+                                <div className="space-y-2">
+                                    <Label htmlFor="nf-tipo">Tipo da Nota</Label>
+                                    <Select>
+                                        <SelectTrigger id="nf-tipo"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                                        <SelectContent><SelectItem value="entrada">Entrada</SelectItem><SelectItem value="saida">Saída</SelectItem></SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="nf-finalidade">Finalidade</Label>
+                                     <Select>
+                                        <SelectTrigger id="nf-finalidade"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="normal">Normal</SelectItem>
+                                            <SelectItem value="complementar">Complementar</SelectItem>
+                                            <SelectItem value="ajuste">Ajuste</SelectItem>
+                                            <SelectItem value="devolucao">Devolução</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2 col-span-1 md:col-span-2">
+                                    <Label htmlFor="nf-natureza">Natureza da Operação (CFOP)</Label>
+                                    <Input id="nf-natureza" defaultValue="Venda de mercadoria" />
+                                </div>
+                            </FormRow>
+                             <FormRow>
+                                <div className="space-y-2">
+                                    <Label htmlFor="nf-modelo">Modelo</Label>
+                                    <Input id="nf-modelo" defaultValue="55" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="nf-serie">Série</Label>
+                                    <Input id="nf-serie" defaultValue="1" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="nf-numero">Número</Label>
+                                    <Input id="nf-numero" defaultValue="12345" />
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label htmlFor="nf-data-emissao">Data de Emissão</Label>
+                                    <Input id="nf-data-emissao" type="datetime-local" defaultValue="2025-11-06T22:05" />
+                                </div>
+                            </FormRow>
+                       </CardContent>
+                   </Card>
                 </TabsContent>
-                <TabsContent value="emitente" className="mt-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="emit-nome">Nome/Razão Social</Label>
-                            <Input id="emit-nome" defaultValue="SIVALDO PEREIRA LEITE 39443817187" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="emit-cnpj">CNPJ</Label>
-                            <Input id="emit-cnpj" defaultValue="11.786.827/0001-99" />
-                        </div>
-                    </div>
+
+                {/* 2. Emitente / Destinatário */}
+                <TabsContent value="emitente-destinatario" className="mt-4">
+                     <Card>
+                        <CardHeader>
+                           <CardTitle>Dados do Emitente / Destinatário</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <FormRow>
+                                <div className="space-y-2">
+                                    <Label htmlFor="emit-cnpj">CNPJ / CPF</Label>
+                                    <Input id="emit-cnpj" defaultValue="11.786.827/0001-99" />
+                                </div>
+                                <div className="space-y-2 col-span-1 md:col-span-2">
+                                    <Label htmlFor="emit-razao-social">Razão Social</Label>
+                                    <Input id="emit-razao-social" defaultValue="SIVALDO PEREIRA LEITE 39443817187" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="emit-ie">Inscrição Estadual</Label>
+                                    <Input id="emit-ie" defaultValue="104679387" />
+                                </div>
+                            </FormRow>
+                             <FormRow>
+                                <div className="space-y-2">
+                                    <Label htmlFor="emit-cep">CEP</Label>
+                                    <Input id="emit-cep" defaultValue="74988-805" />
+                                </div>
+                                <div className="space-y-2 col-span-1 md:col-span-2">
+                                    <Label htmlFor="emit-logradouro">Logradouro</Label>
+                                    <Input id="emit-logradouro" defaultValue="RUA DOUTOR COUTO" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="emit-numero">Número</Label>
+                                    <Input id="emit-numero" defaultValue="SN" />
+                                </div>
+                            </FormRow>
+                             <FormRow>
+                                 <div className="space-y-2">
+                                    <Label htmlFor="emit-bairro">Bairro</Label>
+                                    <Input id="emit-bairro" defaultValue="REAL GRANDEZA - 2A ETAPA" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="emit-cidade">Cidade</Label>
+                                    <Input id="emit-cidade" defaultValue="APARECIDA DE GOIANIA" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="emit-uf">UF</Label>
+                                    <Input id="emit-uf" defaultValue="GO" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="emit-regime">Regime Tributário</Label>
+                                    <Select>
+                                        <SelectTrigger id="emit-regime"><SelectValue placeholder="Simples Nacional" /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="simples">Simples Nacional</SelectItem>
+                                            <SelectItem value="presumido">Lucro Presumido</SelectItem>
+                                            <SelectItem value="real">Lucro Real</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                             </FormRow>
+                        </CardContent>
+                    </Card>
                 </TabsContent>
-                <TabsContent value="destinatario" className="mt-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="dest-nome">Nome/Razão Social</Label>
-                            <Input id="dest-nome" defaultValue="SIVALDO PEREIRA LEITE" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="dest-cpf">CPF</Label>
-                            <Input id="dest-cpf" defaultValue="394.438.171-87" />
-                        </div>
-                    </div>
-                </TabsContent>
+
+                {/* 3. Produtos */}
                 <TabsContent value="produtos" className="mt-4">
                     <Card>
                         <CardHeader>
@@ -522,7 +620,7 @@ function LancamentoProdutoDialog() {
                             <Table>
                                 <TableHeader>
                                 <TableRow>
-                                    <TableHead className="w-[60%]">Produto</TableHead>
+                                    <TableHead className="w-[40%]">Produto</TableHead>
                                     <TableHead>Qtd.</TableHead>
                                     <TableHead>Vl. Unit.</TableHead>
                                     <TableHead className="text-right">Total</TableHead>
@@ -535,7 +633,7 @@ function LancamentoProdutoDialog() {
                                         <TableCell className="font-medium">{item.name}</TableCell>
                                         <TableCell>{item.quantity}</TableCell>
                                         <TableCell>{Number(item.price).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</TableCell>
-                                        <TableCell className="text-right">{(item.quantity * Number(item.price)).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</TableCell>
+                                        <TableCell className="text-right">{item.total.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</TableCell>
                                         <TableCell>
                                             <Button variant="ghost" size="icon" className="h-8 w-8"><X className="h-4 w-4" /></Button>
                                         </TableCell>
@@ -549,13 +647,115 @@ function LancamentoProdutoDialog() {
                         </CardContent>
                     </Card>
                 </TabsContent>
+                
+                {/* 4. Tributação */}
+                 <TabsContent value="tributacao" className="mt-4">
+                     <Card>
+                        <CardHeader>
+                           <CardTitle>Totais de Tributos</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <FormRow>
+                                <div className="space-y-2">
+                                    <Label>Base de Cálculo ICMS</Label>
+                                    <Input readOnly disabled defaultValue="R$ 0,00" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Valor do ICMS</Label>
+                                    <Input readOnly disabled defaultValue="R$ 0,00" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Base de Cálculo ICMS ST</Label>
+                                    <Input readOnly disabled defaultValue="R$ 0,00" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Valor do ICMS ST</Label>
+                                    <Input readOnly disabled defaultValue="R$ 0,00" />
+                                </div>
+                            </FormRow>
+                             <FormRow>
+                                <div className="space-y-2">
+                                    <Label>Valor do IPI</Label>
+                                    <Input readOnly disabled defaultValue="R$ 0,00" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Valor do PIS</Label>
+                                    <Input readOnly disabled defaultValue="R$ 0,00" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Valor do COFINS</Label>
+                                    <Input readOnly disabled defaultValue="R$ 0,00" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-destructive">Valor Total dos Tributos</Label>
+                                    <Input readOnly disabled className="text-destructive font-bold" defaultValue="R$ 4.828,43" />
+                                </div>
+                            </FormRow>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                 {/* 5. Transporte */}
+                <TabsContent value="transporte" className="mt-4">
+                     <Card>
+                        <CardHeader>
+                           <CardTitle>Dados de Transporte</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <FormRow>
+                                <div className="space-y-2">
+                                    <Label htmlFor="transp-modalidade">Modalidade do Frete</Label>
+                                    <Select>
+                                        <SelectTrigger id="transp-modalidade"><SelectValue placeholder="Sem Frete" /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="9">Sem Ocorrência de Transporte</SelectItem>
+                                            <SelectItem value="0">Contratação por conta do Remetente (CIF)</SelectItem>
+                                            <SelectItem value="1">Contratação por conta do Destinatário (FOB)</SelectItem>
+                                            <SelectItem value="2">Contratação por conta de Terceiros</SelectItem>
+                                            <SelectItem value="3">Transporte Próprio por conta do Remetente</SelectItem>
+                                            <SelectItem value="4">Transporte Próprio por conta do Destinatário</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </FormRow>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                
+                {/* 6. Faturas */}
+                <TabsContent value="faturas" className="mt-4">
+                     <Card>
+                        <CardHeader>
+                           <CardTitle>Faturas e Pagamentos</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                           <p className="text-sm text-muted-foreground">Nenhuma informação de pagamento encontrada no XML.</p>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                 {/* 7. Informações Adicionais */}
+                <TabsContent value="adicionais" className="mt-4">
+                     <Card>
+                        <CardHeader>
+                           <CardTitle>Informações Adicionais</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Label>Informações Complementares</Label>
+                                <p className="text-sm p-3 bg-muted rounded-md">--NOTA FISCAL EMITIDA EM DECORRENCIA DE BAIXA DE ESTOQUE DECORRENTE DO ENCERRAMENTO DAS ATIVIDADES DA EMPRESA...</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
             </Tabs>
         </div>
         <DialogFooter>
             <div className="flex w-full justify-between items-center">
-                <p className="text-sm text-muted-foreground">
-                    Valor Total da Nota: <span className="font-bold text-foreground">R$ 23.610,90</span>
-                </p>
+                <div className="text-sm text-muted-foreground">
+                    <p>Total Produtos: <span className="font-bold text-foreground">{totalNota.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span></p>
+                    <p>Total Nota: <span className="font-bold text-foreground text-lg">{totalNota.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span></p>
+                </div>
                 <div>
                     <Button variant="outline">Cancelar</Button>
                     <Button type="submit" className="ml-2">Salvar Lançamento</Button>
@@ -566,6 +766,6 @@ function LancamentoProdutoDialog() {
     );
   }
     
-
     
+
 
