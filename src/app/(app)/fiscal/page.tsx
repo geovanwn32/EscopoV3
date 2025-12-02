@@ -157,19 +157,20 @@ export default function FiscalPage() {
 
         <Card>
             <Tabs defaultValue="xmls">
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <TabsList className="grid w-full max-w-lg grid-cols-5">
-                            <TabsTrigger value="xmls">XMLs Importados</TabsTrigger>
-                            <TabsTrigger value="produtos">Notas de Produto</TabsTrigger>
-                            <TabsTrigger value="saidas">Notas de Saída</TabsTrigger>
-                            <TabsTrigger value="servicos">Notas de Serviço</TabsTrigger>
-                            <TabsTrigger value="recibos">Recibos/Cupons</TabsTrigger>
+                 <CardHeader>
+                    <CardTitle>Documentos Fiscais</CardTitle>
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+                        <TabsList className="w-full sm:w-auto">
+                            <TabsTrigger value="xmls">XMLs</TabsTrigger>
+                            <TabsTrigger value="produtos">Produtos</TabsTrigger>
+                            <TabsTrigger value="saidas">Saídas</TabsTrigger>
+                            <TabsTrigger value="servicos">Serviços</TabsTrigger>
+                            <TabsTrigger value="recibos">Recibos</TabsTrigger>
                         </TabsList>
-                        <div className="flex items-center gap-2">
-                             <div className="relative flex-grow sm:flex-grow-0">
+                        <div className="flex w-full sm:w-auto items-center gap-2">
+                             <div className="relative flex-grow">
                                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input placeholder="Buscar por arquivo..." className="pl-9 w-full" />
+                                <Input placeholder="Buscar..." className="pl-9 w-full" />
                             </div>
                             <Button variant="outline"><Filter className="mr-2 h-4 w-4"/>Filtrar</Button>
                         </div>
@@ -700,7 +701,9 @@ function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boo
                 </nav>
             </aside>
             <main className="overflow-y-auto">
-                {renderSection()}
+                <ScrollArea className="h-full pr-6">
+                    {renderSection()}
+                </ScrollArea>
             </main>
         </div>
 
