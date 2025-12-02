@@ -111,3 +111,32 @@
         background-position: 0% 50%;
     }
 }
+
+@keyframes move-up {
+  0% {
+    transform: translateY(100%);
+  }
+  100% {
+    transform: translateY(-100%);
+  }
+}
+
+.data-block-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.data-block {
+  position: absolute;
+  bottom: 0;
+  width: 2px;
+  background-color: hsl(var(--primary) / 0.2);
+  animation-name: move-up;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
