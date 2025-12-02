@@ -3,13 +3,23 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Building2, Mail, Lock, Eye, EyeOff, GraduationCap, Facebook, Apple } from 'lucide-react';
+import { useForm, SubmitHandler } from 'react-hook-form';
+import { Building2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import Image from 'next/image';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
+
+// 1. Tipagem para os dados do formulário
+type FormInputs = {
+  fullname?: string;
+  email: string;
+  password: string;
+  remember?: boolean;
+};
+
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
@@ -52,10 +62,18 @@ function DataBlocksAnimation() {
 }
 
 export default function LoginPage() {
+  const router = useRouter();
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const characterImage = PlaceHolderImages.find(p => p.id === 'login-character');
 
+  // 2. Setup para o react-hook-form
+  const { register, handleSubmit, formState: { errors } } = useForm<FormInputs>();
+
+  // 3. Função de submissão do formulário
+  const onSubmit: SubmitHandler<FormInputs> = (data) => {
+    console.log(data); // Em um app real, aqui você faria a chamada para a API
+    router.push('/selecionar-empresa');
+  };
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center p-4 lg:p-8 animated-gradient">
@@ -95,24 +113,25 @@ export default function LoginPage() {
                 <h2 className="text-3xl font-bold mb-2">{isSignUp ? "Criar Conta" : "Login"}</h2>
                 <p className="text-muted-foreground mb-8">{isSignUp ? "Insira seus dados para começar." : "Insira seus dados para acessar o sistema."}</p>
 
-                <form className="space-y-4">
+                {/* 4. O formulário agora usa a tag <form> e o `handleSubmit` */}
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     {isSignUp && (
                         <div className="space-y-2">
                             <Label htmlFor="fullname">Nome Completo:</Label>
-                            <Input id="fullname" type="text" placeholder="Seu nome completo" required className="bg-muted/50 border-0" />
+                            <Input id="fullname" type="text" {...register("fullname", { required: true })} placeholder="Seu nome completo" className="bg-muted/50 border-0" />
                         </div>
                     )}
                     <div className="space-y-2">
                         <Label htmlFor="email">Email:</Label>
-                        <Input id="email" type="email" placeholder="email@exemplo.com" required className="bg-muted/50 border-0" />
+                        <Input id="email" type="email" {...register("email", { required: true })} placeholder="email@exemplo.com" className="bg-muted/50 border-0" />
                     </div>
                     <div className="space-y-2 relative">
                         <Label htmlFor="password">Senha:</Label>
-                        <Input id="password" type={showPassword ? "text" : "password"} placeholder="Sua senha" required className="bg-muted/50 border-0 pr-10" />
+                        <Input id="password" type={showPassword ? "text" : "password"} {...register("password", { required: true, minLength: 6 })} placeholder="Sua senha" className="bg-muted/50 border-0 pr-10" />
                         <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 bottom-2.5 text-muted-foreground"
+                            className="absolute right-3 top-9 text-muted-foreground"
                             aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
                         >
                             {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -125,12 +144,12 @@ export default function LoginPage() {
                              <div className="flex items-start">
                                 <Checkbox id="terms" />
                                 <Label htmlFor="terms" className="ml-2 font-normal text-muted-foreground text-xs">
-                                    Envie-me ofertas especiais e dicas de aprendizado.
+                                    Envie-me ofertas e dicas de aprendizado.
                                 </Label>
                              </div>
                            ) : (
                              <>
-                                <Checkbox id="remember" />
+                                <Checkbox id="remember" {...register("remember")} />
                                 <Label htmlFor="remember" className="ml-2 font-normal text-muted-foreground">Lembrar-me</Label>
                              </>
                            )}
@@ -142,8 +161,9 @@ export default function LoginPage() {
                         )}
                     </div>
                     
-                    <Button asChild type="submit" className="w-full font-semibold text-lg py-6 mt-6">
-                        <Link href="/selecionar-empresa">{isSignUp ? 'Continuar' : 'Entrar'}</Link>
+                    {/* 5. Botão de submissão do formulário */}
+                    <Button type="submit" className="w-full font-semibold text-lg py-6 mt-6">
+                        {isSignUp ? 'Continuar' : 'Entrar'}
                     </Button>
                 </form>
 
@@ -161,7 +181,8 @@ export default function LoginPage() {
                 
                 <p className="text-center text-sm text-muted-foreground mt-8">
                     {isSignUp ? 'Já tem uma conta?' : "Não tem uma conta?"}{' '}
-                    <button onClick={() => setIsSignUp(!isSignUp)} className="font-medium text-primary hover:underline">
+                    {/* 6. Botão semanticamente correto */}
+                    <button type="button" onClick={() => setIsSignUp(!isSignUp)} className="font-medium text-primary hover:underline">
                         {isSignUp ? 'Entrar' : 'Crie uma agora'}
                     </button>
                 </p>
@@ -188,3 +209,5 @@ export default function LoginPage() {
   );
 }
 
+
+    
