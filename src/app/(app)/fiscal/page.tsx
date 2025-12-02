@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { PackagePlus, FileText, Wrench, Settings, Upload, FileMinus } from "lucide-react";
+import { PackagePlus, FileText, Wrench, Settings, Upload, FileMinus, Receipt } from "lucide-react";
 import Link from "next/link";
 
 const actions = [
@@ -30,8 +30,8 @@ const actions = [
         color: "text-indigo-600 bg-indigo-100/80 group-hover:bg-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400 dark:group-hover:bg-indigo-500",
     },
     {
-        icon: <Settings className="h-8 w-8" />,
-        label: "Configurações",
+        icon: <Receipt className="h-8 w-8" />,
+        label: "Recibos/Cupons",
         href: "#",
         color: "text-slate-600 bg-slate-100/80 group-hover:bg-slate-600 dark:bg-slate-700/40 dark:text-slate-400 dark:group-hover:bg-slate-500",
     },
