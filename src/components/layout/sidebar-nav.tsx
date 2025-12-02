@@ -122,18 +122,6 @@ export function SidebarNav() {
     }
     return false;
   };
-
-  const handleCompanySwitch = (companyId: number) => {
-    switchCompany(companyId);
-  }
-
-  const handleGoToSelection = () => {
-    router.push('/selecionar-empresa');
-  }
-  
-  const handleGoToAdmin = () => {
-    router.push('/admin');
-  };
   
   const companyDisplayName = activeCompany?.data?.nomeFantasia || activeCompany?.name;
 
@@ -148,45 +136,6 @@ export function SidebarNav() {
                 <span className="font-bold text-lg tracking-tight">EscopoV3</span>
             </div>
         </div>
-
-        <Card className="p-0 overflow-hidden group-data-[collapsible=icon]:hidden">
-            <CardContent className="p-3 flex items-center gap-3">
-                <Link href="/minha-empresa" className="flex items-center gap-3 min-w-0 flex-1">
-                    <Avatar className='h-9 w-9'>
-                        <AvatarFallback className="bg-muted text-muted-foreground font-semibold">
-                            {companyDisplayName ? companyDisplayName.charAt(0).toUpperCase() : '?'}
-                        </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col min-w-0">
-                        <span className="font-semibold text-sm truncate">{companyDisplayName}</span>
-                        <span className="text-xs text-muted-foreground">Editar dados</span>
-                    </div>
-                </Link>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                            <MoreVertical className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-64" align="start">
-                        <DropdownMenuLabel>Mudar de empresa</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {companies.map(company => (
-                            <DropdownMenuItem key={company.id} onSelect={() => handleCompanySwitch(company.id)}>
-                                <Check className={`mr-2 h-4 w-4 ${currentCompany === company.id ? 'opacity-100' : 'opacity-0'}`} />
-                                {company.data?.nomeFantasia || company.name}
-                            </DropdownMenuItem>
-                        ))}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onSelect={handleGoToSelection}>
-                            <LayoutGrid className="mr-2 h-4 w-4" />
-                            Gerenciar Empresas
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </CardContent>
-        </Card>
-
       </SidebarHeader>
 
       <SidebarContent className="p-4">

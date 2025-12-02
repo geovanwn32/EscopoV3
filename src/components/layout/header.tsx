@@ -34,6 +34,7 @@ import { cn } from '@/lib/utils';
 import { Input } from '../ui/input';
 import { useRouter } from 'next/navigation';
 import { Badge } from '../ui/badge';
+import { useState } from 'react';
 
 export default function Header() {
   const avatar = PlaceHolderImages.find((img) => img.id === 'user-avatar-1');
@@ -50,12 +51,91 @@ export default function Header() {
         </div>
       </div>
       <div className='flex items-center gap-4'>
+        <CompanySwitcher />
         <Notifications />
         <UserMenu avatar={avatar} />
       </div>
     </header>
   );
 }
+
+function CompanySwitcher() {
+  const [open, setOpen] = useState(false)
+  const { companies, currentCompany, switchCompany } = useCompany()
+  const router = useRouter();
+
+  const activeCompany = companies.find(c => c.id === currentCompany)
+  const companyDisplayName = activeCompany?.data?.nomeFantasia || activeCompany?.name;
+  
+  if (!activeCompany) {
+    return null;
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-[220px] justify-between hidden sm:flex"
+        >
+          <div className="flex items-center gap-2 overflow-hidden">
+            <Avatar className='h-6 w-6'>
+                <AvatarFallback className="bg-muted text-muted-foreground text-xs font-semibold">
+                    {companyDisplayName ? companyDisplayName.charAt(0).toUpperCase() : '?'}
+                </AvatarFallback>
+            </Avatar>
+            <span className="truncate">{companyDisplayName}</span>
+          </div>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[240px] p-0">
+        <Command>
+          <CommandInput placeholder="Buscar empresa..." />
+          <CommandList>
+            <CommandEmpty>Nenhuma empresa encontrada.</CommandEmpty>
+            <CommandGroup>
+              {companies.map((company) => (
+                <CommandItem
+                  key={company.id}
+                  value={company.name}
+                  onSelect={() => {
+                    switchCompany(company.id)
+                    setOpen(false)
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      currentCompany === company.id ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {company.data?.nomeFantasia || company.name}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+          <CommandSeparator />
+          <CommandList>
+            <CommandGroup>
+                <CommandItem onSelect={() => { router.push('/selecionar-empresa'); setOpen(false); }}>
+                    <LayoutGrid className="mr-2 h-4 w-4" />
+                    Gerenciar Empresas
+                </CommandItem>
+                <CommandItem onSelect={() => { router.push('/selecionar-empresa'); setOpen(false); }}>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Adicionar Nova Empresa
+                </CommandItem>
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
 
 function Notifications() {
   // Mock data for notifications. In a real app, this would come from a state or API.
