@@ -20,6 +20,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Partner } from "@/types/partner";
 
 const actions = [
     {
@@ -100,7 +101,7 @@ export default function FiscalPage() {
                 description: "Não foi possível carregar os dados salvos anteriormente."
             })
         }
-    }, []);
+    }, [toast]);
 
     // Save data to localStorage whenever it changes
     useEffect(() => {
@@ -173,6 +174,31 @@ export default function FiscalPage() {
         let detectedModel: 'produto' | 'servico' | null = null;
         let parsedData = {};
 
+        // Helper to save partner
+        const savePartner = (partnerData: Omit<Partner, 'id' | 'type'>, partnerType: 'Fornecedor' | 'Cliente' | 'Transportadora') => {
+            try {
+                const storedPartners = localStorage.getItem('partners') || '[]';
+                const partners: Partner[] = JSON.parse(storedPartners);
+                const existingPartner = partners.find(p => p.document === partnerData.document);
+                if (!existingPartner) {
+                    const newPartner: Partner = {
+                        id: Date.now() + Math.random(),
+                        ...partnerData,
+                        type: partnerType
+                    };
+                    partners.push(newPartner);
+                    localStorage.setItem('partners', JSON.stringify(partners));
+                    toast({
+                        title: "Parceiro Cadastrado",
+                        description: `O parceiro ${newPartner.name} foi salvo automaticamente.`
+                    });
+                }
+            } catch (error) {
+                console.error("Failed to save partner to localStorage", error);
+            }
+        };
+
+
         // Simulating XML parsing
         if (content.includes('<infNFe') && content.includes('<NFe')) {
             detectedModel = 'produto';
@@ -187,7 +213,7 @@ export default function FiscalPage() {
                     total: parseFloat(find('vProd') || '0'),
                 };
             });
-            parsedData = {
+             parsedData = {
                 geral: {
                     numero: content.match(/<nNF>(.*?)<\/nNF>/)?.[1],
                     serie: content.match(/<serie>(.*?)<\/serie>/)?.[1],
@@ -203,6 +229,14 @@ export default function FiscalPage() {
                 },
                 items: products,
             };
+
+            const emitenteCnpj = (parsedData as any).emitente?.cnpj;
+            const emitenteRazaoSocial = (parsedData as any).emitente?.razaoSocial;
+            if (emitenteCnpj && emitenteRazaoSocial) {
+                savePartner({ document: emitenteCnpj, name: emitenteRazaoSocial }, 'Fornecedor');
+            }
+
+
         } else if (content.includes('<infNFSe') || content.includes('<CompNfse')) {
             detectedModel = 'servico';
              parsedData = {
@@ -223,6 +257,18 @@ export default function FiscalPage() {
                     descricao: content.match(/<Discriminacao>(.*?)<\/Discriminacao>/)?.[1] || content.match(/<xDescServ>(.*?)<\/xDescServ>/)?.[1],
                 }
              };
+
+            const prestadorCnpj = (parsedData as any).prestador?.cnpj;
+            const prestadorRazaoSocial = (parsedData as any).prestador?.razaoSocial;
+            if (prestadorCnpj && prestadorRazaoSocial) {
+                savePartner({ document: prestadorCnpj, name: prestadorRazaoSocial }, 'Fornecedor');
+            }
+
+            const tomadorCnpj = (parsedData as any).tomador?.cnpj;
+            const tomadorRazaoSocial = (parsedData as any).tomador?.razaoSocial;
+            if (tomadorCnpj && tomadorRazaoSocial) {
+                savePartner({ document: tomadorCnpj, name: tomadorRazaoSocial }, 'Cliente');
+            }
         }
 
         if (detectedModel) {
@@ -295,65 +341,68 @@ export default function FiscalPage() {
         </Dialog>
 
         <Card>
-            <Tabs defaultValue="xmls">
-                <CardHeader>
+            <CardHeader>
+                <CardTitle>Documentos Fiscais</CardTitle>
+                <CardDescription>Gerencie todos os seus documentos importados e lançados.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Tabs defaultValue="xmls">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                        <CardTitle>Documentos Fiscais</CardTitle>
-                        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 mt-4 sm:mt-0 sm:w-auto">
+                        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 mb-4 sm:mb-0 sm:w-auto">
                             <TabsTrigger value="xmls">XMLs Importados</TabsTrigger>
                             <TabsTrigger value="produtos">Notas de Produto</TabsTrigger>
                             <TabsTrigger value="saidas">Notas de Saída</TabsTrigger>
                             <TabsTrigger value="servicos">Notas de Serviço</TabsTrigger>
                             <TabsTrigger value="recibos">Recibos/Cupons</TabsTrigger>
                         </TabsList>
-                    </div>
-                     <div className="flex w-full items-center gap-2 pt-4">
-                        <div className="relative flex-grow">
-                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Buscar em todos os documentos..." className="pl-9 w-full" />
+                        <div className="flex w-full sm:w-auto items-center gap-2">
+                            <div className="relative flex-grow">
+                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Input placeholder="Buscar..." className="pl-9 w-full" />
+                            </div>
+                            <Button variant="outline"><Filter className="mr-2 h-4 w-4"/>Filtrar</Button>
                         </div>
-                        <Button variant="outline"><Filter className="mr-2 h-4 w-4"/>Filtrar</Button>
                     </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <TabsContent value="xmls">
-                        <RecentDocumentsTable
-                            headers={['Arquivo', 'Data Importação', 'Status']}
-                            data={xmls}
-                            renderRow={(item: XmlFile) => (
-                                <>
-                                    <TableCell className="font-medium">{item.fileName}</TableCell>
-                                    <TableCell>{item.date}</TableCell>
-                                    <TableCell>
-                                        <Badge variant={
-                                            item.status === 'Lançado' ? 'default' :
-                                            item.status === 'Importado' ? 'secondary' : 'destructive'
-                                        }>
-                                            {item.status}
-                                        </Badge>
-                                    </TableCell>
-                                </>
-                            )}
-                            onLancar={handleLancarXml}
-                            onDelete={handleDeleteXml}
-                        />
-                    </TabsContent>
-                    <TabsContent value="produtos">
-                        <NotasFiscaisTable data={notasProduto} tipo="produto" />
-                    </TabsContent>
-                    <TabsContent value="saidas">
-                        <NotasFiscaisTable data={notasSaida} tipo="saida" />
-                    </TabsContent>
-                    <TabsContent value="servicos">
-                        <NotasFiscaisTable data={notasServico} tipo="servico" />
-                    </TabsContent>
-                    <TabsContent value="recibos">
-                         <div className="text-center py-10">
-                            <p className="text-muted-foreground">Nenhum recibo encontrado.</p>
-                        </div>
-                    </TabsContent>
-                </CardContent>
-            </Tabs>
+                    <div className="mt-4">
+                        <TabsContent value="xmls">
+                            <RecentDocumentsTable
+                                headers={['Arquivo', 'Data Importação', 'Status']}
+                                data={xmls}
+                                renderRow={(item: XmlFile) => (
+                                    <>
+                                        <TableCell className="font-medium">{item.fileName}</TableCell>
+                                        <TableCell>{item.date}</TableCell>
+                                        <TableCell>
+                                            <Badge variant={
+                                                item.status === 'Lançado' ? 'default' :
+                                                item.status === 'Importado' ? 'secondary' : 'destructive'
+                                            }>
+                                                {item.status}
+                                            </Badge>
+                                        </TableCell>
+                                    </>
+                                )}
+                                onLancar={handleLancarXml}
+                                onDelete={handleDeleteXml}
+                            />
+                        </TabsContent>
+                        <TabsContent value="produtos">
+                            <NotasFiscaisTable data={notasProduto} tipo="produto" />
+                        </TabsContent>
+                        <TabsContent value="saidas">
+                            <NotasFiscaisTable data={notasSaida} tipo="saida" />
+                        </TabsContent>
+                        <TabsContent value="servicos">
+                            <NotasFiscaisTable data={notasServico} tipo="servico" />
+                        </TabsContent>
+                        <TabsContent value="recibos">
+                             <div className="text-center py-10">
+                                <p className="text-muted-foreground">Nenhum recibo encontrado.</p>
+                            </div>
+                        </TabsContent>
+                    </div>
+                </Tabs>
+            </CardContent>
         </Card>
       </div>
     );
@@ -642,7 +691,7 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
         }
     }, [tipoNota, initialData]);
 
-    const notaLabel = tipoNota === 'servico' ? 'de Serviço' : (tipoNota === 'produto' ? 'de Produto' : 'de Saída');
+    const notaLabel = tipoNota === 'servico' ? 'de Serviço' : (tipoNota === 'produto' ? 'de Produto (Entrada)' : 'de Saída');
 
     const handleInputChange = (section: string, field: string, value: any) => {
         setFormData((prev: any) => ({
@@ -715,7 +764,7 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
 
     const handleServiceChange = (id: number, field: keyof Omit<ServiceItem, 'id'>, value: string | number) => {
         setServiceItems(prev => prev.map(item =>
-            item.id === id ? { ...item, [field]: value } : item
+            item.id === id ? { ...item, [field]: Number(value) } : item
         ));
     };
     
@@ -1013,7 +1062,7 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
                         </CardContent>
                     </Card>
                 )
-            case 'serviços':
+            case 'servicos':
                 return (
                     <Card>
                         <CardHeader>
@@ -1030,10 +1079,10 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
                                     {serviceItems.length > 0 ? serviceItems.map((item) => (
                                         <TableRow key={item.id} className="has-[:focus-visible]:bg-muted/40">
                                             <TableCell className="font-medium">
-                                                <Input value={item.name} onChange={(e) => handleServiceChange(item.id, 'name', e.target.value)} className="h-8" />
+                                                <Input value={item.name || ''} onChange={(e) => handleServiceChange(item.id, 'name', e.target.value)} className="h-8" />
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <Input type="number" value={item.value} onChange={(e) => handleServiceChange(item.id, 'value', e.target.value)} className="h-8 w-32 text-right" />
+                                                <Input type="number" value={item.value || ''} onChange={(e) => handleServiceChange(item.id, 'value', e.target.value)} className="h-8 w-32 text-right" />
                                             </TableCell>
                                             <TableCell><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveService(item.id)}><X className="h-4 w-4" /></Button></TableCell>
                                         </TableRow>
