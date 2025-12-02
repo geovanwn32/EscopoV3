@@ -55,7 +55,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         </Sidebar>
         <div
           className={cn(
-            "flex flex-1 flex-col h-full transition-all duration-300 ease-in-out",
+            "flex flex-col h-full flex-1 transition-all duration-300 ease-in-out",
             !isMobile && (isSidebarOpen ? "ml-72" : "ml-20")
           )}
         >
@@ -74,7 +74,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <CompanyProvider>
       <SidebarProvider>
-        <div className="flex h-screen bg-background">
+        <div className="flex h-full w-full bg-background">
           <AppLayoutContent>{children}</AppLayoutContent>
         </div>
       </SidebarProvider>
