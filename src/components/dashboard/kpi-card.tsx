@@ -26,7 +26,7 @@ export default function KpiCard({ title, value, change, changeType }: KpiCardPro
         <p
           className={cn(
             'text-xs text-muted-foreground',
-            isIncrease ? 'text-emerald-500' : 'text-red-500'
+            isIncrease ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
           )}
         >
           {change} em relação ao mês passado

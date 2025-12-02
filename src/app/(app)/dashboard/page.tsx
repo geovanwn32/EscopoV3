@@ -1,5 +1,8 @@
-import { Settings } from 'lucide-react';
 
+'use client';
+
+import { Settings } from 'lucide-react';
+import { useCompany } from '@/hooks/use-company';
 import { Button } from '@/components/ui/button';
 import KpiCard from '@/components/dashboard/kpi-card';
 import ResultsChart from '@/components/dashboard/results-chart';
@@ -8,23 +11,32 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 
-// Os KPIs agora devem vir de um estado ou API
-const kpis = [
-  { title: 'Faturamento', value: 'R$ 0,00', change: '0%', changeType: 'increase' },
-  { title: 'Compras/Despesas', value: 'R$ 0,00', change: '0%', changeType: 'increase' },
-  { title: 'Notas Emitidas', value: '0', change: '0%', changeType: 'decrease' },
-  { title: 'Resultado', value: 'R$ 0,00', change: '0%', changeType: 'increase' },
+const defaultKpis = [
+  { id: 'faturamento', title: 'Faturamento', value: 'R$ 0,00', change: '0%', changeType: 'increase', enabled: true },
+  { id: 'despesas', title: 'Compras/Despesas', value: 'R$ 0,00', change: '0%', changeType: 'increase', enabled: true },
+  { id: 'notas', title: 'Notas Emitidas', value: '0', change: '0%', changeType: 'decrease', enabled: true },
+  { id: 'resultado', title: 'Resultado', value: 'R$ 0,00', change: '0%', changeType: 'increase', enabled: true },
+  { id: 'impostos', title: 'Impostos a Pagar', value: 'R$ 0,00', change: '0%', changeType: 'increase', enabled: false },
 ];
 
 export default function DashboardPage() {
+  const { useScopedData } = useCompany();
+  const [kpis, setKpis] = useScopedData('dashboard-kpis', defaultKpis);
+  
+  const handleKpiToggle = (id: string, checked: boolean) => {
+    setKpis(kpis.map(kpi => kpi.id === id ? { ...kpi, enabled: checked } : kpi));
+  };
+  
+  const visibleKpis = kpis.filter(kpi => kpi.enabled);
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight font-headline">Visão Geral</h1>
-        <DashboardSettings />
+        <DashboardSettings kpis={kpis} onKpiToggle={handleKpiToggle} />
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {kpis.map((kpi) => (
+        {visibleKpis.map((kpi) => (
           <KpiCard key={kpi.title} {...kpi} />
         ))}
       </div>
@@ -40,7 +52,12 @@ export default function DashboardPage() {
   );
 }
 
-function DashboardSettings() {
+interface DashboardSettingsProps {
+    kpis: typeof defaultKpis;
+    onKpiToggle: (id: string, checked: boolean) => void;
+}
+
+function DashboardSettings({ kpis, onKpiToggle }: DashboardSettingsProps) {
     return (
         <Sheet>
             <SheetTrigger asChild>
@@ -57,26 +74,16 @@ function DashboardSettings() {
                     </SheetDescription>
                 </SheetHeader>
                 <div className="grid gap-4 py-4">
-                    <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-                        <Label htmlFor="kpi-faturamento">Faturamento</Label>
-                        <Switch id="kpi-faturamento" defaultChecked />
-                    </div>
-                     <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-                        <Label htmlFor="kpi-despesas">Compras/Despesas</Label>
-                        <Switch id="kpi-despesas" defaultChecked />
-                    </div>
-                     <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-                        <Label htmlFor="kpi-notas">Notas Emitidas</Label>
-                        <Switch id="kpi-notas" defaultChecked />
-                    </div>
-                     <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-                        <Label htmlFor="kpi-resultado">Resultado</Label>
-                        <Switch id="kpi-resultado" defaultChecked />
-                    </div>
-                    <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-                        <Label htmlFor="kpi-impostos">Impostos a Pagar</Label>
-                        <Switch id="kpi-impostos" />
-                    </div>
+                    {kpis.map(kpi => (
+                        <div key={kpi.id} className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
+                            <Label htmlFor={`kpi-${kpi.id}`}>{kpi.title}</Label>
+                            <Switch 
+                                id={`kpi-${kpi.id}`} 
+                                checked={kpi.enabled}
+                                onCheckedChange={(checked) => onKpiToggle(kpi.id, checked)}
+                            />
+                        </div>
+                    ))}
                 </div>
             </SheetContent>
         </Sheet>

@@ -22,6 +22,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Partner } from "@/types/partner";
 import { useCompany } from "@/hooks/use-company";
+import { NotaFiscal, ProductItem, ServiceItem } from "@/types/fiscal";
+
 
 const actions = [
     {
@@ -68,13 +70,6 @@ interface XmlFile {
     date: string;
     status: 'Importado' | 'Lançado' | 'Erro';
 }
-
-type NotaFiscal = {
-    id: number;
-    tipo: 'entrada' | 'saida' | 'servico';
-    dados: any;
-    items: ProductItem[] | ServiceItem[];
-};
 
 export default function FiscalPage() {
     const { toast } = useToast();
@@ -136,7 +131,7 @@ export default function FiscalPage() {
         let parsedData = {};
 
         // Helper to save partner
-        const savePartner = (partnerData: Omit<Partner, 'id'>, partnerType: 'Fornecedor' | 'Cliente' | 'Transportadora') => {
+        const savePartner = (partnerData: Omit<Partner, 'id'>) => {
             const existingPartner = partners.find(p => p.document === partnerData.document);
             if (!existingPartner && partnerData.document && partnerData.name) {
                 const newPartner: Partner = {
@@ -183,10 +178,9 @@ export default function FiscalPage() {
                 items: products,
             };
 
-            const emitenteCnpj = (parsedData as any).emitente?.cnpj;
-            const emitenteRazaoSocial = (parsedData as any).emitente?.razaoSocial;
-            if (emitenteCnpj && emitenteRazaoSocial) {
-                savePartner({ document: emitenteCnpj, name: emitenteRazaoSocial, type: 'Fornecedor' }, 'Fornecedor');
+            const emitenteData = (parsedData as any).emitente;
+            if (emitenteData?.cnpj && emitenteData?.razaoSocial) {
+                savePartner({ document: emitenteData.cnpj, name: emitenteData.razaoSocial, type: 'Fornecedor' });
             }
 
 
@@ -211,16 +205,14 @@ export default function FiscalPage() {
                 }
              };
 
-            const prestadorCnpj = (parsedData as any).prestador?.cnpj;
-            const prestadorRazaoSocial = (parsedData as any).prestador?.razaoSocial;
-            if (prestadorCnpj && prestadorRazaoSocial) {
-                savePartner({ document: prestadorCnpj, name: prestadorRazaoSocial, type: 'Fornecedor' }, 'Fornecedor');
+            const prestadorData = (parsedData as any).prestador;
+            if (prestadorData?.cnpj && prestadorData?.razaoSocial) {
+                savePartner({ document: prestadorData.cnpj, name: prestadorData.razaoSocial, type: 'Fornecedor' });
             }
 
-            const tomadorCnpj = (parsedData as any).tomador?.cnpj;
-            const tomadorRazaoSocial = (parsedData as any).tomador?.razaoSocial;
-            if (tomadorCnpj && tomadorRazaoSocial) {
-                savePartner({ document: tomadorCnpj, name: tomadorRazaoSocial, type: 'Cliente' }, 'Cliente');
+            const tomadorData = (parsedData as any).tomador;
+            if (tomadorData?.cnpj && tomadorData?.razaoSocial) {
+                savePartner({ document: tomadorData.cnpj, name: tomadorData.razaoSocial, type: 'Cliente' });
             }
         }
 
@@ -260,7 +252,7 @@ export default function FiscalPage() {
     const handleSaveNota = (savedNota: any) => {
         if (editingNota) {
             // Update existing note
-            const updateList = (list: NotaFiscal[]) => list.map(n => n.id === editingNota.id ? { ...n, ...savedNota, id: editingNota.id } : n);
+            const updateList = (list: NotaFiscal[]) => list.map(n => n.id === editingNota.id ? { ...savedNota, id: editingNota.id } : n);
             if (editingNota.tipo === 'entrada' || editingNota.tipo === 'produto') setNotasProduto(updateList);
             if (editingNota.tipo === 'saida') setNotasSaida(updateList);
             if (editingNota.tipo === 'servico') setNotasServico(updateList);
@@ -303,6 +295,7 @@ export default function FiscalPage() {
 
     const handleViewNota = (nota: NotaFiscal) => {
         const tipo = nota.tipo === 'entrada' ? 'produto' : nota.tipo;
+        setEditingNota(nota); // Set editingNota to pass full object
         openLancamentoDialog(tipo as any, nota.dados, true);
     };
 
@@ -621,10 +614,10 @@ function NotasFiscaisTable({
         : ['Número', 'Emitente', 'Destinatário', 'Valor Total'];
 
 
-    const renderRow = (item: any) => {
+    const renderRow = (item: NotaFiscal) => {
         const total = tipo === 'servico' 
-            ? item.items.reduce((acc: number, service: ServiceItem) => acc + (Number(service.value) || 0), 0)
-            : item.items.reduce((acc: number, product: ProductItem) => acc + product.total, 0);
+            ? (item.items as ServiceItem[]).reduce((acc: number, service) => acc + (Number(service.value) || 0), 0)
+            : (item.items as ProductItem[]).reduce((acc: number, product) => acc + product.total, 0);
 
         return (
             <>
@@ -694,20 +687,6 @@ function NotasFiscaisTable({
     )
 }
 
-interface ProductItem {
-    id: number;
-    name: string;
-    quantity: number;
-    price: number;
-    total: number;
-}
-
-interface ServiceItem {
-    id: number;
-    name: string;
-    value: number;
-}
-
 interface LancamentoDialogProps {
     onOpenChange: (open: boolean) => void;
     tipoNota: 'produto' | 'saida' | 'servico' | null;
@@ -745,9 +724,9 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave, isReadO
         }
 
         if (items) {
-             if (tipoNota === 'produto' || tipoNota === 'saida' || editingNota?.tipo === 'entrada' || editingNota?.tipo === 'saida') {
+             if (effectiveTipo === 'produto' || effectiveTipo === 'saida' || effectiveTipo === 'entrada') {
                 setProductItems(items as ProductItem[] || []);
-            } else if (tipoNota === 'servico' || editingNota?.tipo === 'servico') {
+            } else if (effectiveTipo === 'servico') {
                 const initialServices = Array.isArray(items) 
                     ? items 
                     : (initialData?.servico?.descricao ? [{ id: Date.now(), name: initialData.servico.descricao, value: initialData.servico.valor || 0 }] : []);

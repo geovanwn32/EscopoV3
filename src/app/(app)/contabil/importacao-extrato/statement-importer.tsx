@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { suggestBankAccountAssociations } from '@/ai/flows/suggest-bank-account-associations';
 import { Badge } from '@/components/ui/badge';
+import { useCompany } from '@/hooks/use-company';
 
 type TransactionStatus = 'pending' | 'loading' | 'suggested' | 'error';
 interface Transaction {
@@ -27,7 +28,8 @@ const mockPreviousAssociations = [
 const mockLedgerBalances = { "Receita de Vendas": 50000, "Despesas com Salários": -25000, "Fornecedores": -10000 };
 
 export default function StatementImporter() {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const { useScopedData } = useCompany();
+  const [transactions, setTransactions] = useScopedData<Transaction[]>('statement-importer-transactions', []);
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
 
@@ -40,9 +42,16 @@ export default function StatementImporter() {
       })
       // Here you would typically parse the file and set the transactions
       // For now, we'll keep it simple and not process the file content.
-      // setTransactions(parsedTransactions);
+      // A mock transaction is added to demonstrate the feature.
+      const mockTransactions: Transaction[] = [
+          { id: 1, date: '01/12/2025', description: 'Pagamento Fornecedor ABC', amount: -1250.75, status: 'pending' },
+          { id: 2, date: '02/12/2025', description: 'Recebimento Cliente XPTO', amount: 5000.00, status: 'pending' },
+          { id: 3, date: '03/12/2025', description: 'Salário Funcionário', amount: -2800.00, status: 'pending' },
+      ];
+      setTransactions(mockTransactions);
     }
-    e.target.value = ''; // Reset input to allow same file selection
+    // Reset input to allow same file selection again
+    e.target.value = ''; 
   }
 
   const handleSuggestion = async () => {
@@ -56,29 +65,42 @@ export default function StatementImporter() {
     }
 
     setIsProcessing(true);
-    setTransactions(current => current.map(t => ({ ...t, status: 'loading' })));
+    
+    // Create a temporary array to hold the new state
+    let updatedTransactions = transactions.map(t => ({ ...t, status: 'loading' as TransactionStatus }));
+    setTransactions(updatedTransactions);
 
-    const suggestionPromises = transactions.map(async (t) => {
+
+    const processTransaction = async (transaction: Transaction) => {
       try {
         const result = await suggestBankAccountAssociations({
-          transactionDescription: t.description,
-          transactionAmount: t.amount,
+          transactionDescription: transaction.description,
+          transactionAmount: transaction.amount,
           previousAssociations: mockPreviousAssociations,
           currentLedgerBalances: mockLedgerBalances,
         });
-        return { ...t, status: 'suggested' as TransactionStatus, suggestion: result.suggestedAccount, confidence: result.confidenceScore };
+        return { ...transaction, status: 'suggested' as TransactionStatus, suggestion: result.suggestedAccount, confidence: result.confidenceScore };
       } catch (error) {
-        console.error(`Error suggesting for transaction ${t.id}:`, error);
-        return { ...t, status: 'error' as TransactionStatus };
+        console.error(`Error suggesting for transaction ${transaction.id}:`, error);
+        return { ...transaction, status: 'error' as TransactionStatus };
       }
-    });
+    };
     
-    // Process promises sequentially with a small delay for better UX
-    const newTransactions: Transaction[] = [];
-    for (const promise of suggestionPromises) {
-        newTransactions.push(await promise);
-        setTransactions([...newTransactions, ...transactions.slice(newTransactions.length).map(t => ({...t, status: 'loading'}))]);
-        await new Promise(res => setTimeout(res, 300));
+    const finalTransactions = [];
+    for (const t of transactions) {
+        const result = await processTransaction(t);
+        finalTransactions.push(result);
+        
+        // Update the state with the processed transaction and the rest as loading
+        const currentState = transactions.map(originalT => {
+            const processed = finalTransactions.find(ft => ft.id === originalT.id);
+            if (processed) return processed;
+            // Mark as loading if not yet processed
+            return { ...originalT, status: 'loading' as TransactionStatus };
+        });
+        setTransactions(currentState);
+
+        await new Promise(res => setTimeout(res, 300)); // UI delay
     }
 
     setIsProcessing(false);
@@ -127,7 +149,7 @@ export default function StatementImporter() {
                   <TableRow key={t.id}>
                     <TableCell className="font-medium">{t.date}</TableCell>
                     <TableCell>{t.description}</TableCell>
-                    <TableCell className={`text-right font-mono ${t.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <TableCell className={`text-right font-mono ${t.amount > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                       {t.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </TableCell>
                     <TableCell className="text-center">
