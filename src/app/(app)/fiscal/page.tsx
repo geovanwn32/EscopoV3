@@ -48,11 +48,11 @@ export default function FiscalPage() {
 function ActionTile({ icon, label, href = "#" }: { icon: React.ReactNode, label: string, href?: string }) {
   return (
     <Link href={href}>
-        <div className="group flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 text-muted-foreground transition-colors hover:border-primary hover:text-primary hover:bg-muted/50 cursor-pointer h-full">
-            <div className="transition-transform group-hover:scale-110">
+        <div className="group flex h-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border bg-card p-6 text-card-foreground shadow-sm transition-all hover:-translate-y-1 hover:shadow-md hover:text-primary">
+            <div className="rounded-full bg-primary/10 p-3 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                 {icon}
             </div>
-            <span className="font-semibold text-center text-sm">{label}</span>
+            <span className="text-center text-sm font-semibold">{label}</span>
         </div>
     </Link>
   )
