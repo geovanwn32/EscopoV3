@@ -20,9 +20,10 @@ interface CompanyContextType {
     companies: Company[];
     currentCompany: number | null;
     isLoaded: boolean;
-    switchCompany: (companyId: number) => void;
+    switchCompany: (companyId: number, navigate?: boolean) => void;
     addCompany: () => void;
     updateCompany: (companyId: number, companyData: Company) => void;
+    deleteCompany: (companyId: number) => void;
     useScopedData: <T>(key: string, defaultValue: T) => [T, (value: T) => void];
 }
 
@@ -53,6 +54,12 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
                 localStorage.setItem(LS_CURRENT_COMPANY_KEY, JSON.stringify(companyId));
             }
 
+            // If the current company doesn't exist in the list, clear it
+            if (companyId && !initialCompanies.some((c: Company) => c.id === companyId)) {
+                companyId = initialCompanies.length > 0 ? initialCompanies[0].id : null;
+                localStorage.setItem(LS_CURRENT_COMPANY_KEY, JSON.stringify(companyId));
+            }
+
             setCurrentCompany(companyId);
 
         } catch (error) {
@@ -72,12 +79,13 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
         }
     }, [companies, isLoaded]);
 
-    const switchCompany = useCallback((companyId: number) => {
+    const switchCompany = useCallback((companyId: number, navigate = true) => {
         setCurrentCompany(companyId);
         try {
             localStorage.setItem(LS_CURRENT_COMPANY_KEY, JSON.stringify(companyId));
-            // Instead of reloading, we can just push to dashboard and let the layout re-render
-            router.push('/dashboard');
+            if (navigate) {
+                router.push('/dashboard');
+            }
         } catch (error) {
             console.error("Failed to save current company to localStorage", error);
         }
@@ -90,17 +98,40 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
             name: `Nova Empresa ${companies.length + 1}`,
             data: {},
         };
-        // We temporarily set the new company as current before redirecting
-        // So the layout guard doesn't block the navigation to /minha-empresa
-        setCurrentCompany(newCompanyId);
         setCompanies(prev => [...prev, newCompany]);
-        localStorage.setItem(LS_CURRENT_COMPANY_KEY, JSON.stringify(newCompanyId));
+        // Switch to the new company and navigate to the edit page
+        switchCompany(newCompanyId, false);
         router.push('/minha-empresa');
-    }, [companies.length, router]);
+    }, [companies.length, router, switchCompany]);
 
     const updateCompany = useCallback((companyId: number, companyData: Company) => {
         setCompanies(prev => prev.map(c => c.id === companyId ? companyData : c));
     }, []);
+
+    const deleteCompany = useCallback((companyId: number) => {
+        setCompanies(prev => {
+            const newCompanies = prev.filter(c => c.id !== companyId);
+            
+            // Also delete all scoped data for that company
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith(`company-${companyId}-`)) {
+                    localStorage.removeItem(key);
+                }
+            });
+            
+            if (currentCompany === companyId) {
+                const nextCompanyId = newCompanies.length > 0 ? newCompanies[0].id : null;
+                setCurrentCompany(nextCompanyId);
+                localStorage.setItem(LS_CURRENT_COMPANY_KEY, JSON.stringify(nextCompanyId));
+                if (nextCompanyId) {
+                     router.push('/selecionar-empresa');
+                }
+            }
+            return newCompanies;
+        });
+
+    }, [currentCompany, router]);
+
 
     const useScopedData = <T,>(key: string, defaultValue: T): [T, (value: T) => void] => {
         const scopedKey = `company-${currentCompany}-${key}`;
@@ -155,6 +186,7 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
         switchCompany,
         addCompany,
         updateCompany,
+        deleteCompany,
         useScopedData
     };
 
