@@ -1,7 +1,41 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { FilePlus, FileText, Search, Settings, Upload } from "lucide-react";
 import Link from "next/link";
+
+const actions = [
+    {
+        icon: <Upload className="h-8 w-8" />,
+        label: "Importar XML",
+        href: "#",
+        color: "text-sky-600 bg-sky-100/80 group-hover:bg-sky-600 dark:bg-sky-900/40 dark:text-sky-400 dark:group-hover:bg-sky-500",
+    },
+    {
+        icon: <FilePlus className="h-8 w-8" />,
+        label: "Nova Nota",
+        href: "#",
+        color: "text-emerald-600 bg-emerald-100/80 group-hover:bg-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400 dark:group-hover:bg-emerald-500",
+    },
+    {
+        icon: <FileText className="h-8 w-8" />,
+        label: "Gerar Relatório",
+        href: "#",
+        color: "text-amber-600 bg-amber-100/80 group-hover:bg-amber-600 dark:bg-amber-900/40 dark:text-amber-400 dark:group-hover:bg-amber-500",
+    },
+    {
+        icon: <Search className="h-8 w-8" />,
+        label: "Consultar NFe",
+        href: "#",
+        color: "text-indigo-600 bg-indigo-100/80 group-hover:bg-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400 dark:group-hover:bg-indigo-500",
+    },
+    {
+        icon: <Settings className="h-8 w-8" />,
+        label: "Configurações",
+        href: "#",
+        color: "text-slate-600 bg-slate-100/80 group-hover:bg-slate-600 dark:bg-slate-700/40 dark:text-slate-400 dark:group-hover:bg-slate-500",
+    },
+]
 
 export default function FiscalPage() {
     return (
@@ -19,37 +53,23 @@ export default function FiscalPage() {
                 <CardDescription>Acesse as principais funcionalidades do módulo fiscal.</CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                <ActionTile 
-                    icon={<Upload className="h-8 w-8" />} 
-                    label="Importar XML" 
-                />
-                <ActionTile 
-                    icon={<FilePlus className="h-8 w-8" />} 
-                    label="Nova Nota" 
-                />
-                <ActionTile 
-                    icon={<FileText className="h-8 w-8" />} 
-                    label="Gerar Relatório" 
-                />
-                <ActionTile 
-                    icon={<Search className="h-8 w-8" />} 
-                    label="Consultar NFe" 
-                />
-                <ActionTile 
-                    icon={<Settings className="h-8 w-8" />} 
-                    label="Configurações" 
-                />
+                {actions.map((action) => (
+                    <ActionTile key={action.label} {...action} />
+                ))}
             </CardContent>
         </Card>
       </div>
     );
 }
 
-function ActionTile({ icon, label, href = "#" }: { icon: React.ReactNode, label: string, href?: string }) {
+function ActionTile({ icon, label, href = "#", color }: { icon: React.ReactNode, label: string, href?: string, color: string }) {
   return (
     <Link href={href}>
-        <div className="group flex h-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border bg-card p-6 text-card-foreground shadow-sm transition-all hover:-translate-y-1 hover:shadow-md hover:text-primary">
-            <div className="rounded-full bg-primary/10 p-3 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+        <div className="group flex h-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border bg-card p-6 text-card-foreground shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
+            <div className={cn(
+                "rounded-full p-3 transition-colors group-hover:text-primary-foreground",
+                color
+            )}>
                 {icon}
             </div>
             <span className="text-center text-sm font-semibold">{label}</span>
