@@ -1,3 +1,4 @@
+
 'use client';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -13,6 +14,7 @@ import {
     ChartTooltip,
     ChartTooltipContent,
   } from "@/components/ui/chart"
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../ui/select';
 
 type ChartData = { month: string; revenue: number; expenses: number };
 
@@ -23,7 +25,7 @@ const chartConfig = {
     },
     expenses: {
       label: "Despesas",
-      color: "hsl(var(--chart-5))",
+      color: "hsl(var(--chart-1))",
     },
   }
 
@@ -34,9 +36,21 @@ interface ResultsChartProps {
 export default function ResultsChart({ data }: ResultsChartProps) {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Resultados dos Últimos 6 Meses</CardTitle>
-        <CardDescription>Comparativo entre receitas e despesas.</CardDescription>
+      <CardHeader className='flex-row items-center justify-between'>
+        <div>
+            <CardTitle>Resultados</CardTitle>
+            <CardDescription>Receitas e despesas dos últimos meses</CardDescription>
+        </div>
+        <Select>
+            <SelectTrigger className='w-[180px]'>
+                <SelectValue placeholder="Últimos 8 meses" />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="8">Últimos 8 meses</SelectItem>
+                <SelectItem value="6">Últimos 6 meses</SelectItem>
+                <SelectItem value="12">Últimos 12 meses</SelectItem>
+            </SelectContent>
+        </Select>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[250px] w-full">
@@ -50,7 +64,7 @@ export default function ResultsChart({ data }: ResultsChartProps) {
                         bottom: 0,
                     }}
                 >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border) / 0.5)"/>
                 <XAxis
                   dataKey="month"
                   tickLine={false}
@@ -58,14 +72,22 @@ export default function ResultsChart({ data }: ResultsChartProps) {
                   tickMargin={8}
                 />
                 <YAxis
-                  tickFormatter={(value) => `R$${Number(value) / 1000}k`}
+                  tickFormatter={(value) => `${Number(value) / 1000}k`}
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
                 />
                 <Tooltip
                     cursor={false}
-                    content={<ChartTooltipContent indicator="dot" />}
+                    content={<ChartTooltipContent 
+                        indicator="dot" 
+                        formatter={(value, name) => (
+                            <div className="flex items-center">
+                                <div className="flex-1">{chartConfig[name as keyof typeof chartConfig].label}</div>
+                                <div className="font-bold ml-4">{Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
+                            </div>
+                        )}
+                    />}
                 />
                 <defs>
                     <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
@@ -83,13 +105,15 @@ export default function ResultsChart({ data }: ResultsChartProps) {
                   fill="url(#fillRevenue)"
                   stroke="var(--color-revenue)"
                   stackId="a"
+                  strokeWidth={2}
                 />
                  <Area
                   dataKey="expenses"
                   type="natural"
                   fill="url(#fillExpenses)"
                   stroke="var(--color-expenses)"
-                  stackId="a"
+                  stackId="b"
+                  strokeWidth={2}
                 />
               </AreaChart>
             ) : (

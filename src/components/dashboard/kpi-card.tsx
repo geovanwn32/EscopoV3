@@ -1,36 +1,32 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 interface KpiCardProps {
   title: string;
   value: string;
-  change: string;
-  changeType: 'increase' | 'decrease';
+  icon: React.ReactNode;
+  variant?: 'default' | 'primary';
 }
 
-export default function KpiCard({ title, value, change, changeType }: KpiCardProps) {
-  const isIncrease = changeType === 'increase';
+export default function KpiCard({ title, value, icon, variant = 'default' }: KpiCardProps) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+    <Card className={cn(
+      "rounded-2xl",
+      variant === 'default' ? 'bg-accent' : 'bg-primary text-primary-foreground'
+    )}>
+      <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        {isIncrease ? (
-            <ArrowUpRight className="h-4 w-4 text-emerald-500" />
-        ) : (
-            <ArrowDownRight className="h-4 w-4 text-red-500" />
-        )}
       </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        <p
-          className={cn(
-            'text-xs text-muted-foreground',
-            isIncrease ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
-          )}
-        >
-          {change} em relação ao mês passado
-        </p>
+      <CardContent className="flex items-end justify-between">
+        <div className="text-3xl font-bold">{value}</div>
+        <div className={cn(
+            "flex items-center justify-center h-8 w-8 rounded-full",
+            variant === 'default' ? 'bg-black/10' : 'bg-white/20'
+        )}>
+            {icon}
+        </div>
       </CardContent>
     </Card>
   );

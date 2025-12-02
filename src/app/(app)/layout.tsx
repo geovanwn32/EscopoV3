@@ -19,12 +19,10 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isLoaded) {
       if (!currentCompany) {
-        // Allow access to company creation/selection even if no company is selected
         if (pathname !== '/selecionar-empresa' && pathname !== '/minha-empresa') {
           router.push('/selecionar-empresa');
         }
       } else {
-        // Log login only once per session when company is confirmed
         if (!loginLoggedRef.current) {
           logAudit(setAuditLogs, 'LOGIN', 'Autenticação', 'Login bem-sucedido no sistema.');
           loginLoggedRef.current = true;
@@ -33,25 +31,31 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     }
   }, [isLoaded, currentCompany, pathname, router, setAuditLogs]);
 
-  // Avoid rendering the main layout if we are about to redirect or not ready
   if (!isLoaded || (!currentCompany && pathname !== '/selecionar-empresa' && pathname !== '/minha-empresa')) {
     return (
         <div className="flex h-screen w-full items-center justify-center">
-            {/* You can add a loader here */}
         </div>
     );
   }
 
+  // Hide sidebar and header for selecionar-empresa page
+  if (pathname === '/selecionar-empresa') {
+    return <main className="flex-1 p-4 lg:p-6 bg-background">{children}</main>;
+  }
+
+
   return (
     <SidebarProvider>
-      <Sidebar side="left" collapsible="icon" variant="sidebar" className="bg-background text-foreground border-r">
-        <SidebarNav />
-      </Sidebar>
-      <div className="flex flex-col flex-1">
-        <Header />
-        <main className="flex-1 p-4 lg:p-6 bg-muted/40">
-          {children}
-        </main>
+      <div className="flex h-screen bg-background">
+        <Sidebar className="bg-sidebar">
+          <SidebarNav />
+        </Sidebar>
+        <div className="flex flex-1 flex-col overflow-y-auto">
+          <Header />
+          <main className="flex-1 p-6">
+            {children}
+          </main>
+        </div>
       </div>
     </SidebarProvider>
   );
