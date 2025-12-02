@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -51,8 +52,14 @@ const actions = [
     },
 ]
 
+interface XmlFile {
+    id: number;
+    file: string;
+    date: string;
+    status: 'Processado' | 'Erro';
+}
+
 // Dados fictícios removidos. As tabelas agora iniciarão vazias.
-const mockXmls: any[] = [];
 const mockNotasProduto: any[] = [];
 const mockNotasSaida: any[] = [];
 const mockNotasServico: any[] = [];
@@ -61,14 +68,25 @@ const mockRecibos: any[] = [];
 
 export default function FiscalPage() {
     const { toast } = useToast();
+    const [xmls, setXmls] = useState<XmlFile[]>([]);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
         if (files && files.length > 0) {
             const fileNames = Array.from(files).map(file => file.name).join(', ');
+            
+            const newFiles: XmlFile[] = Array.from(files).map((file, index) => ({
+                id: Date.now() + index,
+                file: file.name,
+                date: new Date().toLocaleDateString('pt-BR'),
+                status: 'Processado' // Simulando status
+            }));
+
+            setXmls(prevXmls => [...prevXmls, ...newFiles]);
+
             toast({
-                title: "Arquivos Selecionados",
-                description: `Você selecionou: ${fileNames}`,
+                title: "Arquivos Importados com Sucesso",
+                description: `${fileNames}`,
             });
             // Reset the input value to allow selecting the same file again
             event.target.value = '';
@@ -114,7 +132,7 @@ export default function FiscalPage() {
                         />
                         <RecentDocumentsTable
                             headers={['Arquivo', 'Data Importação', 'Status']}
-                            data={mockXmls}
+                            data={xmls}
                             renderRow={(item: any) => (
                                 <>
                                     <TableCell className="font-medium">{item.file}</TableCell>
