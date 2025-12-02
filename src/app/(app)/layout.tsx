@@ -5,7 +5,7 @@ import { useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Header from '@/components/layout/header';
 import { SidebarNav } from '@/components/layout/sidebar-nav';
-import { Sidebar, SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { Sidebar, SidebarProvider } from '@/components/ui/sidebar';
 import { CompanyProvider, useCompany } from '@/hooks/use-company';
 import { AuditLog, logAudit } from '@/lib/audit-log';
 
@@ -19,7 +19,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isLoaded) {
       if (!currentCompany) {
-        if (pathname !== '/selecionar-empresa' && pathname !== '/minha-empresa') {
+        if (pathname !== '/selecionar-empresa') {
           router.push('/selecionar-empresa');
         }
       } else {
@@ -31,18 +31,16 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     }
   }, [isLoaded, currentCompany, pathname, router, setAuditLogs]);
 
-  if (!isLoaded || (!currentCompany && pathname !== '/selecionar-empresa' && pathname !== '/minha-empresa')) {
+  if (pathname === '/selecionar-empresa') {
+    return <>{children}</>;
+  }
+  
+  if (!isLoaded || !currentCompany) {
     return (
         <div className="flex h-screen w-full items-center justify-center">
         </div>
     );
   }
-
-  // Hide sidebar and header for selecionar-empresa page
-  if (pathname === '/selecionar-empresa') {
-    return <main className="flex-1 p-4 lg:p-6 bg-background">{children}</main>;
-  }
-
 
   return (
     <SidebarProvider>

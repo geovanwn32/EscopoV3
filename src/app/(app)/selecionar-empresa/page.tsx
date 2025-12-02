@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 import { useCompany, type Company } from '@/hooks/use-company';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -18,7 +18,7 @@ import { Label } from '@/components/ui/label';
 
 export default function SelecionarEmpresaPage() {
   const router = useRouter();
-  const { companies, switchCompany, addCompany, deleteCompany } = useCompany();
+  const { companies, switchCompany, addCompany, deleteCompany, isLoaded } = useCompany();
   const [itemToDelete, setItemToDelete] = useState<number | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const { toast } = useToast();
@@ -63,106 +63,115 @@ export default function SelecionarEmpresaPage() {
 
   // Effect to automatically open the form if no companies exist
   useEffect(() => {
-      if (companies.length === 0) {
+      if (isLoaded && companies.length === 0) {
           setIsFormOpen(true);
       }
-  }, [companies]);
+  }, [companies, isLoaded]);
 
 
   return (
     <>
     <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-      <div className="space-y-6">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight font-headline">Selecionar Empresa</h1>
-          <p className="text-muted-foreground">
-            Escolha com qual empresa você deseja trabalhar ou gerencie suas empresas.
-          </p>
-        </div>
-
-        {companies.length > 0 ? (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {companies.map((company) => (
-              <Card
-                key={company.id}
-                className="flex flex-col justify-between transition-shadow hover:shadow-lg focus-within:shadow-lg"
-              >
-                <div 
-                  onClick={() => handleSelectCompany(company.id)}
-                  className='cursor-pointer flex-grow'
-                >
-                  <CardContent className="flex flex-col items-center justify-center p-6 text-center space-y-4">
-                    <Avatar className="h-16 w-16">
-                        <AvatarFallback className="text-xl font-bold bg-muted text-muted-foreground">
-                          {(company.data?.nomeFantasia || company.name).charAt(0).toUpperCase() || '?'}
-                        </AvatarFallback>
-                    </Avatar>
-                    <h2 className="text-lg font-semibold">{company.data?.nomeFantasia || company.name}</h2>
-                    {company.data?.cnpj && <p className="text-sm text-muted-foreground">{company.data.cnpj}</p>}
-                  </CardContent>
+        <div className="flex min-h-screen w-full items-center justify-center p-4 lg:p-8 login-gradient">
+            <div className="w-full max-w-5xl">
+                <div className="text-center mb-8 text-card-foreground">
+                    <h1 className="text-3xl font-bold tracking-tight font-headline">Selecionar Empresa</h1>
+                    <p className="text-muted-foreground">
+                        Escolha com qual empresa você deseja trabalhar ou gerencie suas empresas.
+                    </p>
                 </div>
-                <CardFooter className='p-2 border-t'>
-                    <div className='flex justify-end w-full'>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                    <MoreVertical className="h-4 w-4" />
-                                    <span className="sr-only">Ações</span>
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleSelectCompany(company.id)}>
-                                    <Eye className="mr-2 h-4 w-4" />
-                                    Selecionar / Visualizar
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleEditCompany(company)}>
-                                    <Pencil className="mr-2 h-4 w-4" />
-                                    Editar
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleDeleteCompany(company.id)} className="text-destructive focus:text-destructive">
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Excluir
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                </CardFooter>
-              </Card>
-            ))}
 
-            <Card 
-                onClick={handleAddNewCompany}
-                className="cursor-pointer transition-transform hover:scale-105 hover:shadow-lg focus:scale-105 focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary border-dashed"
-                tabIndex={0}
-            >
-                <CardContent className="flex flex-col items-center justify-center p-6 text-center space-y-4 h-full">
-                    <div className="flex flex-col items-center justify-center text-muted-foreground">
-                        <PlusCircle className="h-10 w-10 mb-4"/>
-                        <h2 className="text-lg font-semibold">Adicionar Nova Empresa</h2>
+                {!isLoaded ? (
+                     <div className="flex justify-center items-center h-64">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
-                </CardContent>
-            </Card>
+                ) : companies.length > 0 ? (
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                    {companies.map((company) => (
+                    <Card
+                        key={company.id}
+                        className="flex flex-col justify-between transition-shadow hover:shadow-lg focus-within:shadow-lg"
+                    >
+                        <div 
+                        onClick={() => handleSelectCompany(company.id)}
+                        className='cursor-pointer flex-grow p-6 flex flex-col items-center justify-center text-center space-y-4'
+                        >
+                            <Avatar className="h-16 w-16">
+                                {company.data?.logo ? 
+                                    <AvatarImage src={company.data.logo} alt={company.name} /> : 
+                                    <AvatarFallback className='bg-primary/10 text-primary'>
+                                        <Building2 className='h-7 w-7'/>
+                                    </AvatarFallback>
+                                }
+                            </Avatar>
+                            <div className='space-y-1'>
+                                <h2 className="text-lg font-semibold">{company.data?.nomeFantasia || company.name}</h2>
+                                {company.data?.cnpj && <p className="text-sm text-muted-foreground">{company.data.cnpj}</p>}
+                            </div>
+                        </div>
+                        <CardFooter className='p-2 border-t'>
+                            <div className='flex justify-end w-full'>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                                            <MoreVertical className="h-4 w-4" />
+                                            <span className="sr-only">Ações</span>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => handleSelectCompany(company.id)}>
+                                            <Eye className="mr-2 h-4 w-4" />
+                                            Selecionar
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleEditCompany(company)}>
+                                            <Pencil className="mr-2 h-4 w-4" />
+                                            Editar
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleDeleteCompany(company.id)} className="text-destructive focus:text-destructive">
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Excluir
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                        </CardFooter>
+                    </Card>
+                    ))}
 
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)]">
-             <Card className="w-full max-w-lg text-center">
-                 <CardHeader>
-                     <CardTitle>Nenhuma Empresa Cadastrada</CardTitle>
-                     <CardDescription>
-                         Você precisa cadastrar sua primeira empresa para continuar.
-                     </CardDescription>
-                 </CardHeader>
-                 <CardContent>
-                     <Button onClick={handleAddNewCompany}>
-                         <PlusCircle className="mr-2 h-4 w-4" />
-                         Cadastrar Primeira Empresa
-                     </Button>
-                 </CardContent>
-             </Card>
-         </div>
-        )}
-      </div>
+                    <Card 
+                        onClick={handleAddNewCompany}
+                        className="cursor-pointer transition-transform hover:scale-105 hover:shadow-lg focus:scale-105 focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary border-dashed bg-card/50 hover:bg-card"
+                        tabIndex={0}
+                    >
+                        <CardContent className="flex flex-col items-center justify-center p-6 text-center space-y-4 h-full">
+                            <div className="flex flex-col items-center justify-center text-muted-foreground">
+                                <PlusCircle className="h-10 w-10 mb-4"/>
+                                <h2 className="text-lg font-semibold">Adicionar Nova Empresa</h2>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                </div>
+                ) : (
+                <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)]">
+                    <Card className="w-full max-w-lg text-center">
+                        <CardHeader>
+                            <CardTitle>Nenhuma Empresa Cadastrada</CardTitle>
+                            <CardDescription>
+                                Você precisa cadastrar sua primeira empresa para continuar.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Button onClick={handleAddNewCompany}>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Cadastrar Primeira Empresa
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
+                )}
+            </div>
+        </div>
       <CompanyForm
         onSave={handleSaveCompany}
         onCancel={() => setIsFormOpen(false)}
