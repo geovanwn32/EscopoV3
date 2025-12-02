@@ -50,9 +50,9 @@ export default function LoginPage() {
         <div className="relative hidden lg:flex flex-col justify-center items-center p-12 bg-primary/95 text-primary-foreground text-center">
             <div className="absolute inset-0 bg-primary opacity-20 transform -skew-y-6"></div>
             <div className="relative z-10">
-                <h2 className="text-4xl font-bold mb-4">Your Learning <br/> Journey Starts Here.</h2>
+                <h2 className="text-4xl font-bold mb-4">Sua jornada de <br/> aprendizado começa aqui.</h2>
                 <p className="text-primary-foreground/80 mb-8 max-w-sm">
-                    Lorem ipsum is that it has a more-or-less normal distribution of letters, to using 'Content here, content here', making it look like readable English.
+                    Lorem ipsum é que ele tem uma distribuição mais ou menos normal de letras, ao contrário de usar 'Conteúdo aqui, conteúdo aqui', fazendo com que pareça inglês legível.
                 </p>
                 {characterImage && 
                     <Image 
@@ -75,13 +75,13 @@ export default function LoginPage() {
                     <h1 className="text-2xl font-bold text-foreground">TEACH TECH</h1>
                 </div>
 
-                <h2 className="text-3xl font-bold mb-2">{isSignUp ? "Welcome" : "Welcome Back"}</h2>
-                <p className="text-muted-foreground mb-8">{isSignUp ? "Create an account" : "Log in to your account"}</p>
+                <h2 className="text-3xl font-bold mb-2">{isSignUp ? "Bem-vindo" : "Bem-vindo de volta"}</h2>
+                <p className="text-muted-foreground mb-8">{isSignUp ? "Crie uma conta" : "Faça login na sua conta"}</p>
 
                 <form className="space-y-4">
                     {isSignUp && (
                         <div className="space-y-2">
-                            <Label htmlFor="fullname">Full Name:</Label>
+                            <Label htmlFor="fullname">Nome Completo:</Label>
                             <Input id="fullname" type="text" placeholder="" required className="bg-muted border-0" />
                         </div>
                     )}
@@ -90,13 +90,13 @@ export default function LoginPage() {
                         <Input id="email" type="email" placeholder="" required className="bg-muted border-0" />
                     </div>
                     <div className="space-y-2 relative">
-                        <Label htmlFor="password">Password:</Label>
+                        <Label htmlFor="password">Senha:</Label>
                         <Input id="password" type={showPassword ? "text" : "password"} placeholder="" required className="bg-muted border-0 pr-10" />
                         <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
                             className="absolute right-3 bottom-2.5 text-muted-foreground"
-                            aria-label={showPassword ? "Hide password" : "Show password"}
+                            aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
                         >
                             {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                         </button>
@@ -104,17 +104,17 @@ export default function LoginPage() {
 
                     <div className="flex items-center text-sm pt-2">
                         <Checkbox id="offers" />
-                        <Label htmlFor="offers" className="ml-2 font-normal text-muted-foreground">Send me special offers, personalized recommendations, and learning tips.</Label>
+                        <Label htmlFor="offers" className="ml-2 font-normal text-muted-foreground">Envie-me ofertas especiais, recomendações personalizadas e dicas de aprendizado.</Label>
                     </div>
                     
                     <Button type="submit" className="w-full font-semibold text-lg py-6 mt-6">
-                        <Link href="/selecionar-empresa">{isSignUp ? 'Continue' : 'Log In'}</Link>
+                        <Link href="/selecionar-empresa">{isSignUp ? 'Continuar' : 'Entrar'}</Link>
                     </Button>
                 </form>
 
                 <div className="relative my-8">
                     <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-                    <div className="relative flex justify-center text-xs"><span className="bg-card px-2 text-muted-foreground">Other log in options</span></div>
+                    <div className="relative flex justify-center text-xs"><span className="bg-card px-2 text-muted-foreground">Outras opções de login</span></div>
                 </div>
 
                 <div className="flex justify-center gap-4">
@@ -124,15 +124,15 @@ export default function LoginPage() {
                 </div>
                 
                 <p className="text-center text-sm text-muted-foreground mt-8">
-                    {isSignUp ? 'Have an account?' : "Don't have an account?"}{' '}
+                    {isSignUp ? 'Já tem uma conta?' : "Não tem uma conta?"}{' '}
                     <button onClick={() => setIsSignUp(!isSignUp)} className="font-medium text-primary hover:underline">
-                        {isSignUp ? 'Sign In' : 'Sign Up'}
+                        {isSignUp ? 'Entrar' : 'Inscreva-se'}
                     </button>
                 </p>
                 
                 <div className="text-center mt-4">
                      <Link href="#" className="text-sm font-medium text-primary hover:underline">
-                        Log In With Your Organization
+                        Faça login com sua organização
                     </Link>
                 </div>
             </div>
@@ -141,3 +141,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    

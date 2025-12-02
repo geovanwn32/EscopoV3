@@ -41,7 +41,7 @@ export default function Header() {
       <div className='flex flex-1 items-center justify-end gap-4'>
         <div className="relative w-full max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search..." className="pl-10 w-full bg-card border-none" />
+            <Input placeholder="Pesquisar..." className="pl-10 w-full bg-card border-none" />
         </div>
         <Notifications />
         <UserMenu avatar={avatar} />
@@ -144,3 +144,5 @@ function UserMenu({ avatar }: { avatar?: { imageUrl: string; imageHint: string }
     </DropdownMenu>
   );
 }
+
+    

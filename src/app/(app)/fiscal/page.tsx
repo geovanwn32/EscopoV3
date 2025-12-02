@@ -158,8 +158,8 @@ export default function FiscalPage() {
             if (rejectedFiles.length > 0) {
                 toast({
                     variant: 'destructive',
-                    title: 'Arquivos Duplicados',
-                    description: `Estes arquivos já existem: ${rejectedFiles.join(', ')}`,
+                    title: 'Arquivos Duplicados ou Já Lançados',
+                    description: `Estes arquivos já existem ou foram lançados: ${rejectedFiles.join(', ')}`,
                 });
             }
 
@@ -369,7 +369,7 @@ export default function FiscalPage() {
                 <div className="space-y-1">
                 <h1 className="text-3xl font-bold tracking-tight font-headline">Lançamentos Fiscais</h1>
                 <p className="text-muted-foreground">
-                    Importe XMLs ou lance manually suas notas e recibos.
+                    Importe XMLs ou lance manualmente suas notas e recibos.
                 </p>
                 </div>
 
@@ -1318,7 +1318,7 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave, isReadO
                         `Lançamento de Nota Fiscal ${notaLabel}`;
 
     return (
-      <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-6xl flex flex-col max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>{dialogTitle}</DialogTitle>
           <DialogDescription>
@@ -1381,3 +1381,6 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave, isReadO
 
     
 
+
+
+    

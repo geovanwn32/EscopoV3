@@ -151,7 +151,7 @@ export default function ContasAReceberPage() {
                                     <TableRow key={conta.id}>
                                         <TableCell className="font-medium">{conta.partnerName}</TableCell>
                                         <TableCell className="text-muted-foreground">{conta.description}</TableCell>
-                                        <TableCell>{format(new Date(conta.dueDate), 'dd/MM/yyyy')}</TableCell>
+                                        <TableCell>{format(new Date(conta.dueDate), 'dd/MM/yyyy', { locale: ptBR })}</TableCell>
                                         <TableCell className="text-right font-mono">
                                             {conta.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                         </TableCell>
@@ -303,7 +303,7 @@ function ContaForm({ onSave, onOpenChange, partners, conta }: ContaFormProps) {
                                 )}
                                 >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
-                                {dueDate ? format(dueDate, "dd/MM/yyyy") : <span>Escolha uma data</span>}
+                                {dueDate ? format(dueDate, "dd/MM/yyyy", { locale: ptBR }) : <span>Escolha uma data</span>}
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0">
@@ -331,3 +331,5 @@ function ContaForm({ onSave, onOpenChange, partners, conta }: ContaFormProps) {
         </DialogContent>
     );
 }
+
+    
