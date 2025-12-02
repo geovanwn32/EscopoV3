@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from "react";
@@ -411,11 +412,9 @@ function LancamentoProdutoDialog({ onOpenChange }: { onOpenChange: (open: boolea
         setProductItems(prev => prev.map(item => {
             if (item.id === id) {
                 const updatedItem = { ...item, [field]: value };
-                if (field === 'quantity' || field === 'price') {
-                    const quantity = typeof updatedItem.quantity === 'string' ? parseFloat(updatedItem.quantity) : updatedItem.quantity;
-                    const price = typeof updatedItem.price === 'string' ? parseFloat(updatedItem.price) : updatedItem.price;
-                    updatedItem.total = (quantity || 0) * (price || 0);
-                }
+                const quantity = typeof updatedItem.quantity === 'string' ? parseFloat(updatedItem.quantity) : updatedItem.quantity;
+                const price = typeof updatedItem.price === 'string' ? parseFloat(updatedItem.price) : updatedItem.price;
+                updatedItem.total = (quantity || 0) * (price || 0);
                 return updatedItem;
             }
             return item;
@@ -530,15 +529,15 @@ function LancamentoProdutoDialog({ onOpenChange }: { onOpenChange: (open: boolea
                                     </TableRow></TableHeader>
                                     <TableBody>
                                         {productItems.length > 0 ? productItems.map((item) => (
-                                            <TableRow key={item.id}>
+                                            <TableRow key={item.id} className="has-[:focus-visible]:bg-muted/40">
                                                 <TableCell className="font-medium">
                                                     <Input value={item.name} onChange={(e) => handleProductChange(item.id, 'name', e.target.value)} className="h-8" />
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Input type="number" value={item.quantity} onChange={(e) => handleProductChange(item.id, 'quantity', parseFloat(e.target.value))} className="h-8 w-20" />
+                                                    <Input type="number" value={item.quantity} onChange={(e) => handleProductChange(item.id, 'quantity', e.target.value)} className="h-8 w-20" />
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Input type="number" value={item.price} onChange={(e) => handleProductChange(item.id, 'price', parseFloat(e.target.value))} className="h-8 w-24" />
+                                                    <Input type="number" value={item.price} onChange={(e) => handleProductChange(item.id, 'price', e.target.value)} className="h-8 w-24" />
                                                 </TableCell>
                                                 <TableCell className="text-right font-mono">{item.total.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</TableCell>
                                                 <TableCell><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveProduct(item.id)}><X className="h-4 w-4" /></Button></TableCell>
@@ -676,6 +675,8 @@ function LancamentoProdutoDialog({ onOpenChange }: { onOpenChange: (open: boolea
       </DialogContent>
     );
 }
+    
+
     
 
     
