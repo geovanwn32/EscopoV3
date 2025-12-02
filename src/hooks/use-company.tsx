@@ -84,12 +84,12 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
         try {
             localStorage.setItem(LS_CURRENT_COMPANY_KEY, JSON.stringify(companyId));
             if (navigate) {
-                router.push('/dashboard');
+                // router.push('/dashboard');
             }
         } catch (error) {
             console.error("Failed to save current company to localStorage", error);
         }
-    }, [router]);
+    }, []);
 
     const addCompany = useCallback(() => {
         const newCompanyId = Date.now();

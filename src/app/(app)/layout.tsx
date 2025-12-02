@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect } from 'react';
@@ -19,7 +20,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         if (pathname !== '/selecionar-empresa' && pathname !== '/minha-empresa') {
           router.push('/selecionar-empresa');
         }
-      } 
+      }
     }
   }, [isLoaded, currentCompany, pathname, router]);
 
