@@ -1,5 +1,6 @@
 export const NAV_TITLES: Record<string, string> = {
   '/dashboard': 'Dashboard',
+  '/selecionar-empresa': 'Selecionar Empresa',
   '/fiscal': 'Lançamentos Fiscais',
   '/fiscal/orcamento': 'Orçamentos',
   '/fiscal/apuracao': 'Apuração de Impostos',

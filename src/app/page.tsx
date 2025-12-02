@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { Building2, Mail, Lock, Eye, EyeOff, Phone, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,27 +9,12 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 
-function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg {...props} viewBox="0 0 48 48">
-      <path
-        fill="#FFC107"
-        d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"
-      />
-      <path
-        fill="#FF3D00"
-        d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"
-      />
-      <path
-        fill="#4CAF50"
-        d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.223,0-9.655-3.373-11.303-8H2.894v7.757C6.243,39.636,14.465,44,24,44z"
-      />
-      <path
-        fill="#1976D2"
-        d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571l6.19,5.238C42.012,35.836,44,30.138,44,24C44,22.659,43.862,21.35,43.611,20.083z"
-      />
-    </svg>
-  );
+function WhatsAppIcon(props: React.SVGProps<SVGSVGElement>) {
+    return (
+        <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+        </svg>
+    )
 }
 
 export default function LoginPage() {
@@ -93,7 +78,7 @@ export default function LoginPage() {
 
             <div className="space-y-4 pt-4">
               <Button asChild type="submit" className="w-full font-semibold text-lg py-6">
-                <Link href="/dashboard">{isLogin ? 'Entrar' : 'Cadastrar'}</Link>
+                <Link href="/selecionar-empresa">{isLogin ? 'Entrar' : 'Cadastrar'}</Link>
               </Button>
               
               <div className="relative">
@@ -108,7 +93,7 @@ export default function LoginPage() {
               </div>
 
               <Button variant="outline" className="w-full">
-                <GoogleIcon className="mr-2 h-5 w-5" />
+                <svg role="img" viewBox="0 0 24 24" className="mr-2 h-4 w-4"><path fill="currentColor" d="M12.48 10.92v2.4h3.97c-.16 1.03-1.2 3.02-3.97 3.02-2.39 0-4.34-1.98-4.34-4.42s1.95-4.42 4.34-4.42c1.36 0 2.27.58 2.79 1.08l1.9-1.83C15.47 4.73 13.52 4 11.02 4 6.7 4 3.22 7.22 3.22 11.5s3.48 7.5 7.8 7.5c4.42 0 7.42-2.99 7.42-7.65 0-.5-.05-1-.12-1.48H12.48z"></path></svg>
                 Login com Google
               </Button>
             </div>
@@ -139,7 +124,7 @@ export default function LoginPage() {
                     geovaniwn@gmail.com
                 </a>
                 <a href="https://wa.me/5562992127752" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-primary transition-colors">
-                    <MessageSquare className="h-4 w-4" />
+                    <WhatsAppIcon className="h-4 w-4" />
                     WhatsApp
                 </a>
             </div>
