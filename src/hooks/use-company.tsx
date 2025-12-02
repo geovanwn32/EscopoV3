@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useRouter } from 'next/navigation';
@@ -98,7 +99,7 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
         // The UI should reflect this automatically from the companies state.
     }, []);
 
-    const useScopedData = <T>(key: string, defaultValue: T): [T, (value: T) => void] => {
+    const useScopedData = <T,>(key: string, defaultValue: T): [T, (value: T) => void] => {
         const scopedKey = `company-${currentCompany}-${key}`;
         
         const [data, setData] = useState<T>(() => {
@@ -147,8 +148,17 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
         return null;
     }
 
+    const contextValue = {
+        companies,
+        currentCompany,
+        switchCompany,
+        addCompany,
+        updateCompany,
+        useScopedData
+    };
+
     return (
-        <CompanyContext.Provider value={{ companies, currentCompany, switchCompany, addCompany, updateCompany, useScopedData }}>
+        <CompanyContext.Provider value={contextValue}>
             {children}
         </CompanyContext.Provider>
     );
