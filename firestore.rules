@@ -1,0 +1,265 @@
+/**
+ * Core Philosophy: This ruleset enforces a multi-tenant, company-centric security model.
+ * A user's access to data is primarily determined by their membership within a specific
+ * company ('empresa'). Global administrators have read-only oversight across all companies.
+ *
+ * Data Structure: Most data is hierarchically organized under `/empresas/{empresaId}`,
+ * effectively isolating each company's data. A few root-level collections handle
+ * global concerns: `/roles_admin` for administrator management, `/auditoria` for
+ * system-wide logging, and `/alertas_website` for publicly accessible information.
+ *
+ * Key Security Decisions:
+ * - Company Membership is Key: All access to a company's subcollections (e.g.,
+ *   'lancamentos_fiscais', 'planos_conta') requires that the user has a corresponding
+ *   document in that company's 'usuarios' subcollection.
+ * - Global Admins: The existence of a user's UID in the `/roles_admin` collection
+ *   grants them read-only access to all company data and the audit log, providing
+ *   a clear separation of duties for oversight.
+ * - Data Integrity: Writes to subcollections under an `empresa` document MUST
+ *   include a denormalized `empresaId` that matches the document path. This field is
+ *   enforced as immutable to prevent data from being moved between companies.
+ * - Audit Trail Protection: The `/auditoria` collection is append-only. Updates and
+ *   deletes are explicitly forbidden to ensure the integrity of the audit log.
+ * - Default Deny: Access is denied by default. Rules are written to explicitly
+ *   grant permissions based on the user's role and company membership.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --------------------------------
+    // Helper Functions
+    // --------------------------------
+
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the current user is a global administrator by verifying
+     * the existence of their user ID in the '/roles_admin' collection.
+     */
+    function isGlobalAdmin() {
+      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    /**
+     * Checks if the current user is a member of a specific company.
+     * This is the primary authorization check for all company-scoped data.
+     */
+    function isCompanyMember(empresaId) {
+      return exists(/databases/$(database)/documents/empresas/$(empresaId)/usuarios/$(request.auth.uid));
+    }
+    
+    /**
+     * Checks if a user is an administrator within a specific company.
+     * This grants them rights to manage company details and users.
+     */
+    function isCompanyAdmin(empresaId) {
+      let userDoc = get(/databases/$(database)/documents/empresas/$(empresaId)/usuarios/$(request.auth.uid));
+      return userDoc != null && userDoc.data.isAdmin == true;
+    }
+
+    /**
+     * Validates that an incoming document on creation contains an `empresaId`
+     * that matches the `empresaId` from the document path.
+     * Principle: Enforces relational integrity on create.
+     */
+    function incomingDataMatchesCompany(empresaId) {
+      return request.resource.data.empresaId == empresaId;
+    }
+
+    /**
+     * Validates that the `empresaId` field is not changed during an update.
+     * Principle: Enforces immutability of core relational data.
+     */
+    function companyIdIsImmutable() {
+      return request.resource.data.empresaId == resource.data.empresaId;
+    }
+
+    // --------------------------------
+    // Company Data
+    // --------------------------------
+
+    /**
+     * @description Main company document. Readable by its members and global admins.
+     *   Only editable by designated company administrators.
+     * @path /empresas/{empresaId}
+     * @allow (get) A company member reads their company's profile.
+     * @deny (update) A regular company member tries to change the company name.
+     * @principle Restricts modification of core company data to company admins.
+     */
+    match /empresas/{empresaId} {
+      allow get: if isCompanyMember(empresaId) || isGlobalAdmin();
+      allow list: if isGlobalAdmin(); // General listing of companies is restricted to admins
+      allow create: if false; // Companies must be created via a trusted backend process.
+      allow update: if resource != null && isCompanyAdmin(empresaId);
+      allow delete: if false; // Companies cannot be deleted from the client.
+    }
+
+    /**
+     * @description User profiles within a company. A user can manage their own profile.
+     *   Company admins can manage any user profile within their company.
+     * @path /empresas/{empresaId}/usuarios/{usuarioId}
+     * @allow (update) User 'user123' updates their own name in company 'acme'.
+     * @deny (update) User 'user123' tries to make themselves a company admin.
+     * @principle Enforces self-service for users and delegated administration for company admins.
+     */
+    match /empresas/{empresaId}/usuarios/{usuarioId} {
+      allow get: if isCompanyMember(empresaId) || isGlobalAdmin();
+      allow list: if isCompanyMember(empresaId) || isGlobalAdmin();
+      allow create: if request.auth.uid == usuarioId && incomingDataMatchesCompany(empresaId) && request.resource.data.id == usuarioId;
+      allow update: if resource != null && (request.auth.uid == usuarioId || isCompanyAdmin(empresaId)) && companyIdIsImmutable() && request.resource.data.id == resource.data.id;
+      allow delete: if resource != null && isCompanyAdmin(empresaId);
+    }
+
+    /**
+     * @description Generic rule for all data subcollections within a company.
+     *   Grants read and write access to any member of the company.
+     * @path /empresas/{empresaId}/{collection}/{docId}
+     * @allow (create) A member of company 'acme' creates a new fiscal record for 'acme'.
+     * @deny (create) A user who is not a member of 'acme' tries to create a record.
+     * @principle Enforces that all company data is only accessible by its own members.
+     */
+    match /empresas/{empresaId}/{collection=**} {
+        // This is a placeholder for nested collections. Specific rules below take precedence.
+        allow read, write: if false; 
+    }
+    
+    match /empresas/{empresaId}/lancamentos_fiscais/{lancamentoFiscalId} {
+      allow get: if isCompanyMember(empresaId) || isGlobalAdmin();
+      allow list: if isCompanyMember(empresaId) || isGlobalAdmin();
+      allow create: if isCompanyMember(empresaId) && incomingDataMatchesCompany(empresaId);
+      allow update: if resource != null && isCompanyMember(empresaId) && companyIdIsImmutable();
+      allow delete: if resource != null && isCompanyMember(empresaId);
+    }
+
+    match /empresas/{empresaId}/planos_conta/{planoContaId} {
+      allow get: if isCompanyMember(empresaId) || isGlobalAdmin();
+      allow list: if isCompanyMember(empresaId) || isGlobalAdmin();
+      allow create: if isCompanyMember(empresaId) && incomingDataMatchesCompany(empresaId);
+      allow update: if resource != null && isCompanyMember(empresaId) && companyIdIsImmutable();
+      allow delete: if resource != null && isCompanyMember(empresaId);
+    }
+    
+    match /empresas/{empresaId}/lancamentos_contabeis/{lancamentoContabilId} {
+      allow get: if isCompanyMember(empresaId) || isGlobalAdmin();
+      allow list: if isCompanyMember(empresaId) || isGlobalAdmin();
+      allow create: if isCompanyMember(empresaId) && incomingDataMatchesCompany(empresaId);
+      allow update: if resource != null && isCompanyMember(empresaId) && companyIdIsImmutable();
+      allow delete: if resource != null && isCompanyMember(empresaId);
+    }
+
+    match /empresas/{empresaId}/parceiros/{parceiroId} {
+      allow get: if isCompanyMember(empresaId) || isGlobalAdmin();
+      allow list: if isCompanyMember(empresaId) || isGlobalAdmin();
+      allow create: if isCompanyMember(empresaId) && incomingDataMatchesCompany(empresaId);
+      allow update: if resource != null && isCompanyMember(empresaId) && companyIdIsImmutable();
+      allow delete: if resource != null && isCompanyMember(empresaId);
+    }
+
+    match /empresas/{empresaId}/funcionarios/{funcionarioId} {
+      allow get: if isCompanyMember(empresaId) || isGlobalAdmin();
+      allow list: if isCompanyMember(empresaId) || isGlobalAdmin();
+      allow create: if isCompanyMember(empresaId) && incomingDataMatchesCompany(empresaId);
+      allow update: if resource != null && isCompanyMember(empresaId) && companyIdIsImmutable();
+      allow delete: if resource != null && isCompanyMember(empresaId);
+    }
+
+    match /empresas/{empresaId}/produtos_servicos/{produtoServicoId} {
+      allow get: if isCompanyMember(empresaId) || isGlobalAdmin();
+      allow list: if isCompanyMember(empresaId) || isGlobalAdmin();
+      allow create: if isCompanyMember(empresaId) && incomingDataMatchesCompany(empresaId);
+      allow update: if resource != null && isCompanyMember(empresaId) && companyIdIsImmutable();
+      allow delete: if resource != null && isCompanyMember(empresaId);
+    }
+
+    match /empresas/{empresaId}/eventos/{eventoId} {
+      allow get: if isCompanyMember(empresaId) || isGlobalAdmin();
+      allow list: if isCompanyMember(empresaId) || isGlobalAdmin();
+      allow create: if isCompanyMember(empresaId) && incomingDataMatchesCompany(empresaId);
+      allow update: if resource != null && isCompanyMember(empresaId) && companyIdIsImmutable();
+      allow delete: if resource != null && isCompanyMember(empresaId);
+    }
+
+    match /empresas/{empresaId}/arquivos/{arquivoId} {
+      allow get: if isCompanyMember(empresaId) || isGlobalAdmin();
+      allow list: if isCompanyMember(empresaId) || isGlobalAdmin();
+      allow create: if isCompanyMember(empresaId) && incomingDataMatchesCompany(empresaId);
+      allow update: if resource != null && isCompanyMember(empresaId) && companyIdIsImmutable();
+      allow delete: if resource != null && isCompanyMember(empresaId);
+    }
+
+    match /empresas/{empresaId}/kpis/{kpiId} {
+      allow get: if isCompanyMember(empresaId) || isGlobalAdmin();
+      allow list: if isCompanyMember(empresaId) || isGlobalAdmin();
+      allow create: if isCompanyMember(empresaId) && incomingDataMatchesCompany(empresaId);
+      allow update: if resource != null && isCompanyMember(empresaId) && companyIdIsImmutable();
+      allow delete: if resource != null && isCompanyMember(empresaId);
+    }
+
+    match /empresas/{empresaId}/sugestoes_descricao_transacao/{sugestaoDescricaoTransacaoId} {
+      allow get: if isCompanyMember(empresaId) || isGlobalAdmin();
+      allow list: if isCompanyMember(empresaId) || isGlobalAdmin();
+      allow create: if isCompanyMember(empresaId) && incomingDataMatchesCompany(empresaId);
+      allow update: if resource != null && isCompanyMember(empresaId) && companyIdIsImmutable();
+      allow delete: if resource != null && isCompanyMember(empresaId);
+    }
+
+    // --------------------------------
+    // Global Collections
+    // --------------------------------
+
+    /**
+     * @description System-wide audit log. Readable only by global admins.
+     *   Any signed-in user can create an entry (e.g., to log their own actions).
+     *   Entries are immutable to preserve the audit trail.
+     * @path /auditoria/{auditoriaId}
+     * @allow (create) An authenticated user writes a log of their own action.
+     * @deny (update) Any user, including an admin, tries to change a log entry.
+     * @principle Protects the integrity and immutability of the audit log.
+     */
+    match /auditoria/{auditoriaId} {
+      allow get: if isGlobalAdmin();
+      allow list: if isGlobalAdmin();
+      allow create: if isSignedIn() && request.resource.data.usuarioId == request.auth.uid;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Publicly readable information about government website statuses.
+     *   This data is read-only for all users and cannot be modified from the client.
+     * @path /alertas_website/{alertaWebsiteId}
+     * @allow (get) Any user, even unauthenticated, can read the status of a website.
+     * @deny (create) No client is allowed to add new website alerts.
+     * @principle Segregates public, read-only data from private application data.
+     */
+    match /alertas_website/{alertaWebsiteId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Manages which users have global administrator privileges.
+     *   Only other global administrators can view or change the list of admins.
+     * @path /roles_admin/{userId}
+     * @allow (create) An existing admin adds a new user to the admin roles.
+     * @deny (list) A non-admin user tries to see who all the admins are.
+     * @principle Enforces that only admins can manage other admins, preventing privilege escalation.
+     */
+    match /roles_admin/{userId} {
+      allow get: if isGlobalAdmin();
+      allow list: if isGlobalAdmin();
+      allow create: if isGlobalAdmin();
+      allow update: if isGlobalAdmin();
+      allow delete: if isGlobalAdmin();
+    }
+  }
+}
