@@ -4,7 +4,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
 
 export const metadata: Metadata = {
-  title: 'EscopoV3 Enhancement Suite',
+  title: 'EscopoV3 - Sistema de Gestão',
   description: 'Sistema de gestão contábil para pequenas e médias empresas.',
 };
 

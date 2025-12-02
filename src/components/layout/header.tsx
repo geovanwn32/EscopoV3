@@ -40,7 +40,7 @@ function UserMenu({ avatar }: { avatar?: { imageUrl: string; imageHint: string }
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full">
           <Avatar className="h-10 w-10 border">
-            {avatar && <AvatarImage src={avatar.imageUrl} data-ai-hint={avatar.imageHint} alt="User avatar" />}
+            {avatar && <AvatarImage src={avatar.imageUrl} data-ai-hint={avatar.imageHint} alt="Avatar do usuário" />}
             <AvatarFallback>
               <User />
             </AvatarFallback>

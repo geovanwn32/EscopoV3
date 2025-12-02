@@ -16,9 +16,9 @@ export default function KpiCard({ title, value, change, changeType }: KpiCardPro
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
         {isIncrease ? (
-            <ArrowUpRight className="h-4 w-4 text-success-foreground" />
+            <ArrowUpRight className="h-4 w-4 text-emerald-500" />
         ) : (
-            <ArrowDownRight className="h-4 w-4 text-destructive" />
+            <ArrowDownRight className="h-4 w-4 text-red-500" />
         )}
       </CardHeader>
       <CardContent>
