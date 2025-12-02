@@ -1,14 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
-import { Mail, Lock, Eye, EyeOff, Phone } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Phone, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useRouter } from 'next/navigation';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useAuth, useUser } from '@/firebase';
+import { GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { useToast } from '@/hooks/use-toast';
 
 // Tipagem para os dados do formulário
 type FormInputs = {
@@ -31,15 +34,70 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 
 export default function LoginForm() {
   const router = useRouter();
+  const auth = useAuth();
+  const { user, isUserLoading } = useUser();
+  const { toast } = useToast();
+
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormInputs>();
 
-  const onSubmit: SubmitHandler<FormInputs> = (data) => {
-    console.log(data); // Em um app real, aqui você faria a chamada para a API
-    router.push('/selecionar-empresa');
+  useEffect(() => {
+    if (!isUserLoading && user) {
+      router.push('/selecionar-empresa');
+    }
+  }, [user, isUserLoading, router]);
+
+  const handleGoogleSignIn = async () => {
+    setIsAuthLoading(true);
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+      // Redirection is handled by the useEffect hook
+    } catch (error: any) {
+      console.error("Google Sign-In Error:", error);
+      toast({
+        variant: 'destructive',
+        title: "Erro no Login com Google",
+        description: error.message || "Não foi possível fazer login com o Google. Tente novamente.",
+      });
+      setIsAuthLoading(false);
+    }
   };
+
+  const onSubmit: SubmitHandler<FormInputs> = async (data) => {
+    setIsAuthLoading(true);
+    try {
+      if (isSignUp) {
+        await createUserWithEmailAndPassword(auth, data.email, data.password);
+      } else {
+        await signInWithEmailAndPassword(auth, data.email, data.password);
+      }
+      // Redirection is handled by the useEffect hook
+    } catch (error: any) {
+       console.error("Email/Password Auth Error:", error);
+       toast({
+        variant: 'destructive',
+        title: isSignUp ? "Erro ao Criar Conta" : "Erro de Login",
+        description: error.code === 'auth/email-already-in-use' 
+            ? 'Este e-mail já está em uso.'
+            : error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found'
+            ? 'E-mail ou senha inválidos.'
+            : 'Ocorreu um erro. Por favor, tente novamente.',
+      });
+       setIsAuthLoading(false);
+    }
+  };
+
+  if (isUserLoading || user) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 sm:p-12 flex flex-col justify-center">
@@ -94,7 +152,8 @@ export default function LoginForm() {
             )}
           </div>
 
-          <Button type="submit" className="w-full font-semibold text-lg py-6 mt-6">
+          <Button type="submit" className="w-full font-semibold text-lg py-6 mt-6" disabled={isAuthLoading}>
+             {isAuthLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isSignUp ? 'Continuar' : 'Entrar'}
           </Button>
         </form>
@@ -105,15 +164,15 @@ export default function LoginForm() {
         </div>
 
         <div className="flex justify-center">
-          <Button variant="outline" className="gap-2 bg-white text-gray-700 border-gray-300 shadow-sm hover:bg-gray-100 dark:bg-card-foreground/5 dark:border-border dark:text-foreground dark:hover:bg-card-foreground/10 transition-colors">
-            <GoogleIcon />
+          <Button variant="outline" className="gap-2 bg-white text-gray-700 border-gray-300 shadow-sm hover:bg-gray-100 dark:bg-card-foreground/5 dark:border-border dark:text-foreground dark:hover:bg-card-foreground/10 transition-colors" onClick={handleGoogleSignIn} disabled={isAuthLoading}>
+            {isAuthLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon />}
             Login com Google
           </Button>
         </div>
 
         <p className="text-center text-sm text-muted-foreground mt-8">
           {isSignUp ? 'Já tem uma conta?' : "Não tem uma conta?"}{' '}
-          <button type="button" onClick={() => setIsSignUp(!isSignUp)} className="font-medium text-primary hover:underline">
+          <button type="button" onClick={() => setIsSignUp(!isSignUp)} className="font-medium text-primary hover:underline" disabled={isAuthLoading}>
             {isSignUp ? 'Entrar' : 'Crie uma agora'}
           </button>
         </p>
