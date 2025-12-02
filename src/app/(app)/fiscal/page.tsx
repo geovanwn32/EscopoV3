@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useEffect, ChangeEvent } from "react";
+import { useState, useEffect, ChangeEvent, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -74,6 +74,30 @@ interface XmlFile {
     status: 'Importado' | 'Lançado' | 'Erro';
 }
 
+function RejectedFilesDialog({ title, files, open, onOpenChange }: { title: string, files: string[], open: boolean, onOpenChange: (open: boolean) => void }) {
+    return (
+        <AlertDialog open={open} onOpenChange={onOpenChange}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>{title}</AlertDialogTitle>
+                    <AlertDialogDescription>A lista abaixo contém os arquivos que não puderam ser importados.</AlertDialogDescription>
+                </AlertDialogHeader>
+                <ScrollArea className="max-h-60 rounded-md border p-4">
+                    <ul className="space-y-2 text-sm text-muted-foreground">
+                        {files.map((file, index) => (
+                            <li key={index} className="truncate">{file}</li>
+                        ))}
+                    </ul>
+                </ScrollArea>
+                <AlertDialogFooter>
+                    <AlertDialogAction onClick={() => onOpenChange(false)}>Fechar</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
+}
+
+
 export default function FiscalPage() {
     const { toast } = useToast();
     const { useScopedData, companies, currentCompany } = useCompany();
@@ -92,6 +116,11 @@ export default function FiscalPage() {
     
     const [isReadOnly, setIsReadOnly] = useState(false);
     const [editingNota, setEditingNota] = useState<NotaFiscal | null>(null);
+
+    const [rejectedFiles, setRejectedFiles] = useState<string[]>([]);
+    const [rejectedFilesTitle, setRejectedFilesTitle] = useState('');
+    const [isRejectedFilesDialogOpen, setIsRejectedFilesDialogOpen] = useState(false);
+
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (!currentCompany) {
@@ -112,8 +141,8 @@ export default function FiscalPage() {
         if (!files || files.length === 0) return;
 
         const newFiles: XmlFile[] = [];
-        const rejectedFiles: string[] = [];
-        const invalidCnpjFiles: string[] = [];
+        const currentRejectedFiles: string[] = [];
+        const currentInvalidCnpjFiles: string[] = [];
         let successCount = 0;
 
         const allNotaNumeros = [
@@ -139,7 +168,7 @@ export default function FiscalPage() {
                     const isAlreadyLaunched = numeroNota ? allNotaNumeros.includes(numeroNota) : false;
 
                     if (isDuplicate || isAlreadyLaunched) {
-                        rejectedFiles.push(file.name);
+                        currentRejectedFiles.push(file.name);
                         resolve();
                         return;
                     }
@@ -169,7 +198,7 @@ export default function FiscalPage() {
                     const isCnpjValid = xmlCnpjs.includes(companyCnpj);
 
                     if (!isCnpjValid) {
-                        invalidCnpjFiles.push(file.name);
+                        currentInvalidCnpjFiles.push(file.name);
                         resolve();
                         return;
                     }
@@ -199,19 +228,25 @@ export default function FiscalPage() {
                  logAudit(setAuditLogs, 'IMPORT', 'Fiscal', `Importou ${successCount} arquivo(s) XML.`);
             }
 
-            if (rejectedFiles.length > 0) {
+            if (currentRejectedFiles.length > 0) {
+                setRejectedFiles(currentRejectedFiles);
+                setRejectedFilesTitle('Arquivos Duplicados ou Já Lançados');
                 toast({
                     variant: 'destructive',
-                    title: 'Arquivos Duplicados ou Já Lançados',
-                    description: `Estes arquivos já existem ou foram lançados: ${rejectedFiles.join(', ')}`,
+                    title: 'Arquivos Rejeitados',
+                    description: `${currentRejectedFiles.length} arquivo(s) já existem ou foram lançados.`,
+                    action: <Button variant="secondary" size="sm" onClick={() => setIsRejectedFilesDialogOpen(true)}>Ver Detalhes</Button>,
                 });
             }
 
-            if (invalidCnpjFiles.length > 0) {
+            if (currentInvalidCnpjFiles.length > 0) {
+                 setRejectedFiles(currentInvalidCnpjFiles);
+                 setRejectedFilesTitle('Arquivos com CNPJ Inválido');
                 toast({
                     variant: 'destructive',
-                    title: 'CNPJ Inválido',
-                    description: `Estes arquivos não pertencem à empresa ativa: ${invalidCnpjFiles.join(', ')}`,
+                    title: 'Arquivos com CNPJ Inválido',
+                    description: `${currentInvalidCnpjFiles.length} arquivo(s) não pertencem à empresa ativa.`,
+                    action: <Button variant="secondary" size="sm" onClick={() => setIsRejectedFilesDialogOpen(true)}>Ver Detalhes</Button>,
                 });
             }
 
@@ -524,6 +559,13 @@ export default function FiscalPage() {
                     editingNota={editingNota}
                 />
             </Dialog>
+            <RejectedFilesDialog 
+                title={rejectedFilesTitle}
+                files={rejectedFiles}
+                open={isRejectedFilesDialogOpen}
+                onOpenChange={setIsRejectedFilesDialogOpen}
+            />
+
         </>
     );
 }
