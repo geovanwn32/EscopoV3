@@ -5,7 +5,7 @@ import { Sidebar, SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
-      <Sidebar collapsible="icon" variant="sidebar" className="bg-sidebar text-sidebar-foreground">
+      <Sidebar collapsible="icon" variant="floating" className="bg-sidebar text-sidebar-foreground">
         <SidebarNav />
       </Sidebar>
       <SidebarInset>
