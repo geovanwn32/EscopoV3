@@ -61,10 +61,10 @@ const actions = [
 
 interface XmlFile {
     id: number;
-    file: File;
+    fileName: string;
+    fileContent: string;
     date: string;
     status: 'Importado' | 'Lançado' | 'Erro';
-    model?: 'produto' | 'saida' | 'servico';
 }
 
 export default function FiscalPage() {
@@ -78,21 +78,84 @@ export default function FiscalPage() {
     const [notasSaida, setNotasSaida] = useState<any[]>([]);
     const [notasServico, setNotasServico] = useState<any[]>([]);
 
+    // Load data from localStorage on initial render
+    useEffect(() => {
+        try {
+            const storedXmls = localStorage.getItem('fiscal-xmls');
+            if (storedXmls) setXmls(JSON.parse(storedXmls));
+
+            const storedNotasProduto = localStorage.getItem('fiscal-notasProduto');
+            if (storedNotasProduto) setNotasProduto(JSON.parse(storedNotasProduto));
+
+            const storedNotasSaida = localStorage.getItem('fiscal-notasSaida');
+            if (storedNotasSaida) setNotasSaida(JSON.parse(storedNotasSaida));
+
+            const storedNotasServico = localStorage.getItem('fiscal-notasServico');
+            if (storedNotasServico) setNotasServico(JSON.parse(storedNotasServico));
+        } catch (error) {
+            console.error("Failed to load data from localStorage", error);
+            toast({
+                variant: "destructive",
+                title: "Erro ao carregar dados",
+                description: "Não foi possível carregar os dados salvos anteriormente."
+            })
+        }
+    }, []);
+
+    // Save data to localStorage whenever it changes
+    useEffect(() => {
+        try {
+            localStorage.setItem('fiscal-xmls', JSON.stringify(xmls));
+        } catch (error) {
+            console.error("Failed to save XMLs to localStorage", error);
+        }
+    }, [xmls]);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem('fiscal-notasProduto', JSON.stringify(notasProduto));
+        } catch (error) {
+            console.error("Failed to save Notas de Produto to localStorage", error);
+        }
+    }, [notasProduto]);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem('fiscal-notasSaida', JSON.stringify(notasSaida));
+        } catch (error) {
+            console.error("Failed to save Notas de Saída to localStorage", error);
+        }
+    }, [notasSaida]);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem('fiscal-notasServico', JSON.stringify(notasServico));
+        } catch (error) {
+            console.error("Failed to save Notas de Serviço to localStorage", error);
+        }
+    }, [notasServico]);
+
+
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
         if (files && files.length > 0) {
             const fileNames = Array.from(files).map(file => file.name).join(', ');
             
-            const newFiles: XmlFile[] = Array.from(files).map((file, index) => {
-                return {
-                    id: Date.now() + index,
-                    file: file,
-                    date: new Date().toLocaleDateString('pt-BR'),
-                    status: 'Importado',
-                }
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const content = e.target?.result as string;
+                    const newFile: XmlFile = {
+                        id: Date.now() + Math.random(),
+                        fileName: file.name,
+                        fileContent: content,
+                        date: new Date().toLocaleDateString('pt-BR'),
+                        status: 'Importado',
+                    };
+                    setXmls(prevXmls => [...prevXmls, newFile]);
+                };
+                reader.readAsText(file);
             });
-
-            setXmls(prevXmls => [...prevXmls, ...newFiles]);
 
             toast({
                 title: "Arquivos Importados com Sucesso",
@@ -106,81 +169,73 @@ export default function FiscalPage() {
         const xmlFile = xmls.find(x => x.id === id);
         if (!xmlFile) return;
     
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const content = e.target?.result as string;
-            let detectedModel: 'produto' | 'servico' | null = null;
-            let parsedData = {};
+        const content = xmlFile.fileContent;
+        let detectedModel: 'produto' | 'servico' | null = null;
+        let parsedData = {};
 
-            // Simulating XML parsing
-            if (content.includes('<infNFe') && content.includes('<NFe')) {
-                detectedModel = 'produto';
-                const products = Array.from(content.matchAll(/<det nItem="(\d+)">([\s\S]*?)<\/det>/g)).map(match => {
-                    const itemContent = match[2];
-                    const find = (tag: string) => itemContent.match(new RegExp(`<${tag}>(.*?)</${tag}>`))?.[1] || '';
-                    return {
-                        id: Date.now() + Math.random(),
-                        name: find('xProd'),
-                        quantity: parseFloat(find('qCom') || '0'),
-                        price: parseFloat(find('vUnCom') || '0'),
-                        total: parseFloat(find('vProd') || '0'),
-                    };
-                });
-                parsedData = {
-                    geral: {
-                        numero: content.match(/<nNF>(.*?)<\/nNF>/)?.[1],
-                        serie: content.match(/<serie>(.*?)<\/serie>/)?.[1],
-                        dataEmissao: content.match(/<dhEmi>(.*?)<\/dhEmi>/)?.[1].substring(0, 16),
-                    },
-                    emitente: {
-                        cnpj: content.match(/<emit>[\s\S]*?<CNPJ>(.*?)<\/CNPJ>/)?.[1],
-                        razaoSocial: content.match(/<emit>[\s\S]*?<xNome>(.*?)<\/xNome>/)?.[1],
-                    },
-                    items: products,
+        // Simulating XML parsing
+        if (content.includes('<infNFe') && content.includes('<NFe')) {
+            detectedModel = 'produto';
+            const products = Array.from(content.matchAll(/<det nItem="(\d+)">([\s\S]*?)<\/det>/g)).map(match => {
+                const itemContent = match[2];
+                const find = (tag: string) => itemContent.match(new RegExp(`<${tag}>(.*?)</${tag}>`))?.[1] || '';
+                return {
+                    id: Date.now() + Math.random(),
+                    name: find('xProd'),
+                    quantity: parseFloat(find('qCom') || '0'),
+                    price: parseFloat(find('vUnCom') || '0'),
+                    total: parseFloat(find('vProd') || '0'),
                 };
-            } else if (content.includes('<infNFSe') || content.includes('<CompNfse')) {
-                detectedModel = 'servico';
-                 parsedData = {
-                    identificacao: {
-                        numero: content.match(/<Numero>(.*?)<\/Numero>/)?.[1],
-                        dataEmissao: content.match(/<DataEmissao>(.*?)<\/DataEmissao>/)?.[1]?.substring(0, 16) || content.match(/<dhEmi>(.*?)<\/dhEmi>/)?.[1]?.substring(0, 16),
-                    },
-                    prestador: {
-                        cnpj: content.match(/<Prestador>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1] || content.match(/<PrestadorServico>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1] || content.match(/<emit>[\s\S]*?<CNPJ>(.*?)<\/CNPJ>/)?.[1],
-                        razaoSocial: content.match(/<PrestadorServico>[\s\S]*?<RazaoSocial>(.*?)<\/RazaoSocial>/)?.[1] || content.match(/<emit>[\s\S]*?<xNome>(.*?)<\/xNome>/)?.[1],
-                    },
-                    tomador: {
-                        cnpj: content.match(/<TomadorServico>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1] || content.match(/<toma>[\s\S]*?<CNPJ>(.*?)<\/CNPJ>/)?.[1],
-                        razaoSocial: content.match(/<TomadorServico>[\s\S]*?<RazaoSocial>(.*?)<\/RazaoSocial>/)?.[1] || content.match(/<toma>[\s\S]*?<xNome>(.*?)<\/xNome>/)?.[1],
-                    },
-                    servico: {
-                        valor: parseFloat(content.match(/<ValorServicos>(.*?)<\/ValorServicos>/)?.[1] || content.match(/<vServ>(.*?)<\/vServ>/)?.[1] || '0'),
-                        descricao: content.match(/<Discriminacao>(.*?)<\/Discriminacao>/)?.[1] || content.match(/<xDescServ>(.*?)<\/xDescServ>/)?.[1],
-                    }
-                 };
-            }
-    
-            if (detectedModel) {
-                openLancamentoDialog(detectedModel, parsedData);
-                setXmls(prevXmls => prevXmls.map(x => x.id === id ? { ...x, status: 'Lançado' } : x));
-            } else {
-                toast({
-                    variant: 'destructive',
-                    title: 'Modelo de XML não suportado',
-                    description: 'Não foi possível identificar o tipo de nota fiscal para este arquivo.'
-                });
-                 setXmls(prevXmls => prevXmls.map(x => x.id === id ? { ...x, status: 'Erro' } : x));
-            }
-        };
-        reader.onerror = () => {
+            });
+            parsedData = {
+                geral: {
+                    numero: content.match(/<nNF>(.*?)<\/nNF>/)?.[1],
+                    serie: content.match(/<serie>(.*?)<\/serie>/)?.[1],
+                    dataEmissao: content.match(/<dhEmi>(.*?)<\/dhEmi>/)?.[1].substring(0, 16),
+                },
+                emitente: {
+                    cnpj: content.match(/<emit>[\s\S]*?<CNPJ>(.*?)<\/CNPJ>/)?.[1],
+                    razaoSocial: content.match(/<emit>[\s\S]*?<xNome>(.*?)<\/xNome>/)?.[1],
+                },
+                destinatario: {
+                    cnpj: content.match(/<dest>[\s\S]*?<CNPJ>(.*?)<\/CNPJ>/)?.[1] || content.match(/<dest>[\s\S]*?<CPF>(.*?)<\/CPF>/)?.[1],
+                    razaoSocial: content.match(/<dest>[\s\S]*?<xNome>(.*?)<\/xNome>/)?.[1],
+                },
+                items: products,
+            };
+        } else if (content.includes('<infNFSe') || content.includes('<CompNfse')) {
+            detectedModel = 'servico';
+             parsedData = {
+                identificacao: {
+                    numero: content.match(/<Numero>(.*?)<\/Numero>/)?.[1],
+                    dataEmissao: content.match(/<DataEmissao>(.*?)<\/DataEmissao>/)?.[1]?.substring(0, 16) || content.match(/<dhEmi>(.*?)<\/dhEmi>/)?.[1]?.substring(0, 16),
+                },
+                prestador: {
+                    cnpj: content.match(/<Prestador>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1] || content.match(/<PrestadorServico>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1] || content.match(/<emit>[\s\S]*?<CNPJ>(.*?)<\/CNPJ>/)?.[1],
+                    razaoSocial: content.match(/<PrestadorServico>[\s\S]*?<RazaoSocial>(.*?)<\/RazaoSocial>/)?.[1] || content.match(/<emit>[\s\S]*?<xNome>(.*?)<\/xNome>/)?.[1],
+                },
+                tomador: {
+                    cnpj: content.match(/<TomadorServico>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1] || content.match(/<toma>[\s\S]*?<CNPJ>(.*?)<\/CNPJ>/)?.[1],
+                    razaoSocial: content.match(/<TomadorServico>[\s\S]*?<RazaoSocial>(.*?)<\/RazaoSocial>/)?.[1] || content.match(/<toma>[\s\S]*?<xNome>(.*?)<\/xNome>/)?.[1],
+                },
+                servico: {
+                    valor: parseFloat(content.match(/<ValorServicos>(.*?)<\/ValorServicos>/)?.[1] || content.match(/<vServ>(.*?)<\/vServ>/)?.[1] || '0'),
+                    descricao: content.match(/<Discriminacao>(.*?)<\/Discriminacao>/)?.[1] || content.match(/<xDescServ>(.*?)<\/xDescServ>/)?.[1],
+                }
+             };
+        }
+
+        if (detectedModel) {
+            openLancamentoDialog(detectedModel, parsedData);
+            setXmls(prevXmls => prevXmls.map(x => x.id === id ? { ...x, status: 'Lançado' } : x));
+        } else {
             toast({
                 variant: 'destructive',
-                title: 'Erro ao ler arquivo',
-                description: 'Não foi possível ler o conteúdo do arquivo XML.'
+                title: 'Modelo de XML não suportado',
+                description: 'Não foi possível identificar o tipo de nota fiscal para este arquivo.'
             });
              setXmls(prevXmls => prevXmls.map(x => x.id === id ? { ...x, status: 'Erro' } : x));
-        };
-        reader.readAsText(xmlFile.file);
+        }
     };
 
     const handleDeleteXml = (id: number) => {
@@ -242,18 +297,17 @@ export default function FiscalPage() {
         <Card>
             <Tabs defaultValue="xmls">
                 <CardHeader>
-                    <CardTitle>Documentos Fiscais</CardTitle>
-                    <CardDescription>
-                        Gerencie todos os seus documentos importados e lançados.
-                    </CardDescription>
-                     <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 mt-4">
-                        <TabsTrigger value="xmls">XMLs Importados</TabsTrigger>
-                        <TabsTrigger value="produtos">Notas de Produto</TabsTrigger>
-                        <TabsTrigger value="saidas">Notas de Saída</TabsTrigger>
-                        <TabsTrigger value="servicos">Notas de Serviço</TabsTrigger>
-                        <TabsTrigger value="recibos">Recibos/Cupons</TabsTrigger>
-                    </TabsList>
-                    <div className="flex w-full items-center gap-2 pt-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                        <CardTitle>Documentos Fiscais</CardTitle>
+                        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 mt-4 sm:mt-0 sm:w-auto">
+                            <TabsTrigger value="xmls">XMLs Importados</TabsTrigger>
+                            <TabsTrigger value="produtos">Notas de Produto</TabsTrigger>
+                            <TabsTrigger value="saidas">Notas de Saída</TabsTrigger>
+                            <TabsTrigger value="servicos">Notas de Serviço</TabsTrigger>
+                            <TabsTrigger value="recibos">Recibos/Cupons</TabsTrigger>
+                        </TabsList>
+                    </div>
+                     <div className="flex w-full items-center gap-2 pt-4">
                         <div className="relative flex-grow">
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                             <Input placeholder="Buscar em todos os documentos..." className="pl-9 w-full" />
@@ -268,7 +322,7 @@ export default function FiscalPage() {
                             data={xmls}
                             renderRow={(item: XmlFile) => (
                                 <>
-                                    <TableCell className="font-medium">{item.file.name}</TableCell>
+                                    <TableCell className="font-medium">{item.fileName}</TableCell>
                                     <TableCell>{item.date}</TableCell>
                                     <TableCell>
                                         <Badge variant={
@@ -452,7 +506,7 @@ function RecentDocumentsTable({
                         <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
                         <AlertDialogDescription>
                             Essa ação não pode ser desfeita. Isso excluirá permanentemente o documento
-                             <span className="font-bold"> "{itemToDelete?.file?.name}"</span>.
+                             <span className="font-bold"> "{itemToDelete?.fileName}"</span>.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -636,8 +690,8 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
         setProductItems(prev => prev.map(item => {
             if (item.id === id) {
                 const updatedItem = { ...item, [field]: value };
-                const quantity = field === 'quantity' ? Number(value) : Number(updatedItem.quantity);
-                const price = field === 'price' ? Number(value) : Number(updatedItem.price);
+                const quantity = Number(updatedItem.quantity) || 0;
+                const price = Number(updatedItem.price) || 0;
     
                 if (!isNaN(quantity) && !isNaN(price)) {
                     updatedItem.total = quantity * price;
@@ -888,27 +942,33 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
                     </Card>
                 )
             case 'emitente':
+                const sectionKey = tipoNotaValue === 'entrada' ? 'emitente' : 'destinatario';
+                const otherSectionKey = tipoNotaValue === 'entrada' ? 'destinatario' : 'emitente';
+                const title = tipoNotaValue === 'entrada' ? 'Emitente / Destinatário' : 'Destinatário / Emitente';
+
                 return (
                     <Card>
-                        <CardHeader><CardTitle>Dados do Emitente / Destinatário</CardTitle></CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
-                                <div className="space-y-2"><Label htmlFor="emit-cnpj">CNPJ / CPF</Label><Input id="emit-cnpj" value={formData.emitente?.cnpj || ''} onChange={(e) => handleInputChange('emitente', 'cnpj', e.target.value)} /></div>
-                                <div className="space-y-2 col-span-1 md:col-span-2"><Label htmlFor="emit-razao-social">Razão Social</Label><Input id="emit-razao-social" value={formData.emitente?.razaoSocial || ''} onChange={(e) => handleInputChange('emitente', 'razaoSocial', e.target.value)} /></div>
-                                <div className="space-y-2"><Label htmlFor="emit-ie">Inscrição Estadual</Label><Input id="emit-ie" /></div>
+                        <CardHeader><CardTitle>{title}</CardTitle></CardHeader>
+                        <CardContent className="space-y-6">
+                            <div>
+                                <h3 className="text-lg font-medium text-foreground mb-4">{tipoNotaValue === 'entrada' ? 'Emitente' : 'Destinatário'}</h3>
+                                <div className="space-y-4">
+                                     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
+                                        <div className="space-y-2"><Label>CNPJ / CPF</Label><Input value={formData[sectionKey]?.cnpj || ''} onChange={(e) => handleInputChange(sectionKey, 'cnpj', e.target.value)} /></div>
+                                        <div className="space-y-2 col-span-1 md:col-span-2"><Label>Razão Social</Label><Input value={formData[sectionKey]?.razaoSocial || ''} onChange={(e) => handleInputChange(sectionKey, 'razaoSocial', e.target.value)} /></div>
+                                        <div className="space-y-2"><Label>Inscrição Estadual</Label><Input /></div>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
-                                <div className="space-y-2"><Label htmlFor="emit-cep">CEP</Label><Input id="emit-cep" /></div>
-                                <div className="space-y-2 col-span-1 md:col-span-2"><Label htmlFor="emit-logradouro">Logradouro</Label><Input id="emit-logradouro" /></div>
-                                <div className="space-y-2"><Label htmlFor="emit-numero">Número</Label><Input id="emit-numero" /></div>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
-                                <div className="space-y-2"><Label htmlFor="emit-bairro">Bairro</Label><Input id="emit-bairro" /></div>
-                                <div className="space-y-2"><Label htmlFor="emit-cidade">Cidade</Label><Input id="emit-cidade" /></div>
-                                <div className="space-y-2"><Label htmlFor="emit-uf">UF</Label><Input id="emit-uf" /></div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="emit-regime">Regime Tributário</Label>
-                                    <Select><SelectTrigger id="emit-regime"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent><SelectItem value="simples">Simples Nacional</SelectItem><SelectItem value="presumido">Lucro Presumido</SelectItem><SelectItem value="real">Lucro Real</SelectItem></SelectContent></Select>
+                            <Separator />
+                             <div>
+                                <h3 className="text-lg font-medium text-foreground mb-4">{tipoNotaValue === 'entrada' ? 'Destinatário' : 'Emitente'}</h3>
+                                <div className="space-y-4">
+                                     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
+                                        <div className="space-y-2"><Label >CNPJ / CPF</Label><Input value={formData[otherSectionKey]?.cnpj || ''} onChange={(e) => handleInputChange(otherSectionKey, 'cnpj', e.target.value)} /></div>
+                                        <div className="space-y-2 col-span-1 md:col-span-2"><Label>Razão Social</Label><Input value={formData[otherSectionKey]?.razaoSocial || ''} onChange={(e) => handleInputChange(otherSectionKey, 'razaoSocial', e.target.value)} /></div>
+                                        <div className="space-y-2"><Label >Inscrição Estadual</Label><Input /></div>
+                                    </div>
                                 </div>
                             </div>
                         </CardContent>
@@ -953,7 +1013,7 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave }: Lanca
                         </CardContent>
                     </Card>
                 )
-            case 'serviços': // Corrigido de 'servicos' para 'serviços'
+            case 'serviços':
                 return (
                     <Card>
                         <CardHeader>
