@@ -464,11 +464,7 @@ function FormRow({ children }: { children: React.ReactNode }) {
 
 function LancamentoProdutoDialog() {
     // Mock data, in a real scenario this would come from an API or the XML file
-    const productItems = [
-        { id: 1, name: 'AMEND CROC CEB SAL 20X40G', quantity: 20, price: '12.60', total: 252.00 },
-        { id: 2, name: 'AMEND CROC TRADIC 20X40G', quantity: 5, price: '11.86', total: 59.30 },
-        { id: 3, name: 'AMENDOIM JAP 20X40G', quantity: 20, price: '13.13', total: 262.60 },
-    ];
+    const productItems: any[] = [];
 
     const totalNota = productItems.reduce((acc, item) => acc + item.total, 0);
   
@@ -521,25 +517,25 @@ function LancamentoProdutoDialog() {
                                 </div>
                                 <div className="space-y-2 col-span-1 md:col-span-2">
                                     <Label htmlFor="nf-natureza">Natureza da Operação (CFOP)</Label>
-                                    <Input id="nf-natureza" defaultValue="Venda de mercadoria" />
+                                    <Input id="nf-natureza" />
                                 </div>
                             </FormRow>
                              <FormRow>
                                 <div className="space-y-2">
                                     <Label htmlFor="nf-modelo">Modelo</Label>
-                                    <Input id="nf-modelo" defaultValue="55" />
+                                    <Input id="nf-modelo" />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="nf-serie">Série</Label>
-                                    <Input id="nf-serie" defaultValue="1" />
+                                    <Input id="nf-serie" />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="nf-numero">Número</Label>
-                                    <Input id="nf-numero" defaultValue="12345" />
+                                    <Input id="nf-numero" />
                                 </div>
                                  <div className="space-y-2">
                                     <Label htmlFor="nf-data-emissao">Data de Emissão</Label>
-                                    <Input id="nf-data-emissao" type="datetime-local" defaultValue="2025-11-06T22:05" />
+                                    <Input id="nf-data-emissao" type="datetime-local" />
                                 </div>
                             </FormRow>
                        </CardContent>
@@ -556,48 +552,48 @@ function LancamentoProdutoDialog() {
                             <FormRow>
                                 <div className="space-y-2">
                                     <Label htmlFor="emit-cnpj">CNPJ / CPF</Label>
-                                    <Input id="emit-cnpj" defaultValue="11.786.827/0001-99" />
+                                    <Input id="emit-cnpj" />
                                 </div>
                                 <div className="space-y-2 col-span-1 md:col-span-2">
                                     <Label htmlFor="emit-razao-social">Razão Social</Label>
-                                    <Input id="emit-razao-social" defaultValue="SIVALDO PEREIRA LEITE 39443817187" />
+                                    <Input id="emit-razao-social" />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="emit-ie">Inscrição Estadual</Label>
-                                    <Input id="emit-ie" defaultValue="104679387" />
+                                    <Input id="emit-ie" />
                                 </div>
                             </FormRow>
                              <FormRow>
                                 <div className="space-y-2">
                                     <Label htmlFor="emit-cep">CEP</Label>
-                                    <Input id="emit-cep" defaultValue="74988-805" />
+                                    <Input id="emit-cep" />
                                 </div>
                                 <div className="space-y-2 col-span-1 md:col-span-2">
                                     <Label htmlFor="emit-logradouro">Logradouro</Label>
-                                    <Input id="emit-logradouro" defaultValue="RUA DOUTOR COUTO" />
+                                    <Input id="emit-logradouro" />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="emit-numero">Número</Label>
-                                    <Input id="emit-numero" defaultValue="SN" />
+                                    <Input id="emit-numero" />
                                 </div>
                             </FormRow>
                              <FormRow>
                                  <div className="space-y-2">
                                     <Label htmlFor="emit-bairro">Bairro</Label>
-                                    <Input id="emit-bairro" defaultValue="REAL GRANDEZA - 2A ETAPA" />
+                                    <Input id="emit-bairro" />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="emit-cidade">Cidade</Label>
-                                    <Input id="emit-cidade" defaultValue="APARECIDA DE GOIANIA" />
+                                    <Input id="emit-cidade" />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="emit-uf">UF</Label>
-                                    <Input id="emit-uf" defaultValue="GO" />
+                                    <Input id="emit-uf" />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="emit-regime">Regime Tributário</Label>
                                     <Select>
-                                        <SelectTrigger id="emit-regime"><SelectValue placeholder="Simples Nacional" /></SelectTrigger>
+                                        <SelectTrigger id="emit-regime"><SelectValue placeholder="Selecione" /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="simples">Simples Nacional</SelectItem>
                                             <SelectItem value="presumido">Lucro Presumido</SelectItem>
@@ -628,7 +624,7 @@ function LancamentoProdutoDialog() {
                                 </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                {productItems.map((item) => (
+                                {productItems.length > 0 ? productItems.map((item) => (
                                     <TableRow key={item.id}>
                                         <TableCell className="font-medium">{item.name}</TableCell>
                                         <TableCell>{item.quantity}</TableCell>
@@ -638,7 +634,11 @@ function LancamentoProdutoDialog() {
                                             <Button variant="ghost" size="icon" className="h-8 w-8"><X className="h-4 w-4" /></Button>
                                         </TableCell>
                                     </TableRow>
-                                ))}
+                                )) : (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="h-24 text-center">Nenhum produto adicionado.</TableCell>
+                                    </TableRow>
+                                )}
                                 </TableBody>
                             </Table>
                             <div className="mt-4 flex justify-end">
@@ -658,37 +658,37 @@ function LancamentoProdutoDialog() {
                             <FormRow>
                                 <div className="space-y-2">
                                     <Label>Base de Cálculo ICMS</Label>
-                                    <Input readOnly disabled defaultValue="R$ 0,00" />
+                                    <Input readOnly disabled />
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Valor do ICMS</Label>
-                                    <Input readOnly disabled defaultValue="R$ 0,00" />
+                                    <Input readOnly disabled />
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Base de Cálculo ICMS ST</Label>
-                                    <Input readOnly disabled defaultValue="R$ 0,00" />
+                                    <Input readOnly disabled />
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Valor do ICMS ST</Label>
-                                    <Input readOnly disabled defaultValue="R$ 0,00" />
+                                    <Input readOnly disabled />
                                 </div>
                             </FormRow>
                              <FormRow>
                                 <div className="space-y-2">
                                     <Label>Valor do IPI</Label>
-                                    <Input readOnly disabled defaultValue="R$ 0,00" />
+                                    <Input readOnly disabled />
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Valor do PIS</Label>
-                                    <Input readOnly disabled defaultValue="R$ 0,00" />
+                                    <Input readOnly disabled />
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Valor do COFINS</Label>
-                                    <Input readOnly disabled defaultValue="R$ 0,00" />
+                                    <Input readOnly disabled />
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="text-destructive">Valor Total dos Tributos</Label>
-                                    <Input readOnly disabled className="text-destructive font-bold" defaultValue="R$ 4.828,43" />
+                                    <Input readOnly disabled className="text-destructive font-bold" />
                                 </div>
                             </FormRow>
                         </CardContent>
@@ -706,7 +706,7 @@ function LancamentoProdutoDialog() {
                                 <div className="space-y-2">
                                     <Label htmlFor="transp-modalidade">Modalidade do Frete</Label>
                                     <Select>
-                                        <SelectTrigger id="transp-modalidade"><SelectValue placeholder="Sem Frete" /></SelectTrigger>
+                                        <SelectTrigger id="transp-modalidade"><SelectValue placeholder="Selecione" /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="9">Sem Ocorrência de Transporte</SelectItem>
                                             <SelectItem value="0">Contratação por conta do Remetente (CIF)</SelectItem>
@@ -729,7 +729,7 @@ function LancamentoProdutoDialog() {
                            <CardTitle>Faturas e Pagamentos</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                           <p className="text-sm text-muted-foreground">Nenhuma informação de pagamento encontrada no XML.</p>
+                           <p className="text-sm text-muted-foreground">Nenhuma informação de pagamento para esta nota.</p>
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -742,7 +742,7 @@ function LancamentoProdutoDialog() {
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
                                 <Label>Informações Complementares</Label>
-                                <p className="text-sm p-3 bg-muted rounded-md">--NOTA FISCAL EMITIDA EM DECORRENCIA DE BAIXA DE ESTOQUE DECORRENTE DO ENCERRAMENTO DAS ATIVIDADES DA EMPRESA...</p>
+                                <p className="text-sm p-3 bg-muted rounded-md min-h-[60px]"></p>
                             </div>
                         </CardContent>
                     </Card>
@@ -767,5 +767,6 @@ function LancamentoProdutoDialog() {
   }
     
     
+
 
 
