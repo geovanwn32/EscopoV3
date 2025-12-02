@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { PackagePlus, Wrench, Upload, FileMinus, Receipt, MoreHorizontal, Search, Filter, Plus } from "lucide-react";
+import { PackagePlus, Wrench, Upload, FileMinus, Receipt, MoreHorizontal, Search, Filter, Plus, FileUp } from "lucide-react";
 import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -56,10 +56,9 @@ interface XmlFile {
     id: number;
     file: string;
     date: string;
-    status: 'Processado' | 'Erro';
+    status: 'Importado' | 'Lançado' | 'Erro';
 }
 
-// Dados fictícios removidos. As tabelas agora iniciarão vazias.
 const mockNotasProduto: any[] = [];
 const mockNotasSaida: any[] = [];
 const mockNotasServico: any[] = [];
@@ -79,7 +78,7 @@ export default function FiscalPage() {
                 id: Date.now() + index,
                 file: file.name,
                 date: new Date().toLocaleDateString('pt-BR'),
-                status: 'Processado' // Simulando status
+                status: 'Importado'
             }));
 
             setXmls(prevXmls => [...prevXmls, ...newFiles]);
@@ -88,9 +87,20 @@ export default function FiscalPage() {
                 title: "Arquivos Importados com Sucesso",
                 description: `${fileNames}`,
             });
-            // Reset the input value to allow selecting the same file again
             event.target.value = '';
         }
+    };
+
+    const handleLancarXml = (id: number) => {
+        setXmls(prevXmls => 
+            prevXmls.map(xml => 
+                xml.id === id ? { ...xml, status: 'Lançado' } : xml
+            )
+        );
+        toast({
+            title: 'Arquivo Lançado!',
+            description: `O documento foi lançado com sucesso no sistema.`
+        });
     };
     
     return (
@@ -133,13 +143,21 @@ export default function FiscalPage() {
                         <RecentDocumentsTable
                             headers={['Arquivo', 'Data Importação', 'Status']}
                             data={xmls}
-                            renderRow={(item: any) => (
+                            renderRow={(item: XmlFile) => (
                                 <>
                                     <TableCell className="font-medium">{item.file}</TableCell>
                                     <TableCell>{item.date}</TableCell>
-                                    <TableCell><Badge variant={item.status === 'Processado' ? 'secondary' : 'destructive'}>{item.status}</Badge></TableCell>
+                                    <TableCell>
+                                        <Badge variant={
+                                            item.status === 'Lançado' ? 'default' :
+                                            item.status === 'Importado' ? 'secondary' : 'destructive'
+                                        }>
+                                            {item.status}
+                                        </Badge>
+                                    </TableCell>
                                 </>
                             )}
+                            onLancar={handleLancarXml}
                         />
                     </TabsContent>
                      <TabsContent value="produtos">
@@ -306,7 +324,17 @@ function ListHeader({ title, description, searchPlaceholder, buttonLabel, button
 }
 
 
-function RecentDocumentsTable({ headers, data, renderRow }: { headers: string[], data: any[], renderRow: (item: any) => React.ReactNode }) {
+function RecentDocumentsTable({ 
+    headers, 
+    data, 
+    renderRow,
+    onLancar
+}: { 
+    headers: string[], 
+    data: any[], 
+    renderRow: (item: any) => React.ReactNode,
+    onLancar?: (id: number) => void
+}) {
     const { toast } = useToast();
     return (
         <div className="overflow-x-auto rounded-md border">
@@ -330,6 +358,12 @@ function RecentDocumentsTable({ headers, data, renderRow }: { headers: string[],
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
+                                    {onLancar && item.status === 'Importado' && (
+                                        <DropdownMenuItem onClick={() => onLancar(item.id)}>
+                                            <FileUp className="mr-2 h-4 w-4" />
+                                            Lançar
+                                        </DropdownMenuItem>
+                                    )}
                                     <DropdownMenuItem onClick={() => toast({ title: 'Ação: Visualizar', description: `Visualizando item ${item.id}` })}>Visualizar</DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => toast({ title: 'Ação: Editar', description: `Editando item ${item.id}` })}>Editar</DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => toast({ variant: "destructive", title: 'Ação: Excluir', description: `Excluindo item ${item.id}` })} className="text-destructive">Excluir</DropdownMenuItem>
