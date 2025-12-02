@@ -48,11 +48,7 @@ export default function FiscalPage() {
         </div>
 
         <Card>
-            <CardHeader>
-                <CardTitle>Ações Rápidas</CardTitle>
-                <CardDescription>Acesse as principais funcionalidades do módulo fiscal.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <CardContent className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 pt-6">
                 {actions.map((action) => (
                     <ActionTile key={action.label} {...action} />
                 ))}
