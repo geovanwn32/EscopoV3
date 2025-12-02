@@ -16,6 +16,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const actions = [
     {
@@ -463,10 +464,8 @@ function FormRow({ children }: { children: React.ReactNode }) {
 }
 
 function LancamentoProdutoDialog() {
-    // Mock data, in a real scenario this would come from an API or the XML file
     const productItems: any[] = [];
-
-    const totalNota = productItems.reduce((acc, item) => acc + item.total, 0);
+    const totalNota = productItems.reduce((acc, item) => acc + (item.total || 0), 0);
   
     return (
       <DialogContent className="max-w-6xl">
@@ -476,25 +475,13 @@ function LancamentoProdutoDialog() {
             Preencha os dados abaixo para realizar o lançamento da nota fiscal.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-6 py-4 max-h-[70vh] overflow-y-auto pr-4">
-            <Tabs defaultValue="geral">
-                <TabsList className="grid w-full grid-cols-7">
-                    <TabsTrigger value="geral">Geral</TabsTrigger>
-                    <TabsTrigger value="emitente-destinatario">Emitente/Dest.</TabsTrigger>
-                    <TabsTrigger value="produtos">Produtos</TabsTrigger>
-                    <TabsTrigger value="tributacao">Tributação</TabsTrigger>
-                    <TabsTrigger value="transporte">Transporte</TabsTrigger>
-                    <TabsTrigger value="faturas">Faturas</TabsTrigger>
-                    <TabsTrigger value="adicionais">Info. Adicionais</TabsTrigger>
-                </TabsList>
-
+        <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
+            <Accordion type="multiple" collapsible className="w-full" defaultValue={['item-1']}>
                 {/* 1. Dados Gerais */}
-                <TabsContent value="geral" className="mt-4 space-y-6">
-                   <Card>
-                       <CardHeader>
-                           <CardTitle>Dados Gerais da Nota</CardTitle>
-                       </CardHeader>
-                       <CardContent className="space-y-4">
+                <AccordionItem value="item-1">
+                    <AccordionTrigger className="text-lg font-semibold text-primary">Dados Gerais da Nota</AccordionTrigger>
+                    <AccordionContent className="pt-4">
+                        <div className="space-y-4 rounded-md border p-4">
                             <FormRow>
                                 <div className="space-y-2">
                                     <Label htmlFor="nf-tipo">Tipo da Nota</Label>
@@ -538,17 +525,15 @@ function LancamentoProdutoDialog() {
                                     <Input id="nf-data-emissao" type="datetime-local" />
                                 </div>
                             </FormRow>
-                       </CardContent>
-                   </Card>
-                </TabsContent>
+                       </div>
+                    </AccordionContent>
+                </AccordionItem>
 
                 {/* 2. Emitente / Destinatário */}
-                <TabsContent value="emitente-destinatario" className="mt-4">
-                     <Card>
-                        <CardHeader>
-                           <CardTitle>Dados do Emitente / Destinatário</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
+                <AccordionItem value="item-2">
+                    <AccordionTrigger className="text-lg font-semibold text-primary">Dados do Emitente / Destinatário</AccordionTrigger>
+                    <AccordionContent className="pt-4">
+                        <div className="space-y-4 rounded-md border p-4">
                             <FormRow>
                                 <div className="space-y-2">
                                     <Label htmlFor="emit-cnpj">CNPJ / CPF</Label>
@@ -602,17 +587,15 @@ function LancamentoProdutoDialog() {
                                     </Select>
                                 </div>
                              </FormRow>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
 
                 {/* 3. Produtos */}
-                <TabsContent value="produtos" className="mt-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Itens da Nota</CardTitle>
-                        </CardHeader>
-                        <CardContent>
+                <AccordionItem value="item-3">
+                    <AccordionTrigger className="text-lg font-semibold text-primary">Itens da Nota</AccordionTrigger>
+                    <AccordionContent className="pt-4">
+                       <div className="space-y-4 rounded-md border p-4">
                             <Table>
                                 <TableHeader>
                                 <TableRow>
@@ -644,17 +627,15 @@ function LancamentoProdutoDialog() {
                             <div className="mt-4 flex justify-end">
                                 <Button variant="outline"><Plus className="mr-2 h-4 w-4" /> Adicionar Produto</Button>
                             </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
                 
                 {/* 4. Tributação */}
-                 <TabsContent value="tributacao" className="mt-4">
-                     <Card>
-                        <CardHeader>
-                           <CardTitle>Totais de Tributos</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
+                 <AccordionItem value="item-4">
+                    <AccordionTrigger className="text-lg font-semibold text-primary">Totais de Tributos</AccordionTrigger>
+                    <AccordionContent className="pt-4">
+                       <div className="space-y-4 rounded-md border p-4">
                             <FormRow>
                                 <div className="space-y-2">
                                     <Label>Base de Cálculo ICMS</Label>
@@ -691,17 +672,15 @@ function LancamentoProdutoDialog() {
                                     <Input readOnly disabled className="text-destructive font-bold" />
                                 </div>
                             </FormRow>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
 
                  {/* 5. Transporte */}
-                <TabsContent value="transporte" className="mt-4">
-                     <Card>
-                        <CardHeader>
-                           <CardTitle>Dados de Transporte</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
+                <AccordionItem value="item-5">
+                    <AccordionTrigger className="text-lg font-semibold text-primary">Dados de Transporte</AccordionTrigger>
+                    <AccordionContent className="pt-4">
+                        <div className="space-y-4 rounded-md border p-4">
                             <FormRow>
                                 <div className="space-y-2">
                                     <Label htmlFor="transp-modalidade">Modalidade do Frete</Label>
@@ -718,37 +697,33 @@ function LancamentoProdutoDialog() {
                                     </Select>
                                 </div>
                             </FormRow>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
                 
                 {/* 6. Faturas */}
-                <TabsContent value="faturas" className="mt-4">
-                     <Card>
-                        <CardHeader>
-                           <CardTitle>Faturas e Pagamentos</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
+                <AccordionItem value="item-6">
+                    <AccordionTrigger className="text-lg font-semibold text-primary">Faturas e Pagamentos</AccordionTrigger>
+                    <AccordionContent className="pt-4">
+                        <div className="space-y-4 rounded-md border p-4">
                            <p className="text-sm text-muted-foreground">Nenhuma informação de pagamento para esta nota.</p>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
+
                  {/* 7. Informações Adicionais */}
-                <TabsContent value="adicionais" className="mt-4">
-                     <Card>
-                        <CardHeader>
-                           <CardTitle>Informações Adicionais</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
+                <AccordionItem value="item-7">
+                    <AccordionTrigger className="text-lg font-semibold text-primary">Informações Adicionais</AccordionTrigger>
+                    <AccordionContent className="pt-4">
+                        <div className="space-y-4 rounded-md border p-4">
                             <div className="space-y-2">
                                 <Label>Informações Complementares</Label>
                                 <p className="text-sm p-3 bg-muted rounded-md min-h-[60px]"></p>
                             </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-            </Tabs>
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
+            </Accordion>
         </div>
         <DialogFooter>
             <div className="flex w-full justify-between items-center">
@@ -767,6 +742,7 @@ function LancamentoProdutoDialog() {
   }
     
     
+
 
 
 
