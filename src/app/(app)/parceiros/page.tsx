@@ -14,40 +14,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Partner } from '@/types/partner';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useCompany } from '@/hooks/use-company';
 
 export default function ParceirosPage() {
     const { toast } = useToast();
-    const [partners, setPartners] = useState<Partner[]>([]);
+    const { useScopedData } = useCompany();
+    const [partners, setPartners] = useScopedData<Partner[]>('partners', []);
+
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<Partner | null>(null);
     const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
     const [isReadOnly, setIsReadOnly] = useState(false);
-
-    // Load partners from localStorage
-    useEffect(() => {
-        try {
-            const storedPartners = localStorage.getItem('partners');
-            if (storedPartners) {
-                setPartners(JSON.parse(storedPartners));
-            }
-        } catch (error) {
-            console.error("Failed to load partners from localStorage", error);
-            toast({
-                variant: 'destructive',
-                title: 'Erro ao carregar parceiros',
-                description: 'Não foi possível ler os dados do armazenamento local.'
-            });
-        }
-    }, [toast]);
-
-    // Save partners to localStorage
-    useEffect(() => {
-        try {
-            localStorage.setItem('partners', JSON.stringify(partners));
-        } catch (error) {
-            console.error("Failed to save partners to localStorage", error);
-        }
-    }, [partners]);
     
     const handleSavePartner = (partnerData: Omit<Partner, 'id'>) => {
         if (editingPartner) {

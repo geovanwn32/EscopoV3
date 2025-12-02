@@ -21,6 +21,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Partner } from "@/types/partner";
+import { useCompany } from "@/hooks/use-company";
 
 const actions = [
     {
@@ -77,77 +78,27 @@ type NotaFiscal = {
 
 export default function FiscalPage() {
     const { toast } = useToast();
-    const [xmls, setXmls] = useState<XmlFile[]>([]);
+    const { useScopedData, currentCompany } = useCompany();
+
+    const [xmls, setXmls] = useScopedData<XmlFile[]>('fiscal-xmls', []);
+    const [notasProduto, setNotasProduto] = useScopedData<NotaFiscal[]>('fiscal-notasProduto', []);
+    const [notasSaida, setNotasSaida] = useScopedData<NotaFiscal[]>('fiscal-notasSaida', []);
+    const [notasServico, setNotasServico] = useScopedData<NotaFiscal[]>('fiscal-notasServico', []);
+    const [partners, setPartners] = useScopedData<Partner[]>('partners', []);
+
     const [isLancamentoDialogOpen, setIsLancamentoDialogOpen] = useState(false);
     const [tipoNota, setTipoNota] = useState<'produto' | 'saida' | 'servico' | null>(null);
     const [lancamentoData, setLancamentoData] = useState<any>(null);
     
-    const [notasProduto, setNotasProduto] = useState<NotaFiscal[]>([]);
-    const [notasSaida, setNotasSaida] = useState<NotaFiscal[]>([]);
-    const [notasServico, setNotasServico] = useState<NotaFiscal[]>([]);
-
     const [isReadOnly, setIsReadOnly] = useState(false);
     const [editingNota, setEditingNota] = useState<NotaFiscal | null>(null);
 
-    // Load data from localStorage on initial render
-    useEffect(() => {
-        try {
-            const storedXmls = localStorage.getItem('fiscal-xmls');
-            if (storedXmls) setXmls(JSON.parse(storedXmls));
-
-            const storedNotasProduto = localStorage.getItem('fiscal-notasProduto');
-            if (storedNotasProduto) setNotasProduto(JSON.parse(storedNotasProduto));
-
-            const storedNotasSaida = localStorage.getItem('fiscal-notasSaida');
-            if (storedNotasSaida) setNotasSaida(JSON.parse(storedNotasSaida));
-
-            const storedNotasServico = localStorage.getItem('fiscal-notasServico');
-            if (storedNotasServico) setNotasServico(JSON.parse(storedNotasServico));
-        } catch (error) {
-            console.error("Failed to load data from localStorage", error);
-            toast({
-                variant: "destructive",
-                title: "Erro ao carregar dados",
-                description: "Não foi possível carregar os dados salvos anteriormente."
-            })
-        }
-    }, [toast]);
-
-    // Save data to localStorage whenever it changes
-    useEffect(() => {
-        try {
-            localStorage.setItem('fiscal-xmls', JSON.stringify(xmls));
-        } catch (error) {
-            console.error("Failed to save XMLs to localStorage", error);
-        }
-    }, [xmls]);
-
-    useEffect(() => {
-        try {
-            localStorage.setItem('fiscal-notasProduto', JSON.stringify(notasProduto));
-        } catch (error) {
-            console.error("Failed to save Notas de Produto to localStorage", error);
-        }
-    }, [notasProduto]);
-
-    useEffect(() => {
-        try {
-            localStorage.setItem('fiscal-notasSaida', JSON.stringify(notasSaida));
-        } catch (error) {
-            console.error("Failed to save Notas de Saída to localStorage", error);
-        }
-    }, [notasSaida]);
-
-    useEffect(() => {
-        try {
-            localStorage.setItem('fiscal-notasServico', JSON.stringify(notasServico));
-        } catch (error) {
-            console.error("Failed to save Notas de Serviço to localStorage", error);
-        }
-    }, [notasServico]);
-
-
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (!currentCompany) {
+            toast({ variant: 'destructive', title: 'Nenhuma empresa selecionada' });
+            return;
+        }
+
         const files = event.target.files;
         if (files && files.length > 0) {
             const fileNames = Array.from(files).map(file => file.name).join(', ');
@@ -185,26 +136,18 @@ export default function FiscalPage() {
         let parsedData = {};
 
         // Helper to save partner
-        const savePartner = (partnerData: Omit<Partner, 'id' | 'type'>, partnerType: 'Fornecedor' | 'Cliente' | 'Transportadora') => {
-            try {
-                const storedPartners = localStorage.getItem('partners') || '[]';
-                const partners: Partner[] = JSON.parse(storedPartners);
-                const existingPartner = partners.find(p => p.document === partnerData.document);
-                if (!existingPartner && partnerData.document && partnerData.name) {
-                    const newPartner: Partner = {
-                        id: Date.now() + Math.random(),
-                        ...partnerData,
-                        type: partnerType
-                    };
-                    partners.push(newPartner);
-                    localStorage.setItem('partners', JSON.stringify(partners));
-                    toast({
-                        title: "Parceiro Cadastrado",
-                        description: `O parceiro ${newPartner.name} foi salvo automaticamente.`
-                    });
-                }
-            } catch (error) {
-                console.error("Failed to save partner to localStorage", error);
+        const savePartner = (partnerData: Omit<Partner, 'id'>, partnerType: 'Fornecedor' | 'Cliente' | 'Transportadora') => {
+            const existingPartner = partners.find(p => p.document === partnerData.document);
+            if (!existingPartner && partnerData.document && partnerData.name) {
+                const newPartner: Partner = {
+                    id: Date.now() + Math.random(),
+                    ...partnerData,
+                };
+                setPartners(prev => [...prev, newPartner]);
+                toast({
+                    title: "Parceiro Cadastrado",
+                    description: `O parceiro ${newPartner.name} foi salvo automaticamente.`
+                });
             }
         };
 
@@ -225,17 +168,17 @@ export default function FiscalPage() {
             });
              parsedData = {
                 geral: {
-                    numero: content.match(/<nNF>(.*?)<\/nNF>/)?.[1],
-                    serie: content.match(/<serie>(.*?)<\/serie>/)?.[1],
-                    dataEmissao: content.match(/<dhEmi>(.*?)<\/dhEmi>/)?.[1].substring(0, 16),
+                    numero: content.match(/<nNF>(.*?)<\/nNF>/)?.[1] || '',
+                    serie: content.match(/<serie>(.*?)<\/serie>/)?.[1] || '',
+                    dataEmissao: content.match(/<dhEmi>(.*?)<\/dhEmi>/)?.[1].substring(0, 16) || '',
                 },
                 emitente: {
-                    cnpj: content.match(/<emit>[\s\S]*?<CNPJ>(.*?)<\/CNPJ>/)?.[1],
-                    razaoSocial: content.match(/<emit>[\s\S]*?<xNome>(.*?)<\/xNome>/)?.[1],
+                    cnpj: content.match(/<emit>[\s\S]*?<CNPJ>(.*?)<\/CNPJ>/)?.[1] || '',
+                    razaoSocial: content.match(/<emit>[\s\S]*?<xNome>(.*?)<\/xNome>/)?.[1] || '',
                 },
                 destinatario: {
-                    cnpj: content.match(/<dest>[\s\S]*?<CNPJ>(.*?)<\/CNPJ>/)?.[1] || content.match(/<dest>[\s\S]*?<CPF>(.*?)<\/CPF>/)?.[1],
-                    razaoSocial: content.match(/<dest>[\s\S]*?<xNome>(.*?)<\/xNome>/)?.[1],
+                    cnpj: content.match(/<dest>[\s\S]*?<CNPJ>(.*?)<\/CNPJ>/)?.[1] || content.match(/<dest>[\s\S]*?<CPF>(.*?)<\/CPF>/)?.[1] || '',
+                    razaoSocial: content.match(/<dest>[\s\S]*?<xNome>(.*?)<\/xNome>/)?.[1] || '',
                 },
                 items: products,
             };
@@ -243,7 +186,7 @@ export default function FiscalPage() {
             const emitenteCnpj = (parsedData as any).emitente?.cnpj;
             const emitenteRazaoSocial = (parsedData as any).emitente?.razaoSocial;
             if (emitenteCnpj && emitenteRazaoSocial) {
-                savePartner({ document: emitenteCnpj, name: emitenteRazaoSocial }, 'Fornecedor');
+                savePartner({ document: emitenteCnpj, name: emitenteRazaoSocial, type: 'Fornecedor' }, 'Fornecedor');
             }
 
 
@@ -251,33 +194,33 @@ export default function FiscalPage() {
             detectedModel = 'servico';
              parsedData = {
                 identificacao: {
-                    numero: content.match(/<Numero>(.*?)<\/Numero>/)?.[1],
-                    dataEmissao: content.match(/<DataEmissao>(.*?)<\/DataEmissao>/)?.[1]?.substring(0, 16) || content.match(/<dhEmi>(.*?)<\/dhEmi>/)?.[1]?.substring(0, 16),
+                    numero: content.match(/<Numero>(.*?)<\/Numero>/)?.[1] || '',
+                    dataEmissao: content.match(/<DataEmissao>(.*?)<\/DataEmissao>/)?.[1]?.substring(0, 16) || content.match(/<dhEmi>(.*?)<\/dhEmi>/)?.[1]?.substring(0, 16) || '',
                 },
                 prestador: {
-                    cnpj: content.match(/<Prestador>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1] || content.match(/<PrestadorServico>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1] || content.match(/<emit>[\s\S]*?<CNPJ>(.*?)<\/CNPJ>/)?.[1],
-                    razaoSocial: content.match(/<PrestadorServico>[\s\S]*?<RazaoSocial>(.*?)<\/RazaoSocial>/)?.[1] || content.match(/<emit>[\s\S]*?<xNome>(.*?)<\/xNome>/)?.[1],
+                    cnpj: content.match(/<Prestador>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1] || content.match(/<PrestadorServico>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1] || content.match(/<emit>[\s\S]*?<CNPJ>(.*?)<\/CNPJ>/)?.[1] || '',
+                    razaoSocial: content.match(/<PrestadorServico>[\s\S]*?<RazaoSocial>(.*?)<\/RazaoSocial>/)?.[1] || content.match(/<emit>[\s\S]*?<xNome>(.*?)<\/xNome>/)?.[1] || '',
                 },
                 tomador: {
-                    cnpj: content.match(/<TomadorServico>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1] || content.match(/<toma>[\s\S]*?<CNPJ>(.*?)<\/CNPJ>/)?.[1],
-                    razaoSocial: content.match(/<TomadorServico>[\s\S]*?<RazaoSocial>(.*?)<\/RazaoSocial>/)?.[1] || content.match(/<toma>[\s\S]*?<xNome>(.*?)<\/xNome>/)?.[1],
+                    cnpj: content.match(/<TomadorServico>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1] || content.match(/<toma>[\s\S]*?<CNPJ>(.*?)<\/CNPJ>/)?.[1] || '',
+                    razaoSocial: content.match(/<TomadorServico>[\s\S]*?<RazaoSocial>(.*?)<\/RazaoSocial>/)?.[1] || content.match(/<toma>[\s\S]*?<xNome>(.*?)<\/xNome>/)?.[1] || '',
                 },
                 servico: {
                     valor: parseFloat(content.match(/<ValorServicos>(.*?)<\/ValorServicos>/)?.[1] || content.match(/<vServ>(.*?)<\/vServ>/)?.[1] || '0'),
-                    descricao: content.match(/<Discriminacao>(.*?)<\/Discriminacao>/)?.[1] || content.match(/<xDescServ>(.*?)<\/xDescServ>/)?.[1],
+                    descricao: content.match(/<Discriminacao>(.*?)<\/Discriminacao>/)?.[1] || content.match(/<xDescServ>(.*?)<\/xDescServ>/)?.[1] || '',
                 }
              };
 
             const prestadorCnpj = (parsedData as any).prestador?.cnpj;
             const prestadorRazaoSocial = (parsedData as any).prestador?.razaoSocial;
             if (prestadorCnpj && prestadorRazaoSocial) {
-                savePartner({ document: prestadorCnpj, name: prestadorRazaoSocial }, 'Fornecedor');
+                savePartner({ document: prestadorCnpj, name: prestadorRazaoSocial, type: 'Fornecedor' }, 'Fornecedor');
             }
 
             const tomadorCnpj = (parsedData as any).tomador?.cnpj;
             const tomadorRazaoSocial = (parsedData as any).tomador?.razaoSocial;
             if (tomadorCnpj && tomadorRazaoSocial) {
-                savePartner({ document: tomadorCnpj, name: tomadorRazaoSocial }, 'Cliente');
+                savePartner({ document: tomadorCnpj, name: tomadorRazaoSocial, type: 'Cliente' }, 'Cliente');
             }
         }
 
@@ -304,6 +247,10 @@ export default function FiscalPage() {
     }
 
     const openLancamentoDialog = (tipo: 'produto' | 'saida' | 'servico', data: any = null, readOnly = false) => {
+        if (!currentCompany) {
+            toast({ variant: 'destructive', title: 'Nenhuma empresa selecionada' });
+            return;
+        }
         setTipoNota(tipo);
         setLancamentoData(data);
         setIsReadOnly(readOnly);
@@ -782,7 +729,7 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave, isReadO
     useEffect(() => {
         const data = editingNota ? editingNota.dados : initialData;
         const items = editingNota ? editingNota.items : initialData?.items;
-        const effectiveTipo = editingNota ? editingNota.tipo : tipoNota;
+        const effectiveTipo = editingNota ? (editingNota.tipo === 'entrada' ? 'produto' : editingNota.tipo) : tipoNota;
 
         if (effectiveTipo) {
             let notaType = effectiveTipo;
@@ -895,7 +842,7 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave, isReadO
     const handleServiceChange = (id: number, field: keyof Omit<ServiceItem, 'id'>, value: string | number) => {
         if (isReadOnly) return;
         setServiceItems(prev => prev.map(item =>
-            item.id === id ? { ...item, [field]: value === '' ? 0 : Number(value) } : item
+            item.id === id ? { ...item, [field]: value === '' ? '' : value } : item
         ));
     };
     
