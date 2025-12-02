@@ -44,7 +44,7 @@ export default function MinhaEmpresaPage() {
       const activeCompany = companies.find(c => c.id === currentCompany);
       if (activeCompany) {
         setCompanyData({
-          razaoSocial: activeCompany.name || '',
+          razaoSocial: activeCompany.data?.razaoSocial || activeCompany.name || '',
           nomeFantasia: activeCompany.data?.nomeFantasia || '',
           cnpj: activeCompany.data?.cnpj || '',
           ie: activeCompany.data?.ie || '',
@@ -68,8 +68,26 @@ export default function MinhaEmpresaPage() {
   }, [currentCompany, companies, switchCompany]);
 
   const handleInputChange = (field: keyof typeof companyData, value: string) => {
-    setCompanyData(prev => ({ ...prev, [field]: value }));
-  };
+    if (field === 'cnpj') {
+        const onlyNumbers = value.replace(/\D/g, '');
+        let formattedCnpj = onlyNumbers;
+        if (onlyNumbers.length > 2) {
+            formattedCnpj = `${onlyNumbers.slice(0, 2)}.${onlyNumbers.slice(2)}`;
+        }
+        if (onlyNumbers.length > 5) {
+            formattedCnpj = `${onlyNumbers.slice(0, 2)}.${onlyNumbers.slice(2, 5)}.${onlyNumbers.slice(5)}`;
+        }
+        if (onlyNumbers.length > 8) {
+            formattedCnpj = `${onlyNumbers.slice(0, 2)}.${onlyNumbers.slice(2, 5)}.${onlyNumbers.slice(5, 8)}/${onlyNumbers.slice(8)}`;
+        }
+        if (onlyNumbers.length > 12) {
+            formattedCnpj = `${onlyNumbers.slice(0, 2)}.${onlyNumbers.slice(2, 5)}.${onlyNumbers.slice(5, 8)}/${onlyNumbers.slice(8, 12)}-${onlyNumbers.slice(12, 14)}`;
+        }
+        setCompanyData(prev => ({ ...prev, [field]: formattedCnpj }));
+    } else {
+        setCompanyData(prev => ({ ...prev, [field]: value }));
+    }
+};
 
   const handleSave = () => {
     if (!currentCompany) {
@@ -208,7 +226,7 @@ export default function MinhaEmpresaPage() {
                         <div className="space-y-2">
                             <Label htmlFor="cnpj">CNPJ</Label>
                             <div className="flex gap-2">
-                                <Input id="cnpj" value={companyData.cnpj} onChange={(e) => handleInputChange('cnpj', e.target.value)} placeholder="00.000.000/0001-00" />
+                                <Input id="cnpj" value={companyData.cnpj} onChange={(e) => handleInputChange('cnpj', e.target.value)} placeholder="00.000.000/0001-00" maxLength={18} />
                                 <Button variant="outline" onClick={handleCnpjQuery} disabled={isQueryingCnpj}>
                                     {isQueryingCnpj ? <Loader2 className="animate-spin h-4 w-4" /> : <Search className="h-4 w-4" />}
                                     <span className="ml-2 hidden sm:inline">Consultar</span>
@@ -305,7 +323,7 @@ export default function MinhaEmpresaPage() {
                                         <SelectValue placeholder="Selecione..." />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="mei">Microempreendedor Individual</SelectItem>
+                                        <SelectItem value="mei">Microempreendedor Individual (MEI)</SelectItem>
                                         <SelectItem value="simples">Simples Nacional</SelectItem>
                                         <SelectItem value="lucro_presumido">Lucro Presumido</SelectItem>
                                         <SelectItem value="lucro_real">Lucro Real</SelectItem>
@@ -350,5 +368,7 @@ export default function MinhaEmpresaPage() {
     </div>
   );
 }
+
+    
 
     
