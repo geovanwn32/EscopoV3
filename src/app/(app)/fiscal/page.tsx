@@ -65,7 +65,7 @@ interface XmlFile {
     date: string;
     status: 'Importado' | 'Lançado' | 'Erro';
     // This simulates the type of note detected from the XML
-    model?: 'produto' | 'saida';
+    model?: 'produto' | 'saida' | 'servico';
 }
 
 const mockNotasProduto: any[] = [];
@@ -78,7 +78,7 @@ export default function FiscalPage() {
     const { toast } = useToast();
     const [xmls, setXmls] = useState<XmlFile[]>([]);
     const [isLancamentoDialogOpen, setIsLancamentoDialogOpen] = useState(false);
-    const [tipoNota, setTipoNota] = useState<'produto' | 'saida' | null>(null);
+    const [tipoNota, setTipoNota] = useState<'produto' | 'saida' | 'servico' | null>(null);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
@@ -86,9 +86,11 @@ export default function FiscalPage() {
             const fileNames = Array.from(files).map(file => file.name).join(', ');
             
             const newFiles: XmlFile[] = Array.from(files).map((file, index) => {
-                let model: 'produto' | 'saida' | undefined = undefined;
-                if (file.name.toLowerCase().includes('produto')) model = 'produto';
-                else if (file.name.toLowerCase().includes('saida')) model = 'saida';
+                let model: 'produto' | 'saida' | 'servico' | undefined = undefined;
+                const lowerCaseName = file.name.toLowerCase();
+                if (lowerCaseName.includes('produto')) model = 'produto';
+                else if (lowerCaseName.includes('saida')) model = 'saida';
+                else if (lowerCaseName.includes('servico')) model = 'servico';
 
                 return {
                     id: Date.now() + index,
@@ -113,7 +115,7 @@ export default function FiscalPage() {
         const xml = xmls.find(x => x.id === id);
         if (!xml) return;
 
-        if (xml.model === 'produto' || xml.model === 'saida') {
+        if (xml.model === 'produto' || xml.model === 'saida' || xml.model === 'servico') {
              openLancamentoDialog(xml.model);
         } else {
              toast({
@@ -133,7 +135,7 @@ export default function FiscalPage() {
         });
     }
 
-    const openLancamentoDialog = (tipo: 'produto' | 'saida') => {
+    const openLancamentoDialog = (tipo: 'produto' | 'saida' | 'servico') => {
         setTipoNota(tipo);
         setIsLancamentoDialogOpen(true);
     };
@@ -158,6 +160,7 @@ export default function FiscalPage() {
                             onActionClick={
                                 action.id === 'nota-produto' ? () => openLancamentoDialog('produto') :
                                 action.id === 'nota-saida' ? () => openLancamentoDialog('saida') :
+                                action.id === 'nota-servico' ? () => openLancamentoDialog('servico') :
                                 undefined
                             }
                          />
@@ -173,11 +176,11 @@ export default function FiscalPage() {
                     <CardTitle>Documentos Fiscais</CardTitle>
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
                         <TabsList className="w-full sm:w-auto">
-                            <TabsTrigger value="xmls">XMLs</TabsTrigger>
-                            <TabsTrigger value="produtos">Produtos</TabsTrigger>
-                            <TabsTrigger value="saidas">Saídas</TabsTrigger>
-                            <TabsTrigger value="servicos">Serviços</TabsTrigger>
-                            <TabsTrigger value="recibos">Recibos</TabsTrigger>
+                            <TabsTrigger value="xmls">XMLs Importados</TabsTrigger>
+                            <TabsTrigger value="produtos">Notas de Produto</TabsTrigger>
+                            <TabsTrigger value="saidas">Notas de Saída</TabsTrigger>
+                            <TabsTrigger value="servicos">Notas de Serviço</TabsTrigger>
+                            <TabsTrigger value="recibos">Recibos/Cupons</TabsTrigger>
                         </TabsList>
                         <div className="flex w-full sm:w-auto items-center gap-2">
                              <div className="relative flex-grow">
@@ -406,39 +409,41 @@ interface ProductItem {
     total: number;
 }
 
+interface ServiceItem {
+    id: number;
+    name: string;
+    value: number;
+}
 
-function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boolean) => void, tipoNota: 'produto' | 'saida' | null }) {
+
+function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boolean) => void, tipoNota: 'produto' | 'saida' | 'servico' | null }) {
     const { toast } = useToast();
     const [productItems, setProductItems] = useState<ProductItem[]>([]);
+    const [serviceItems, setServiceItems] = useState<ServiceItem[]>([]);
     const [activeSection, setActiveSection] = useState('geral');
     const [tipoNotaValue, setTipoNotaValue] = useState('');
 
-    const notaLabel = tipoNota === 'produto' ? 'de Produto' : 'de Saída';
+    const notaLabel = tipoNota === 'produto' ? 'de Produto' : tipoNota === 'saida' ? 'de Saída' : 'de Serviço';
 
     useEffect(() => {
         if (tipoNota) {
-            setTipoNotaValue(tipoNota === 'produto' ? 'entrada' : 'saida');
+            setTipoNotaValue(tipoNota === 'produto' ? 'entrada' : tipoNota === 'saida' ? 'saida' : 'servico');
         }
     }, [tipoNota]);
 
     const sections = [
         { id: 'geral', label: 'Dados Gerais' },
         { id: 'emitente', label: 'Emitente / Dest.' },
-        { id: 'produtos', label: 'Itens da Nota' },
+        { id: tipoNota === 'servico' ? 'servicos' : 'produtos', label: tipoNota === 'servico' ? 'Serviços' : 'Itens da Nota' },
         { id: 'tributos', label: 'Tributos' },
         { id: 'transporte', label: 'Transporte' },
         { id: 'faturas', label: 'Faturas' },
         { id: 'info', label: 'Informações Adicionais' },
     ];
 
+    // Product Handlers
     const handleAddProduct = () => {
-        const newItem: ProductItem = {
-            id: Date.now(),
-            name: 'Novo Produto',
-            quantity: 1,
-            price: 0.0,
-            total: 0.0,
-        };
+        const newItem: ProductItem = { id: Date.now(), name: 'Novo Produto', quantity: 1, price: 0.0, total: 0.0 };
         setProductItems(prev => [...prev, newItem]);
     };
 
@@ -460,16 +465,31 @@ function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boo
             return item;
         }));
     };
+
+    // Service Handlers
+    const handleAddService = () => {
+        const newItem: ServiceItem = { id: Date.now(), name: 'Novo Serviço', value: 0.0 };
+        setServiceItems(prev => [...prev, newItem]);
+    };
+
+    const handleRemoveService = (id: number) => {
+        setServiceItems(prev => prev.filter(item => item.id !== id));
+    };
+
+    const handleServiceChange = (id: number, field: keyof Omit<ServiceItem, 'id'>, value: string | number) => {
+        setServiceItems(prev => prev.map(item =>
+            item.id === id ? { ...item, [field]: value } : item
+        ));
+    };
     
     const handleSave = () => {
         // Logic to save the data would go here
-        // For example, send it to an API endpoint
         console.log("Saving data...", { 
             tipo: tipoNota,
             dados: {
                 // Collect all form data here
             },
-            items: productItems 
+            items: tipoNota === 'servico' ? serviceItems : productItems,
         });
     
         toast({
@@ -481,7 +501,8 @@ function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boo
     };
 
     const totalProdutos = productItems.reduce((acc, item) => acc + item.total, 0);
-    const totalNota = totalProdutos; // This will be more complex later with taxes, shipping etc.
+    const totalServicos = serviceItems.reduce((acc, item) => acc + (Number(item.value) || 0), 0);
+    const totalNota = tipoNota === 'servico' ? totalServicos : totalProdutos;
   
     const renderSection = () => {
         switch (activeSection) {
@@ -500,6 +521,7 @@ function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boo
                                         <SelectContent>
                                             <SelectItem value="entrada">Entrada</SelectItem>
                                             <SelectItem value="saida">Saída</SelectItem>
+                                            <SelectItem value="servico">Serviço</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -582,6 +604,37 @@ function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boo
                                 </TableBody>
                             </Table>
                             <div className="mt-4 flex justify-end"><Button variant="outline" onClick={handleAddProduct}><Plus className="mr-2 h-4 w-4" /> Adicionar Produto</Button></div>
+                        </CardContent>
+                    </Card>
+                )
+            case 'servicos':
+                return (
+                    <Card>
+                        <CardHeader><CardTitle>Serviços Prestados</CardTitle></CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader><TableRow>
+                                    <TableHead className="w-[60%]">Serviço</TableHead>
+                                    <TableHead className="text-right">Valor</TableHead>
+                                    <TableHead className="w-12"></TableHead>
+                                </TableRow></TableHeader>
+                                <TableBody>
+                                    {serviceItems.length > 0 ? serviceItems.map((item) => (
+                                        <TableRow key={item.id} className="has-[:focus-visible]:bg-muted/40">
+                                            <TableCell className="font-medium">
+                                                <Input value={item.name} onChange={(e) => handleServiceChange(item.id, 'name', e.target.value)} className="h-8" />
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Input type="number" value={item.value} onChange={(e) => handleServiceChange(item.id, 'value', e.target.value)} className="h-8 w-32 ml-auto text-right" />
+                                            </TableCell>
+                                            <TableCell><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveService(item.id)}><X className="h-4 w-4" /></Button></TableCell>
+                                        </TableRow>
+                                    )) : (
+                                        <TableRow><TableCell colSpan={3} className="h-24 text-center">Nenhum serviço adicionado.</TableCell></TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                            <div className="mt-4 flex justify-end"><Button variant="outline" onClick={handleAddService}><Plus className="mr-2 h-4 w-4" /> Adicionar Serviço</Button></div>
                         </CardContent>
                     </Card>
                 )
@@ -729,7 +782,8 @@ function LancamentoDialog({ onOpenChange, tipoNota }: { onOpenChange: (open: boo
         <DialogFooter className="border-t pt-4 mt-auto">
             <div className="flex w-full justify-between items-center">
                 <div className="text-sm text-muted-foreground">
-                    <p>Total Produtos: <span className="font-bold text-foreground">{totalProdutos.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span></p>
+                   {tipoNota !== 'servico' && <p>Total Produtos: <span className="font-bold text-foreground">{totalProdutos.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span></p>}
+                   {tipoNota === 'servico' && <p>Total Serviços: <span className="font-bold text-foreground">{totalServicos.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span></p>}
                     <p>Total Nota: <span className="font-bold text-foreground text-lg">{totalNota.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span></p>
                 </div>
                 <div className="flex gap-2">
