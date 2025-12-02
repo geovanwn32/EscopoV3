@@ -136,7 +136,7 @@ export default function FiscalPage() {
                     ))}
                 </CardContent>
             </Card>
-            <LancamentoProdutoDialog />
+            <LancamentoProdutoDialog onOpenChange={setIsNotaProdutoDialogOpen} />
         </Dialog>
 
         <Card>
@@ -293,11 +293,6 @@ function RecentDocumentsTable({
     const handleConfirmDelete = () => {
         if (itemToDelete && onDelete) {
             onDelete(itemToDelete.id);
-            toast({
-                variant: "destructive",
-                title: 'Arquivo Excluído!',
-                description: `O documento "${itemToDelete.file}" foi removido.`
-            });
         }
         setItemToDelete(null);
     };
@@ -391,7 +386,8 @@ interface ProductItem {
 }
 
 
-function LancamentoProdutoDialog() {
+function LancamentoProdutoDialog({ onOpenChange }: { onOpenChange: (open: boolean) => void }) {
+    const { toast } = useToast();
     const [currentSection, setCurrentSection] = useState('geral');
     const [productItems, setProductItems] = useState<ProductItem[]>([]);
 
@@ -424,6 +420,20 @@ function LancamentoProdutoDialog() {
             return item;
         }));
     };
+
+    const handleSave = () => {
+        // Here you would typically handle the form submission,
+        // e.g., send the data to your backend.
+        console.log("Saving data...", { productItems });
+    
+        toast({
+          title: "Nota Fiscal Lançada",
+          description: "A nota fiscal de produto foi salva com sucesso.",
+        });
+    
+        // Close the dialog after saving
+        onOpenChange(false);
+      };
 
     const totalProdutos = productItems.reduce((acc, item) => acc + item.total, 0);
     const totalNota = totalProdutos; // Simplified for now
@@ -569,7 +579,7 @@ function LancamentoProdutoDialog() {
                     <DialogClose asChild>
                         <Button variant="outline">Cancelar</Button>
                     </DialogClose>
-                    <Button type="submit">Salvar Lançamento</Button>
+                    <Button onClick={handleSave}>Salvar Lançamento</Button>
                 </div>
             </div>
         </DialogFooter>
