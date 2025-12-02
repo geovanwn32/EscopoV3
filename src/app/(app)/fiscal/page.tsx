@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, ChangeEvent } from "react";
@@ -99,32 +100,72 @@ export default function FiscalPage() {
         }
 
         const files = event.target.files;
-        if (files && files.length > 0) {
-            const fileNames = Array.from(files).map(file => file.name).join(', ');
-            
-            Array.from(files).forEach(file => {
+        if (!files || files.length === 0) return;
+
+        const newFiles: XmlFile[] = [];
+        const rejectedFiles: string[] = [];
+        let successCount = 0;
+
+        const allNotaNumeros = [
+            ...notasProduto.map(n => n.dados.geral?.numero),
+            ...notasSaida.map(n => n.dados.geral?.numero),
+            ...notasServico.map(n => n.dados.identificacao?.numero)
+        ].filter(Boolean);
+
+        const filePromises = Array.from(files).map(file => {
+            return new Promise<void>((resolve) => {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const content = e.target?.result as string;
-                    const newFile: XmlFile = {
-                        id: Date.now() + Math.random(),
-                        fileName: file.name,
-                        fileContent: content,
-                        date: new Date().toLocaleDateString('pt-BR'),
-                        status: 'Importado',
-                    };
-                    setXmls(prevXmls => [...prevXmls, newFile]);
+
+                    const isDuplicate = xmls.some(
+                        existingFile => existingFile.fileName === file.name && existingFile.fileContent === content
+                    );
+                    
+                    const numeroNotaMatch = content.match(/<nNF>(.*?)<\/nNF>/) || content.match(/<Numero>(.*?)<\/Numero>/);
+                    const numeroNota = numeroNotaMatch ? numeroNotaMatch[1] : null;
+
+                    const isAlreadyLaunched = numeroNota ? allNotaNumeros.includes(numeroNota) : false;
+
+                    if (isDuplicate || isAlreadyLaunched) {
+                        rejectedFiles.push(file.name);
+                    } else {
+                        newFiles.push({
+                            id: Date.now() + Math.random(),
+                            fileName: file.name,
+                            fileContent: content,
+                            date: new Date().toLocaleDateString('pt-BR'),
+                            status: 'Importado',
+                        });
+                        successCount++;
+                    }
+                    resolve();
                 };
                 reader.readAsText(file);
             });
+        });
 
-            toast({
-                title: "Arquivos Importados com Sucesso",
-                description: `${fileNames}`,
-            });
-            logAudit(setAuditLogs, 'IMPORT', 'Fiscal', `Importou ${files.length} arquivo(s) XML: ${fileNames}`);
+        Promise.all(filePromises).then(() => {
+            if (newFiles.length > 0) {
+                setXmls(prevXmls => [...prevXmls, ...newFiles]);
+                toast({
+                    title: "Importação Concluída",
+                    description: `${successCount} arquivo(s) importado(s) com sucesso.`,
+                });
+                 logAudit(setAuditLogs, 'IMPORT', 'Fiscal', `Importou ${successCount} arquivo(s) XML.`);
+            }
+
+            if (rejectedFiles.length > 0) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Arquivos Duplicados',
+                    description: `Estes arquivos já existem: ${rejectedFiles.join(', ')}`,
+                });
+            }
+
+            // Reset the input field
             event.target.value = '';
-        }
+        });
     };
     
     const handleLancarXml = (id: number) => {
