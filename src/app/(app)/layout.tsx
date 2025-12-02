@@ -8,7 +8,6 @@ import { SidebarNav } from '@/components/layout/sidebar-nav';
 import { Sidebar, SidebarProvider } from '@/components/ui/sidebar';
 import { CompanyProvider, useCompany } from '@/hooks/use-company';
 import { AuditLog, logAudit } from '@/lib/audit-log';
-import Agenda from '@/components/dashboard/agenda';
 
 function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -52,14 +51,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         <div className="flex flex-1 flex-col overflow-y-auto">
           <Header />
           <main className="flex-1 p-6">
-            <div className="grid flex-1 grid-cols-12 gap-6">
-                <div className="col-span-12 xl:col-span-9">
-                    {children}
-                </div>
-                <aside className="col-span-12 xl:col-span-3 hidden xl:block">
-                  <Agenda />
-                </aside>
-            </div>
+             {children}
           </main>
         </div>
       </div>
