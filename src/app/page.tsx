@@ -2,13 +2,12 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Building2, ShieldCheck, TrendingUp, Zap } from 'lucide-react'
+import { Building2, Mail, Phone, MessageSquare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel'
-import Autoplay from 'embla-carousel-autoplay'
+import { Separator } from '@/components/ui/separator'
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -37,30 +36,38 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true)
 
-  const featureSlides = [
-    {
-      icon: <TrendingUp className="h-12 w-12 text-primary" />,
-      title: "Decisões Estratégicas",
-      description: "Transforme números em insights valiosos para o crescimento do seu negócio. Tenha o controle total das finanças e obrigações fiscais."
-    },
-    {
-      icon: <Zap className="h-12 w-12 text-primary" />,
-      title: "Contabilidade em Tempo Real",
-      description: "Sua contabilidade ganha vida: organizada, atualizada e sempre acessível. Acesse sua empresa com poucos cliques, de qualquer lugar."
-    },
-    {
-      icon: <ShieldCheck className="h-12 w-12 text-primary" />,
-      title: "Segurança e Confiança",
-      description: "Gerencie seus dados com a tranquilidade de uma plataforma robusta e segura, projetada para proteger suas informações mais valiosas."
-    }
-  ]
-
   return (
     <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
+      <div className="hidden lg:flex flex-col justify-between p-8 bg-muted/50 dark:bg-zinc-900 dot-pattern">
+          <div className="flex items-center gap-2 text-primary">
+            <Building2 className="h-8 w-8" />
+            <h1 className="text-2xl font-bold font-headline">EscopoV3</h1>
+          </div>
+
+          <div className='text-foreground max-w-md'>
+            <h2 className='text-3xl font-bold'>Sua contabilidade ganha vida.</h2>
+            <p className='text-muted-foreground mt-2'>Organizada, atualizada e sempre segura. Acesse sua empresa com poucos cliques e tenha o controle total na palma da mão.</p>
+          </div>
+
+          <div>
+            <h3 className='font-semibold text-foreground mb-4'>Precisa de Ajuda?</h3>
+            <div className='flex items-center gap-6 text-sm'>
+              <a href='#' className='flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors'>
+                <Phone className='h-4 w-4'/> (XX) XXXX-XXXX
+              </a>
+              <a href='#' className='flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors'>
+                <Mail className='h-4 w-4'/> suporte@escopo.com
+              </a>
+              <a href='#' className='flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors'>
+                <MessageSquare className='h-4 w-4'/> WhatsApp
+              </a>
+            </div>
+          </div>
+      </div>
       <div className="flex items-center justify-center py-12">
         <div className="mx-auto w-[380px] max-w-[90vw] space-y-6">
           <div className="space-y-2 text-center">
-            <div className="flex items-center justify-center gap-2">
+             <div className="flex items-center justify-center gap-2 lg:hidden">
               <Building2 className="h-8 w-8 text-primary" />
               <h1 className="text-3xl font-bold font-headline text-primary">EscopoV3</h1>
             </div>
@@ -69,11 +76,11 @@ export default function LoginPage() {
             </p>
           </div>
         
-          <Card>
+          <Card className='shadow-xl'>
               <CardHeader>
               <CardTitle className="text-2xl">{isLogin ? 'Login' : 'Cadastro'}</CardTitle>
               <CardDescription>
-                  {isLogin ? 'Insira seu e-mail e senha para acessar sua conta.' : 'Preencha os dados para criar sua conta.'}
+                  {isLogin ? 'Insira seu e-mail e senha para acessar.' : 'Preencha os dados para criar sua conta.'}
               </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -100,10 +107,22 @@ export default function LoginPage() {
                     </div>
                 )}
                 
-                <div className="space-y-2 pt-2">
+                <div className="space-y-4 pt-2">
                     <Button asChild type="submit" className="w-full font-semibold">
                       <Link href="/dashboard">{isLogin ? 'Entrar' : 'Cadastrar'}</Link>
                     </Button>
+                    
+                    <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-card px-2 text-muted-foreground">
+                            Ou continue com
+                            </span>
+                        </div>
+                    </div>
+
                     <Button variant="outline" className="w-full font-medium">
                       <GoogleIcon className="mr-2 h-5 w-5" />
                       Login com Google
@@ -119,27 +138,6 @@ export default function LoginPage() {
               </button>
           </div>
         </div>
-      </div>
-      <div className="hidden bg-muted lg:flex items-center justify-center p-10">
-        <Carousel
-          className="w-full max-w-md"
-          plugins={[Autoplay({delay: 5000})]}
-          opts={{loop: true}}
-        >
-          <CarouselContent>
-            {featureSlides.map((slide, index) => (
-              <CarouselItem key={index} className="text-center">
-                <div className="flex flex-col items-center justify-center gap-4 p-6">
-                  {slide.icon}
-                  <h3 className="text-2xl font-bold text-foreground">{slide.title}</h3>
-                  <p className="text-muted-foreground leading-relaxed">{slide.description}</p>
-                </div>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <CarouselPrevious />
-          <CarouselNext />
-        </Carousel>
       </div>
     </div>
   )

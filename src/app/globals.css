@@ -86,3 +86,10 @@
     @apply bg-background text-foreground;
   }
 }
+
+.dot-pattern {
+    background-color: hsl(var(--background));
+    background-image: radial-gradient(hsl(var(--foreground) / 0.15) 1px, transparent 0);
+    background-size: 1rem 1rem;
+    background-position: -1rem -1rem;
+}
