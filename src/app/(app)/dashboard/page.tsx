@@ -91,68 +91,66 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="flex gap-6">
-        <div className="flex-1 flex flex-col gap-6">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                {allKpis.map((kpi) => (
-                <KpiCard key={kpi.id} {...kpi} />
-                ))}
+    <div className="flex flex-col gap-6">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {allKpis.map((kpi) => (
+            <KpiCard key={kpi.id} {...kpi} />
+            ))}
+        </div>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-1">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Visão Geral</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                            <DonutChart
+                            data={[
+                                { name: 'Receitas', value: kpiData.faturamento, color: 'hsl(var(--chart-2))' },
+                                { name: 'Despesas', value: kpiData.despesas, color: 'hsl(var(--chart-1))' },
+                            ]}
+                            valueFormatter={(v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            className="h-48"
+                        />
+                    </CardContent>
+                </Card>
             </div>
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                <div className="lg:col-span-1">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Visão Geral</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                             <DonutChart
-                                data={[
-                                    { name: 'Receitas', value: kpiData.faturamento, color: 'hsl(var(--chart-2))' },
-                                    { name: 'Despesas', value: kpiData.despesas, color: 'hsl(var(--chart-1))' },
-                                ]}
-                                valueFormatter={(v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                                className="h-48"
-                            />
-                        </CardContent>
-                    </Card>
-                </div>
-                <div className="lg:col-span-2">
-                    <ResultsChart data={chartData} />
-                </div>
-            </div>
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                <div className="lg:col-span-2">
-                    <Card>
-                        <CardHeader className='flex-row justify-between items-center'>
-                            <CardTitle>Atividades da Empresa</CardTitle>
-                            <MoreHorizontal className='text-muted-foreground' />
-                        </CardHeader>
-                        <CardContent>
-                            <ResponsiveContainer width="100%" height={200}>
-                                <BarChart data={attendanceData}>
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                                <YAxis axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
-                                <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </CardContent>
-                    </Card>
-                </div>
-                 <div className="lg:col-span-1">
-                     <Card>
-                        <CardHeader>
-                            <CardTitle>Notificações</CardTitle>
-                        </CardHeader>
-                        <CardContent className="text-center text-muted-foreground pt-8">
-                            <p>Em breve...</p>
-                        </CardContent>
-                    </Card>
-                </div>
+            <div className="lg:col-span-2">
+                <ResultsChart data={chartData} />
             </div>
         </div>
-        <aside className="w-80 hidden xl:block">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+                <Card>
+                    <CardHeader className='flex-row justify-between items-center'>
+                        <CardTitle>Atividades da Empresa</CardTitle>
+                        <MoreHorizontal className='text-muted-foreground' />
+                    </CardHeader>
+                    <CardContent>
+                        <ResponsiveContainer width="100%" height={200}>
+                            <BarChart data={attendanceData}>
+                            <XAxis dataKey="name" axisLine={false} tickLine={false} />
+                            <YAxis axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
+                            <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </CardContent>
+                </Card>
+            </div>
+                <div className="lg:col-span-1">
+                    <Card>
+                    <CardHeader>
+                        <CardTitle>Notificações</CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-center text-muted-foreground pt-8">
+                        <p>Em breve...</p>
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+        <div className="xl:hidden">
             <Agenda />
-        </aside>
+        </div>
     </div>
   );
 }
