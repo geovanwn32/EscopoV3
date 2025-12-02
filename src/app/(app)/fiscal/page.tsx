@@ -142,7 +142,7 @@ export default function FiscalPage() {
                  parsedData = {
                     numero: content.match(/<Numero>(.*?)<\/Numero>/)?.[1],
                     dataEmissao: content.match(/<DataEmissao>(.*?)<\/DataEmissao>/)?.[1].substring(0, 16),
-                    cnpjPrestador: content.match(/<Prestador>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1],
+                    cnpjPrestador: content.match(/<Prestador>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1] || content.match(/<PrestadorServico>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1] ,
                     razaoSocialPrestador: content.match(/<PrestadorServico>[\s\S]*?<RazaoSocial>(.*?)<\/RazaoSocial>/)?.[1],
                     cnpjTomador: content.match(/<TomadorServico>[\s\S]*?<Cnpj>(.*?)<\/Cnpj>/)?.[1],
                     razaoSocialTomador: content.match(/<TomadorServico>[\s\S]*?<RazaoSocial>(.*?)<\/RazaoSocial>/)?.[1],
@@ -153,7 +153,7 @@ export default function FiscalPage() {
     
             if (detectedModel) {
                 setLancamentoData(parsedData);
-                openLancamentoDialog(detectedModel);
+                openLancamentoDialog(detectedModel, parsedData);
                 setXmls(prevXmls => prevXmls.map(x => x.id === id ? { ...x, status: 'Lançado' } : x));
             } else {
                 toast({
@@ -561,7 +561,7 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData }: { onOpenChang
         if(tipoNota) {
             setActiveSection(sections[0].id);
         }
-    }, [tipoNota]);
+    }, [tipoNota, sections]);
 
 
     // Product Handlers
