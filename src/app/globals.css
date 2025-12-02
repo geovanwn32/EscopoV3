@@ -17,8 +17,8 @@
     --secondary-foreground: 240 5.9% 10%;
     --muted: 240 4.8% 95.9%;
     --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
+    --accent: 180 82% 25%; /* teal */
+    --accent-foreground: 0 0% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 240 5.9% 90%;
@@ -42,24 +42,24 @@
   }
 
   .dark {
-    --background: 240 5.9% 10%;
+    --background: 235 15% 15%;
     --foreground: 0 0% 98%;
-    --card: 240 5.9% 10%;
+    --card: 235 15% 18%;
     --card-foreground: 0 0% 98%;
-    --popover: 240 5.9% 10%;
+    --popover: 235 15% 10%;
     --popover-foreground: 0 0% 98%;
     --primary: 243 75% 59%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 240 3.7% 15.9%;
+    --secondary: 235 15% 25%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
+    --muted: 235 15% 25%;
     --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
+    --accent: 180 82% 35%; /* teal */
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
+    --border: 235 15% 25%;
+    --input: 235 15% 30%;
     --ring: 243 75% 59%;
     
     --chart-1: 213 74% 54%;
@@ -68,14 +68,35 @@
     --chart-4: 26 95% 61%;
     --chart-5: 262 70% 50%;
 
-    --sidebar-background: 240 5.9% 10%;
+    --sidebar-background: 235 15% 15%;
     --sidebar-foreground: 0 0% 98%;
     --sidebar-primary: 243 75% 59%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent: 235 15% 25%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-border: 235 15% 25%;
     --sidebar-ring: 243 75% 59%;
+  }
+
+  .theme-blue {
+    --primary: 243 75% 59%;
+    --ring: 243 75% 59%;
+  }
+  .theme-green {
+    --primary: 142 76% 36%;
+    --ring: 142 76% 36%;
+  }
+  .theme-orange {
+    --primary: 25 95% 53%;
+    --ring: 25 95% 53%;
+  }
+  .theme-rose {
+    --primary: 346 84% 61%;
+    --ring: 346 84% 61%;
+  }
+  .theme-violet {
+    --primary: 262 84% 59%;
+    --ring: 262 84% 59%;
   }
 }
 
