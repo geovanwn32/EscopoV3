@@ -153,27 +153,69 @@ export default function HomePage() {
             <h2 className="text-3xl font-bold tracking-tight">Planos flexíveis para cada necessidade</h2>
             <p className="mt-4 text-muted-foreground max-w-2xl mx-auto">Escolha o plano que melhor se adapta ao tamanho e complexidade da sua operação. Cancele quando quiser.</p>
             <div className="grid md:grid-cols-3 gap-8 mt-12 max-w-5xl mx-auto">
-                {['Básico', 'Profissional', 'Empresa'].map((plan, index) => (
-                    <Card key={plan} className={`text-left flex flex-col ${index === 1 ? 'border-primary shadow-xl' : ''}`}>
-                         <CardHeader>
-                            <CardTitle className='flex justify-between items-center'>
-                                <span>{plan}</span>
-                                {index === 1 && <span className="text-xs font-semibold px-3 py-1 rounded-full bg-primary/10 text-primary">Mais Popular</span>}
-                            </CardTitle>
-                            <p className="text-4xl font-bold">R$ {49 + index * 50}<span className="text-lg font-normal text-muted-foreground">/mês</span></p>
-                        </CardHeader>
-                        <CardContent className="flex-grow">
-                            <ul className="space-y-3 text-muted-foreground">
-                                {[...Array(3 + index)].map((_, i) => (
-                                    <li key={i} className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" /> Recurso Chave {i+1}</li>
-                                ))}
-                            </ul>
-                        </CardContent>
-                        <CardFooter>
-                            <Button className="w-full" variant={index === 1 ? 'default' : 'outline'}>Começar com o {plan}</Button>
-                        </CardFooter>
-                    </Card>
-                ))}
+                
+                <Card className="text-left flex flex-col">
+                     <CardHeader>
+                        <CardTitle>Básico (MEI)</CardTitle>
+                        <CardDescription>O essencial para o microempreendedor individual se manter em dia.</CardDescription>
+                        <p className="text-4xl font-bold pt-4">R$ 49<span className="text-lg font-normal text-muted-foreground">/mês</span></p>
+                    </CardHeader>
+                    <CardContent className="flex-grow">
+                        <ul className="space-y-3 text-muted-foreground">
+                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" /> Módulo Fiscal Simplificado</li>
+                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" /> Emissão de NFS-e</li>
+                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" /> Controle Financeiro</li>
+                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" /> Relatórios para MEI</li>
+                        </ul>
+                    </CardContent>
+                    <CardFooter>
+                        <Button className="w-full" variant={'outline'}>Começar com o Básico</Button>
+                    </CardFooter>
+                </Card>
+
+                <Card className={'text-left flex flex-col border-primary shadow-xl'}>
+                     <CardHeader>
+                        <CardTitle className='flex justify-between items-center'>
+                            <span>Profissional</span>
+                            <span className="text-xs font-semibold px-3 py-1 rounded-full bg-primary/10 text-primary">Mais Popular</span>
+                        </CardTitle>
+                        <CardDescription>Para pequenas empresas e contadores que precisam de mais poder.</CardDescription>
+                        <p className="text-4xl font-bold pt-4">R$ 99<span className="text-lg font-normal text-muted-foreground">/mês</span></p>
+                    </CardHeader>
+                    <CardContent className="flex-grow">
+                        <ul className="space-y-3 text-muted-foreground">
+                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" /> Todos os recursos do Básico</li>
+                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" /> Módulo Contábil Completo</li>
+                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" /> Departamento Pessoal (até 5 func.)</li>
+                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" /> Importação de Extrato com IA</li>
+                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" /> Suporte Prioritário</li>
+                        </ul>
+                    </CardContent>
+                    <CardFooter>
+                        <Button className="w-full" variant={'default'}>Começar com o Profissional</Button>
+                    </CardFooter>
+                </Card>
+
+                <Card className="text-left flex flex-col">
+                     <CardHeader>
+                        <CardTitle>Empresa</CardTitle>
+                        <CardDescription>A solução completa para escritórios contábeis e empresas em crescimento.</CardDescription>
+                        <p className="text-4xl font-bold pt-4">R$ 149<span className="text-lg font-normal text-muted-foreground">/mês</span></p>
+                    </CardHeader>
+                    <CardContent className="flex-grow">
+                        <ul className="space-y-3 text-muted-foreground">
+                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" /> Todos os recursos do Profissional</li>
+                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" /> Multi-empresa</li>
+                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" /> Usuários Ilimitados</li>
+                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" /> API para Integrações</li>
+                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" /> Gerente de Conta Dedicado</li>
+                        </ul>
+                    </CardContent>
+                    <CardFooter>
+                        <Button className="w-full" variant={'outline'}>Começar com o Empresa</Button>
+                    </CardFooter>
+                </Card>
+
             </div>
           </div>
         </section>
@@ -265,3 +307,5 @@ export default function HomePage() {
 }
 
   
+
+    
