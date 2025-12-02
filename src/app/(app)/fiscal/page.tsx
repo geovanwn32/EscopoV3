@@ -1,8 +1,13 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { PackagePlus, FileText, Wrench, Settings, Upload, FileMinus, Receipt } from "lucide-react";
+import { PackagePlus, FileText, Wrench, Upload, FileMinus, Receipt, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const actions = [
     {
@@ -37,6 +42,30 @@ const actions = [
     },
 ]
 
+const mockXmls = [
+    { id: 1, file: 'NFe_44312.xml', date: '25/07/2024', status: 'Processado' },
+    { id: 2, file: 'NFe_44313.xml', date: '25/07/2024', status: 'Processado' },
+    { id: 3, file: 'CTe_8891.xml', date: '24/07/2024', status: 'Erro' },
+];
+
+const mockNotasProduto = [
+    { id: 1, number: '1254', client: 'ABC Indústria Ltda', value: 'R$ 15.400,00', status: 'Emitida' },
+    { id: 2, number: '1255', client: 'XYZ Comércio S.A.', value: 'R$ 8.250,50', status: 'Emitida' },
+];
+
+const mockNotasSaida = [
+    { id: 1, number: '501', client: 'Logística Total', value: 'R$ 1.200,00', status: 'Cancelada' },
+];
+
+const mockNotasServico = [
+    { id: 1, number: '88', client: 'Consultoria Eficaz', value: 'R$ 5.000,00', status: 'Emitida' },
+];
+
+const mockRecibos = [
+    { id: 1, number: 'C-0012', client: 'Consumidor Final', value: 'R$ 150,00', status: 'Emitido' },
+];
+
+
 export default function FiscalPage() {
     return (
       <div className="space-y-6">
@@ -53,6 +82,92 @@ export default function FiscalPage() {
                     <ActionTile key={action.label} {...action} />
                 ))}
             </CardContent>
+        </Card>
+
+        <Card>
+            <Tabs defaultValue="xml">
+                <CardHeader>
+                    <TabsList>
+                        <TabsTrigger value="xml">XMLs Importados</TabsTrigger>
+                        <TabsTrigger value="produto">Notas de Produto</TabsTrigger>
+                        <TabsTrigger value="saida">Notas de Saída</TabsTrigger>
+                        <TabsTrigger value="servico">Notas de Serviço</TabsTrigger>
+                        <TabsTrigger value="recibos">Recibos/Cupons</TabsTrigger>
+                    </TabsList>
+                </CardHeader>
+
+                <CardContent>
+                    <TabsContent value="xml">
+                        <RecentDocumentsTable
+                            headers={['Arquivo', 'Data Importação', 'Status']}
+                            data={mockXmls}
+                            renderRow={(item) => (
+                                <>
+                                    <TableCell className="font-medium">{item.file}</TableCell>
+                                    <TableCell>{item.date}</TableCell>
+                                    <TableCell><Badge variant={item.status === 'Processado' ? 'secondary' : 'destructive'}>{item.status}</Badge></TableCell>
+                                </>
+                            )}
+                        />
+                    </TabsContent>
+                    <TabsContent value="produto">
+                        <RecentDocumentsTable
+                            headers={['Número', 'Cliente', 'Valor', 'Status']}
+                            data={mockNotasProduto}
+                            renderRow={(item) => (
+                                <>
+                                    <TableCell className="font-medium">{item.number}</TableCell>
+                                    <TableCell>{item.client}</TableCell>
+                                    <TableCell>{item.value}</TableCell>
+                                    <TableCell><Badge>{item.status}</Badge></TableCell>
+                                </>
+                            )}
+                        />
+                    </TabsContent>
+                    <TabsContent value="saida">
+                         <RecentDocumentsTable
+                            headers={['Número', 'Destinatário', 'Valor', 'Status']}
+                            data={mockNotasSaida}
+                            renderRow={(item) => (
+                                <>
+                                    <TableCell className="font-medium">{item.number}</TableCell>
+                                    <TableCell>{item.client}</TableCell>
+                                    <TableCell>{item.value}</TableCell>
+                                    <TableCell><Badge variant="destructive">{item.status}</Badge></TableCell>
+                                </>
+                            )}
+                        />
+                    </TabsContent>
+                    <TabsContent value="servico">
+                         <RecentDocumentsTable
+                            headers={['Número', 'Tomador', 'Valor', 'Status']}
+                            data={mockNotasServico}
+                            renderRow={(item) => (
+                                <>
+                                    <TableCell className="font-medium">{item.number}</TableCell>
+                                    <TableCell>{item.client}</TableCell>
+                                    <TableCell>{item.value}</TableCell>
+                                    <TableCell><Badge>{item.status}</Badge></TableCell>
+                                </>
+                            )}
+                        />
+                    </TabsContent>
+                    <TabsContent value="recibos">
+                         <RecentDocumentsTable
+                            headers={['Número', 'Cliente', 'Valor', 'Status']}
+                            data={mockRecibos}
+                            renderRow={(item) => (
+                                <>
+                                    <TableCell className="font-medium">{item.number}</TableCell>
+                                    <TableCell>{item.client}</TableCell>
+                                    <TableCell>{item.value}</TableCell>
+                                    <TableCell><Badge variant="secondary">{item.status}</Badge></TableCell>
+                                </>
+                            )}
+                        />
+                    </TabsContent>
+                </CardContent>
+            </Tabs>
         </Card>
       </div>
     );
@@ -72,4 +187,41 @@ function ActionTile({ icon, label, href = "#", color }: { icon: React.ReactNode,
         </div>
     </Link>
   )
+}
+
+function RecentDocumentsTable({ headers, data, renderRow }: { headers: string[], data: any[], renderRow: (item: any) => React.ReactNode }) {
+    return (
+        <div className="overflow-x-auto">
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        {headers.map(header => <TableHead key={header}>{header}</TableHead>)}
+                        <TableHead className="w-[64px]"></TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {data.map((item) => (
+                        <TableRow key={item.id}>
+                           {renderRow(item)}
+                           <TableCell>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                        <span className="sr-only">Ações</span>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem>Visualizar</DropdownMenuItem>
+                                    <DropdownMenuItem>Editar</DropdownMenuItem>
+                                    <DropdownMenuItem className="text-destructive">Excluir</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                           </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        </div>
+    )
 }
