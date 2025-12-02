@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -96,37 +95,49 @@ export default function MinhaEmpresaPage() {
     });
   };
 
-  const handleCnpjQuery = () => {
-    if (!companyData.cnpj) {
-        toast({ variant: 'destructive', title: 'CNPJ inválido', description: 'Por favor, insira um CNPJ para consultar.' });
+  const handleCnpjQuery = async () => {
+    const cnpj = companyData.cnpj.replace(/\D/g, ''); // Remove non-digits
+    if (!cnpj || cnpj.length !== 14) {
+        toast({ variant: 'destructive', title: 'CNPJ inválido', description: 'Por favor, insira um CNPJ válido para consultar.' });
         return;
     }
-    setIsQueryingCnpj(true);
-    // Simulate API call
-    setTimeout(() => {
-        const mockData = {
-            razaoSocial: 'EMPRESA CONSULTADA LTDA',
-            nomeFantasia: 'NOME FANTASIA API',
-            cep: '74000-000',
-            logradouro: 'Avenida Exemplo',
-            numero: '123',
-            bairro: 'Centro',
-            cidade: 'Goiânia',
-            uf: 'GO',
-            telefone: '62999998888',
-            email: 'contato@api.com',
-            cnae: '6201501',
-            regimeTributario: 'simples'
-        };
 
+    setIsQueryingCnpj(true);
+    try {
+        const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+        if (!response.ok) {
+            throw new Error('CNPJ não encontrado ou API indisponível.');
+        }
+        const data = await response.json();
+        
         setCompanyData(prev => ({
             ...prev,
-            ...mockData,
+            razaoSocial: data.razao_social || '',
+            nomeFantasia: data.nome_fantasia || '',
+            cnae: data.cnae_fiscal || '',
+            cep: data.cep || '',
+            logradouro: data.logradouro || '',
+            numero: data.numero || '',
+            complemento: data.complemento || '',
+            bairro: data.bairro || '',
+            cidade: data.municipio || '',
+            uf: data.uf || '',
+            telefone: data.ddd_telefone_1 || '',
+            email: data.email || '',
+            // BrasilAPI não fornece regime tributário, então mantemos o valor existente
         }));
 
+        toast({ title: 'CNPJ Consultado!', description: 'Os dados da empresa foram preenchidos com sucesso.' });
+
+    } catch (error: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Erro na Consulta',
+            description: error.message || 'Não foi possível buscar os dados do CNPJ.'
+        });
+    } finally {
         setIsQueryingCnpj(false);
-        toast({ title: 'CNPJ Consultado!', description: 'Os dados da empresa foram preenchidos.' });
-    }, 1500);
+    }
   }
   
   if (companies.length === 0) {
