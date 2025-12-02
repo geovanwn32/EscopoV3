@@ -1,7 +1,7 @@
 'use client';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { User, Settings as SettingsIcon, ChevronsUpDown, Check, PlusCircle, Building2, LayoutGrid } from 'lucide-react';
+import { User, Settings as SettingsIcon, ChevronsUpDown, Check, PlusCircle, Building2, LayoutGrid, Shield } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -62,6 +62,11 @@ function CompanySwitcher() {
     router.push('/selecionar-empresa');
   }
 
+  const goToAdmin = () => {
+    setOpen(false);
+    router.push('/admin');
+  }
+
   if (companies.length === 0) {
     return null;
   }
@@ -113,6 +118,10 @@ function CompanySwitcher() {
               <CommandItem onSelect={goToCompanySelection} className='cursor-pointer'>
                 <LayoutGrid className="mr-2 h-4 w-4" />
                 Ver Todas as Empresas
+              </CommandItem>
+               <CommandItem onSelect={goToAdmin} className='cursor-pointer'>
+                <Shield className="mr-2 h-4 w-4" />
+                Permissões Avançadas
               </CommandItem>
             </CommandGroup>
           </CommandList>
