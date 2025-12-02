@@ -21,11 +21,8 @@ interface Transaction {
 }
 
 // Mock data for AI suggestions - can be replaced with real data fetching
-const mockPreviousAssociations = [
-  { description: "FORNECEDOR XYZ", account: "Fornecedores" },
-  { description: "COMPRA DE MATERIAL", account: "Despesas com Materiais" },
-];
-const mockLedgerBalances = { "Receita de Vendas": 50000, "Despesas com Salários": -25000, "Fornecedores": -10000 };
+const mockPreviousAssociations: { description: string, account: string }[] = [];
+const mockLedgerBalances: Record<string, number> = {};
 
 export default function StatementImporter() {
   const { useScopedData } = useCompany();
@@ -42,12 +39,7 @@ export default function StatementImporter() {
       })
       // Here you would typically parse the file and set the transactions
       // For now, we'll keep it simple and not process the file content.
-      // A mock transaction is added to demonstrate the feature.
-      const mockTransactions: Transaction[] = [
-          { id: 1, date: '01/12/2025', description: 'Pagamento Fornecedor ABC', amount: -1250.75, status: 'pending' },
-          { id: 2, date: '02/12/2025', description: 'Recebimento Cliente XPTO', amount: 5000.00, status: 'pending' },
-          { id: 3, date: '03/12/2025', description: 'Salário Funcionário', amount: -2800.00, status: 'pending' },
-      ];
+      const mockTransactions: Transaction[] = []; // Start with no mock transactions
       setTransactions(mockTransactions);
     }
     // Reset input to allow same file selection again
@@ -59,7 +51,7 @@ export default function StatementImporter() {
       toast({
         variant: "destructive",
         title: "Nenhuma transação",
-        description: "Importe um extrato antes de solicitar sugestões.",
+        description: "Importe e processe um extrato antes de solicitar sugestões.",
       });
       return;
     }

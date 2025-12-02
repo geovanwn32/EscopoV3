@@ -20,35 +20,7 @@ interface AgendaEvent {
     tagColor: string;
 }
 
-const defaultEvents: AgendaEvent[] = [
-    { 
-        id: 1,
-        date: new Date(new Date().setDate(new Date().getDate() + 2)).toISOString(), 
-        description: 'Vencimento do DAS',
-        startTime: '09:00',
-        endTime: '17:00',
-        tag: 'Fiscal',
-        tagColor: 'bg-red-500'
-    },
-    { 
-        id: 2,
-        date: new Date(new Date().setDate(new Date().getDate() + 5)).toISOString(), 
-        description: 'Entrega da EFD-Contribuições',
-        startTime: '10:00',
-        endTime: '11:00',
-        tag: 'Contábil',
-        tagColor: 'bg-sky-500'
-    },
-    { 
-        id: 3,
-        date: new Date().toISOString(), 
-        description: 'Reunião de alinhamento',
-        startTime: '14:00',
-        endTime: '15:00',
-        tag: 'Interno',
-        tagColor: 'bg-amber-500'
-    },
-];
+const defaultEvents: AgendaEvent[] = [];
 
 export default function Agenda() {
   const { useScopedData } = useCompany();

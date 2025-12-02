@@ -12,7 +12,6 @@ import { Conta } from '@/types/financeiro';
 import { NotaFiscal } from '@/types/fiscal';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DonutChart } from '@/components/ui/donut-chart';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 
 const defaultKpiSettings = [
   { id: 'faturamento', title: 'Faturamento', enabled: true },
@@ -20,15 +19,6 @@ const defaultKpiSettings = [
   { id: 'notas', title: 'Notas Emitidas', enabled: true },
   { id: 'resultado', title: 'Resultado', enabled: true },
 ];
-
-const attendanceData = [
-  { name: 'Mon', value: 75 },
-  { name: 'Tue', value: 90 },
-  { name: 'Wed', value: 80 },
-  { name: 'Thu', value: 65 },
-  { name: 'Fri', value: 85 },
-];
-
 
 export default function DashboardPage() {
   const { useScopedData } = useCompany();
@@ -121,31 +111,14 @@ export default function DashboardPage() {
                     <ResultsChart data={chartData} />
                 </div>
             </div>
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                <div className="lg:col-span-2">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-1">
+                <div className="lg:col-span-1">
                     <Card>
-                        <CardHeader className='flex-row justify-between items-center'>
-                            <CardTitle>Atividades da Empresa</CardTitle>
-                            <MoreHorizontal className='text-muted-foreground' />
-                        </CardHeader>
-                        <CardContent>
-                            <ResponsiveContainer width="100%" height={200}>
-                                <BarChart data={attendanceData}>
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                                <YAxis axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
-                                <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </CardContent>
-                    </Card>
-                </div>
-                    <div className="lg:col-span-1">
-                        <Card>
                         <CardHeader>
                             <CardTitle>Notificações</CardTitle>
                         </CardHeader>
                         <CardContent className="text-center text-muted-foreground pt-8">
-                            <p>Em breve...</p>
+                            <p>Nenhuma notificação no momento.</p>
                         </CardContent>
                     </Card>
                 </div>

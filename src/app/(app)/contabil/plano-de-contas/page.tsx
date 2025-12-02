@@ -18,13 +18,7 @@ import { Account, AccountType, AccountNature } from '@/types/contabil';
 import { cn } from '@/lib/utils';
 
 
-const defaultAccounts: Account[] = [
-    { id: 1, parentId: null, code: '1', name: 'Ativo', type: 'Sintética', nature: 'Devedora', status: 'Ativa' },
-    { id: 2, parentId: 1, code: '1.1', name: 'Ativo Circulante', type: 'Sintética', nature: 'Devedora', status: 'Ativa' },
-    { id: 3, parentId: 2, code: '1.1.1', name: 'Caixa e Equivalentes', type: 'Sintética', nature: 'Devedora', status: 'Ativa' },
-    { id: 4, parentId: 3, code: '1.1.1.01', name: 'Caixa Geral', type: 'Analítica', nature: 'Devedora', status: 'Ativa' },
-    { id: 5, parentId: null, code: '2', name: 'Passivo', type: 'Sintética', nature: 'Credora', status: 'Ativa' },
-];
+const defaultAccounts: Account[] = [];
 
 export default function PlanoDeContasPage() {
     const { toast } = useToast();
