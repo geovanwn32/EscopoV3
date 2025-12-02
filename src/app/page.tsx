@@ -288,15 +288,15 @@ function Footer() {
 export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
-        <Header />
-        <main className="flex flex-1 flex-col items-center">
-            <HeroSection />
-            <FeaturesSection />
-            <PlansSection />
-            <AboutSection />
-            <ContactSection />
-        </main>
-        <Footer />
+      <Header />
+      <main className="flex-1">
+        <HeroSection />
+        <FeaturesSection />
+        <PlansSection />
+        <AboutSection />
+        <ContactSection />
+      </main>
+      <Footer />
     </div>
   );
 }
