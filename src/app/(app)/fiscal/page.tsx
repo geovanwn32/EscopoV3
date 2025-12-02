@@ -367,20 +367,6 @@ function RecentDocumentsTable({
     )
 }
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
-    return (
-        <h3 className="text-lg font-semibold text-primary mb-4 pb-2 border-b">{children}</h3>
-    )
-}
-
-function FormRow({ children }: { children: React.ReactNode }) {
-    return (
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
-            {children}
-        </div>
-    )
-}
-
 const sections = [
     { id: 'geral', name: 'Dados Gerais' },
     { id: 'emitente', name: 'Emitente / Dest.' },
@@ -389,12 +375,51 @@ const sections = [
     { id: 'transporte', name: 'Transporte' },
     { id: 'faturas', name: 'Faturas' },
     { id: 'info', name: 'Informações Adicionais' },
-]
+];
+
+interface ProductItem {
+    id: number;
+    name: string;
+    quantity: number;
+    price: number;
+    total: number;
+}
+
 
 function LancamentoProdutoDialog() {
     const [currentSection, setCurrentSection] = useState('geral');
-    const productItems: any[] = [];
-    const totalNota = productItems.reduce((acc, item) => acc + (item.total || 0), 0);
+    const [productItems, setProductItems] = useState<ProductItem[]>([]);
+
+    const handleAddProduct = () => {
+        const newItem: ProductItem = {
+            id: Date.now(),
+            name: 'Novo Produto',
+            quantity: 1,
+            price: 10.0,
+            total: 10.0,
+        };
+        setProductItems(prev => [...prev, newItem]);
+    };
+
+    const handleRemoveProduct = (id: number) => {
+        setProductItems(prev => prev.filter(item => item.id !== id));
+    };
+
+    const handleProductChange = (id: number, field: keyof ProductItem, value: string | number) => {
+        setProductItems(prev => prev.map(item => {
+            if (item.id === id) {
+                const updatedItem = { ...item, [field]: value };
+                if (field === 'quantity' || field === 'price') {
+                    updatedItem.total = updatedItem.quantity * updatedItem.price;
+                }
+                return updatedItem;
+            }
+            return item;
+        }));
+    };
+
+    const totalProdutos = productItems.reduce((acc, item) => acc + item.total, 0);
+    const totalNota = totalProdutos; // Simplified for now
   
     return (
       <DialogContent className="max-w-6xl h-[90vh] flex flex-col">
@@ -425,7 +450,7 @@ function LancamentoProdutoDialog() {
                         <Card>
                             <CardHeader><CardTitle>Dados Gerais da Nota</CardTitle></CardHeader>
                             <CardContent className="space-y-4">
-                                <FormRow>
+                                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
                                     <div className="space-y-2">
                                         <Label htmlFor="nf-tipo">Tipo da Nota</Label>
                                         <Select><SelectTrigger id="nf-tipo"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent><SelectItem value="entrada">Entrada</SelectItem><SelectItem value="saida">Saída</SelectItem></SelectContent></Select>
@@ -438,13 +463,13 @@ function LancamentoProdutoDialog() {
                                         <Label htmlFor="nf-natureza">Natureza da Operação (CFOP)</Label>
                                         <Input id="nf-natureza" />
                                     </div>
-                                </FormRow>
-                                <FormRow>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
                                     <div className="space-y-2"><Label htmlFor="nf-modelo">Modelo</Label><Input id="nf-modelo" /></div>
                                     <div className="space-y-2"><Label htmlFor="nf-serie">Série</Label><Input id="nf-serie" /></div>
                                     <div className="space-y-2"><Label htmlFor="nf-numero">Número</Label><Input id="nf-numero" /></div>
                                     <div className="space-y-2"><Label htmlFor="nf-data-emissao">Data de Emissão</Label><Input id="nf-data-emissao" type="datetime-local" /></div>
-                                </FormRow>
+                                </div >
                             </CardContent>
                         </Card>
                     )}
@@ -453,17 +478,17 @@ function LancamentoProdutoDialog() {
                          <Card>
                             <CardHeader><CardTitle>Dados do Emitente / Destinatário</CardTitle></CardHeader>
                             <CardContent className="space-y-4">
-                                <FormRow>
+                                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
                                     <div className="space-y-2"><Label htmlFor="emit-cnpj">CNPJ / CPF</Label><Input id="emit-cnpj" /></div>
                                     <div className="space-y-2 col-span-1 md:col-span-2"><Label htmlFor="emit-razao-social">Razão Social</Label><Input id="emit-razao-social" /></div>
                                     <div className="space-y-2"><Label htmlFor="emit-ie">Inscrição Estadual</Label><Input id="emit-ie" /></div>
-                                </FormRow>
-                                <FormRow>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
                                     <div className="space-y-2"><Label htmlFor="emit-cep">CEP</Label><Input id="emit-cep" /></div>
                                     <div className="space-y-2 col-span-1 md:col-span-2"><Label htmlFor="emit-logradouro">Logradouro</Label><Input id="emit-logradouro" /></div>
                                     <div className="space-y-2"><Label htmlFor="emit-numero">Número</Label><Input id="emit-numero" /></div>
-                                </FormRow>
-                                <FormRow>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
                                     <div className="space-y-2"><Label htmlFor="emit-bairro">Bairro</Label><Input id="emit-bairro" /></div>
                                     <div className="space-y-2"><Label htmlFor="emit-cidade">Cidade</Label><Input id="emit-cidade" /></div>
                                     <div className="space-y-2"><Label htmlFor="emit-uf">UF</Label><Input id="emit-uf" /></div>
@@ -471,7 +496,7 @@ function LancamentoProdutoDialog() {
                                         <Label htmlFor="emit-regime">Regime Tributário</Label>
                                         <Select><SelectTrigger id="emit-regime"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent><SelectItem value="simples">Simples Nacional</SelectItem><SelectItem value="presumido">Lucro Presumido</SelectItem><SelectItem value="real">Lucro Real</SelectItem></SelectContent></Select>
                                     </div>
-                                </FormRow>
+                                </div>
                             </CardContent>
                         </Card>
                     )}
@@ -481,22 +506,34 @@ function LancamentoProdutoDialog() {
                             <CardHeader><CardTitle>Itens da Nota</CardTitle></CardHeader>
                             <CardContent>
                                 <Table>
-                                    <TableHeader><TableRow><TableHead className="w-[40%]">Produto</TableHead><TableHead>Qtd.</TableHead><TableHead>Vl. Unit.</TableHead><TableHead className="text-right">Total</TableHead><TableHead className="w-12"></TableHead></TableRow></TableHeader>
+                                    <TableHeader><TableRow>
+                                        <TableHead className="w-[40%]">Produto</TableHead>
+                                        <TableHead>Qtd.</TableHead>
+                                        <TableHead>Vl. Unit.</TableHead>
+                                        <TableHead className="text-right">Total</TableHead>
+                                        <TableHead className="w-12"></TableHead>
+                                    </TableRow></TableHeader>
                                     <TableBody>
-                                        {productItems.length > 0 ? productItems.map((item: any) => (
+                                        {productItems.length > 0 ? productItems.map((item) => (
                                             <TableRow key={item.id}>
-                                                <TableCell className="font-medium">{item.name}</TableCell>
-                                                <TableCell>{item.quantity}</TableCell>
-                                                <TableCell>{Number(item.price).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</TableCell>
-                                                <TableCell className="text-right">{item.total.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</TableCell>
-                                                <TableCell><Button variant="ghost" size="icon" className="h-8 w-8"><X className="h-4 w-4" /></Button></TableCell>
+                                                <TableCell className="font-medium">
+                                                    <Input value={item.name} onChange={(e) => handleProductChange(item.id, 'name', e.target.value)} className="h-8" />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Input type="number" value={item.quantity} onChange={(e) => handleProductChange(item.id, 'quantity', parseFloat(e.target.value))} className="h-8 w-20" />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Input type="number" value={item.price} onChange={(e) => handleProductChange(item.id, 'price', parseFloat(e.target.value))} className="h-8 w-24" />
+                                                </TableCell>
+                                                <TableCell className="text-right font-mono">{item.total.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</TableCell>
+                                                <TableCell><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveProduct(item.id)}><X className="h-4 w-4" /></Button></TableCell>
                                             </TableRow>
                                         )) : (
                                             <TableRow><TableCell colSpan={5} className="h-24 text-center">Nenhum produto adicionado.</TableCell></TableRow>
                                         )}
                                     </TableBody>
                                 </Table>
-                                <div className="mt-4 flex justify-end"><Button variant="outline"><Plus className="mr-2 h-4 w-4" /> Adicionar Produto</Button></div>
+                                <div className="mt-4 flex justify-end"><Button variant="outline" onClick={handleAddProduct}><Plus className="mr-2 h-4 w-4" /> Adicionar Produto</Button></div>
                             </CardContent>
                         </Card>
                     )}
@@ -518,7 +555,7 @@ function LancamentoProdutoDialog() {
         <DialogFooter className="border-t pt-4">
             <div className="flex w-full justify-between items-center">
                 <div className="text-sm text-muted-foreground">
-                    <p>Total Produtos: <span className="font-bold text-foreground">{totalNota.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span></p>
+                    <p>Total Produtos: <span className="font-bold text-foreground">{totalProdutos.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span></p>
                     <p>Total Nota: <span className="font-bold text-foreground text-lg">{totalNota.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span></p>
                 </div>
                 <div className="flex gap-2">
@@ -530,4 +567,6 @@ function LancamentoProdutoDialog() {
       </DialogContent>
     );
 }
+    
+
     
