@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -37,23 +36,12 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
-  const background = PlaceHolderImages.find(p => p.id === 'login-background');
-
-
+  
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
       <Card className="w-full max-w-4xl grid lg:grid-cols-2 shadow-2xl overflow-hidden rounded-2xl">
         {/* Left Panel */}
         <div className="hidden lg:flex flex-col justify-center p-12 bg-primary text-primary-foreground relative overflow-hidden">
-          {background && (
-             <Image
-              src={background.imageUrl}
-              alt={background.description}
-              fill
-              className="object-cover brightness-50"
-              data-ai-hint={background.imageHint}
-            />
-          )}
           <div className="relative z-10 space-y-4">
             <div className="flex items-center gap-3 text-white">
               <Building2 className="h-10 w-10" />
