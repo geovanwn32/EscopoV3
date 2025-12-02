@@ -1,12 +1,10 @@
-
-
 'use client';
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { PackagePlus, Wrench, Upload, FileMinus, Receipt, MoreHorizontal, Search, Filter, Plus, FileUp, Trash2 } from "lucide-react";
+import { PackagePlus, Wrench, Upload, FileMinus, Receipt, MoreHorizontal, Search, Filter, Plus, FileUp, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 const actions = [
     {
@@ -70,6 +70,7 @@ const mockRecibos: any[] = [];
 export default function FiscalPage() {
     const { toast } = useToast();
     const [xmls, setXmls] = useState<XmlFile[]>([]);
+    const [isNotaProdutoDialogOpen, setIsNotaProdutoDialogOpen] = useState(false);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
@@ -123,13 +124,16 @@ export default function FiscalPage() {
           </p>
         </div>
 
-        <Card>
-            <CardContent className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 pt-6">
-                {actions.map((action) => (
-                    <ActionTile key={action.label} {...action} onFileChange={action.id === 'importar-xml' ? handleFileChange : undefined} />
-                ))}
-            </CardContent>
-        </Card>
+        <Dialog open={isNotaProdutoDialogOpen} onOpenChange={setIsNotaProdutoDialogOpen}>
+            <Card>
+                <CardContent className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 pt-6">
+                    {actions.map((action) => (
+                        <ActionTile key={action.label} {...action} onFileChange={action.id === 'importar-xml' ? handleFileChange : undefined} />
+                    ))}
+                </CardContent>
+            </Card>
+            <LancamentoProdutoDialog />
+        </Dialog>
 
         <Card>
             <Tabs defaultValue="xmls">
@@ -148,8 +152,6 @@ export default function FiscalPage() {
                             title="XMLs Importados"
                             description="Documentos fiscais importados recentemente."
                             searchPlaceholder="Buscar por arquivo..."
-                            buttonLabel="Importar"
-                            buttonIcon={<Upload className="mr-2 h-4 w-4"/>}
                         />
                         <RecentDocumentsTable
                             headers={['Arquivo', 'Data Importação', 'Status']}
@@ -309,6 +311,14 @@ function ActionTile({
         );
     }
 
+    if (id === 'nota-produto') {
+        return (
+            <DialogTrigger asChild>
+                {tileContent}
+            </DialogTrigger>
+        )
+    }
+
     return (
         <Link href={href}>
            {tileContent}
@@ -316,7 +326,7 @@ function ActionTile({
     )
 }
 
-function ListHeader({ title, description, searchPlaceholder, buttonLabel, buttonIcon }: { title: string, description: string, searchPlaceholder: string, buttonLabel: string, buttonIcon: React.ReactNode}) {
+function ListHeader({ title, description, searchPlaceholder, buttonLabel, buttonIcon }: { title: string, description: string, searchPlaceholder: string, buttonLabel?: string, buttonIcon?: React.ReactNode}) {
     return (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
             <div className="space-y-1.5 flex-grow">
@@ -329,7 +339,9 @@ function ListHeader({ title, description, searchPlaceholder, buttonLabel, button
                     <Input placeholder={searchPlaceholder} className="pl-9 w-full" />
                 </div>
                 <Button variant="outline" className="hidden sm:inline-flex"><Filter className="mr-2 h-4 w-4"/>Filtrar</Button>
-                <Button className="flex-grow sm:flex-grow-0">{buttonIcon}{buttonLabel}</Button>
+                {buttonLabel && buttonIcon && (
+                     <Button className="flex-grow sm:flex-grow-0">{buttonIcon}{buttonLabel}</Button>
+                )}
             </div>
         </div>
     );
@@ -433,6 +445,127 @@ function RecentDocumentsTable({
     )
 }
 
+function LancamentoProdutoDialog() {
+    // Mock data, in a real scenario this would come from an API or the XML file
+    const productItems = [
+        { id: 1, name: 'AMEND CROC CEB SAL 20X40G', quantity: 20, price: '12.60' },
+        { id: 2, name: 'AMEND CROC TRADIC 20X40G', quantity: 5, price: '11.86' },
+        { id: 3, name: 'AMENDOIM JAP 20X40G', quantity: 20, price: '13.13' },
+    ];
+  
+    return (
+      <DialogContent className="max-w-4xl">
+        <DialogHeader>
+          <DialogTitle>Lançamento de Nota Fiscal de Produto</DialogTitle>
+          <DialogDescription>
+            Preencha os dados abaixo para realizar o lançamento da nota fiscal.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-6 py-4">
+            <Tabs defaultValue="geral">
+                <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="geral">Geral</TabsTrigger>
+                    <TabsTrigger value="emitente">Emitente</TabsTrigger>
+                    <TabsTrigger value="destinatario">Destinatário</TabsTrigger>
+                    <TabsTrigger value="produtos">Produtos</TabsTrigger>
+                </TabsList>
+                <TabsContent value="geral" className="mt-4">
+                    <div className="grid grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="nf-numero">Nº da Nota</Label>
+                            <Input id="nf-numero" defaultValue="2" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="nf-serie">Série</Label>
+                            <Input id="nf-serie" defaultValue="1" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="nf-data">Data de Emissão</Label>
+                            <Input id="nf-data" type="date" defaultValue="2025-11-06" />
+                        </div>
+                    </div>
+                    <div className="mt-4 space-y-2">
+                        <Label htmlFor="nf-natureza">Natureza da Operação</Label>
+                        <Input id="nf-natureza" defaultValue="Baixa de estoque por perda, roubo ou deterioracao" />
+                    </div>
+                </TabsContent>
+                <TabsContent value="emitente" className="mt-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="emit-nome">Nome/Razão Social</Label>
+                            <Input id="emit-nome" defaultValue="SIVALDO PEREIRA LEITE 39443817187" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="emit-cnpj">CNPJ</Label>
+                            <Input id="emit-cnpj" defaultValue="11.786.827/0001-99" />
+                        </div>
+                    </div>
+                </TabsContent>
+                <TabsContent value="destinatario" className="mt-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="dest-nome">Nome/Razão Social</Label>
+                            <Input id="dest-nome" defaultValue="SIVALDO PEREIRA LEITE" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="dest-cpf">CPF</Label>
+                            <Input id="dest-cpf" defaultValue="394.438.171-87" />
+                        </div>
+                    </div>
+                </TabsContent>
+                <TabsContent value="produtos" className="mt-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Itens da Nota</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
+                                <TableRow>
+                                    <TableHead className="w-[60%]">Produto</TableHead>
+                                    <TableHead>Qtd.</TableHead>
+                                    <TableHead>Vl. Unit.</TableHead>
+                                    <TableHead className="text-right">Total</TableHead>
+                                    <TableHead className="w-12"></TableHead>
+                                </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                {productItems.map((item) => (
+                                    <TableRow key={item.id}>
+                                        <TableCell className="font-medium">{item.name}</TableCell>
+                                        <TableCell>{item.quantity}</TableCell>
+                                        <TableCell>{Number(item.price).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</TableCell>
+                                        <TableCell className="text-right">{(item.quantity * Number(item.price)).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</TableCell>
+                                        <TableCell>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8"><X className="h-4 w-4" /></Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                                </TableBody>
+                            </Table>
+                            <div className="mt-4 flex justify-end">
+                                <Button variant="outline"><Plus className="mr-2 h-4 w-4" /> Adicionar Produto</Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
+        </div>
+        <DialogFooter>
+            <div className="flex w-full justify-between items-center">
+                <p className="text-sm text-muted-foreground">
+                    Valor Total da Nota: <span className="font-bold text-foreground">R$ 23.610,90</span>
+                </p>
+                <div>
+                    <Button variant="outline">Cancelar</Button>
+                    <Button type="submit" className="ml-2">Salvar Lançamento</Button>
+                </div>
+            </div>
+        </DialogFooter>
+      </DialogContent>
+    );
+  }
     
 
     
+
