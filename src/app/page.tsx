@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Building2, Mail, Phone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -32,20 +32,32 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 }
 
 const DataBlockAnimation = () => {
+    const [blocks, setBlocks] = useState<React.CSSProperties[]>([]);
+  
+    useEffect(() => {
+      const generateBlocks = () => {
+        return Array.from({ length: 50 }).map(() => ({
+          left: `${Math.random() * 100}%`,
+          animationDuration: `${Math.random() * 10 + 5}s`,
+          animationDelay: `${Math.random() * 5}s`,
+          opacity: Math.random() * 0.5 + 0.1,
+        }));
+      };
+      setBlocks(generateBlocks());
+    }, []);
+  
+    if (blocks.length === 0) {
+      return null; // Don't render anything on the server or before useEffect runs
+    }
+  
     return (
       <div className="data-block-container">
-        {Array.from({ length: 50 }).map((_, i) => {
-          const style = {
-            left: `${Math.random() * 100}%`,
-            animationDuration: `${Math.random() * 10 + 5}s`,
-            animationDelay: `${Math.random() * 5}s`,
-            opacity: Math.random() * 0.5 + 0.1,
-          };
-          return <div key={i} className="data-block" style={style} />;
-        })}
+        {blocks.map((style, i) => (
+          <div key={i} className="data-block" style={style} />
+        ))}
       </div>
     );
-};
+  };
 
 
 export default function LoginPage() {
