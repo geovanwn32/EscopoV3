@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Building2, Mail, Phone, Users, ShieldCheck, BarChart, Rocket } from 'lucide-react';
+import { Building2, Mail, Phone, Users, ShieldCheck, BarChart, Rocket, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -40,9 +40,8 @@ function Header() {
                     <Button variant="ghost" asChild>
                         <Link href="/login">Entrar</Link>
                     </Button>
-                    <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-                        <span className="sr-only">Toggle Menu</span>
-                        {isMenuOpen ? <Building2 className="h-6 w-6"/> : <Rocket className="h-6 w-6" />}
+                    <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Toggle Menu">
+                        {isMenuOpen ? <X className="h-6 w-6"/> : <Menu className="h-6 w-6" />}
                     </button>
                 </div>
             </div>
@@ -153,7 +152,7 @@ function PlansSection() {
             <div className="container">
                 <div className="text-center">
                     <h2 className="text-3xl font-bold tracking-tight">Planos flexíveis para cada necessidade</h2>
-                    <p className="mt-4 text-muted-foreground">Escolha o plano que melhor se adapta ao tamanho e complexidade da sua operação. Cancele quando quiser.</p>
+                    <p className="mt-4 text-muted-foreground max-w-xl mx-auto">Escolha o plano que melhor se adapta ao tamanho e complexidade da sua operação. Cancele quando quiser.</p>
                 </div>
                 <div className="mt-12 grid grid-cols-1 gap-8 lg:grid-cols-3">
                     {plans.map(plan => (
