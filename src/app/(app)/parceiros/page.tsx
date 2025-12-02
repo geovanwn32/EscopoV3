@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -15,11 +16,14 @@ import { useToast } from '@/hooks/use-toast';
 import { Partner } from '@/types/partner';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useCompany } from '@/hooks/use-company';
+import { AuditLog, logAudit } from '@/lib/audit-log';
 
 export default function ParceirosPage() {
     const { toast } = useToast();
     const { useScopedData } = useCompany();
     const [partners, setPartners] = useScopedData<Partner[]>('partners', []);
+    const [, setAuditLogs] = useScopedData<AuditLog[]>('audit-trail-logs', []);
+
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<Partner | null>(null);
@@ -34,6 +38,7 @@ export default function ParceirosPage() {
                 title: "Parceiro Atualizado!",
                 description: `O parceiro ${partnerData.name} foi atualizado com sucesso.`
             });
+            logAudit(setAuditLogs, 'UPDATE', 'Parceiros', `Atualizou o parceiro "${partnerData.name}".`);
             setEditingPartner(null);
         } else {
             // Add new partner
@@ -43,6 +48,7 @@ export default function ParceirosPage() {
                 title: "Parceiro Salvo!",
                 description: `O parceiro ${newPartner.name} foi adicionado com sucesso.`
             });
+            logAudit(setAuditLogs, 'CREATE', 'Parceiros', `Criou o parceiro "${newPartner.name}" (Doc: ${newPartner.document}).`);
         }
         setIsDialogOpen(false);
     };
@@ -59,6 +65,7 @@ export default function ParceirosPage() {
                 title: "Parceiro Excluído!",
                 description: `O parceiro ${itemToDelete.name} foi removido.`
             });
+            logAudit(setAuditLogs, 'DELETE', 'Parceiros', `Excluiu o parceiro "${itemToDelete.name}".`);
             setItemToDelete(null);
         }
     };
@@ -285,3 +292,5 @@ function PartnerForm({ onSave, onOpenChange, partner, isReadOnly }: PartnerFormP
         </DialogContent>
     );
 }
+
+    

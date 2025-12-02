@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, ChangeEvent } from "react";
@@ -23,6 +24,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Partner } from "@/types/partner";
 import { useCompany } from "@/hooks/use-company";
 import { NotaFiscal, ProductItem, ServiceItem } from "@/types/fiscal";
+import { AuditLog, logAudit } from "@/lib/audit-log";
 
 
 const actions = [
@@ -80,6 +82,8 @@ export default function FiscalPage() {
     const [notasSaida, setNotasSaida] = useScopedData<NotaFiscal[]>('fiscal-notasSaida', []);
     const [notasServico, setNotasServico] = useScopedData<NotaFiscal[]>('fiscal-notasServico', []);
     const [partners, setPartners] = useScopedData<Partner[]>('partners', []);
+    const [, setAuditLogs] = useScopedData<AuditLog[]>('audit-trail-logs', []);
+
 
     const [isLancamentoDialogOpen, setIsLancamentoDialogOpen] = useState(false);
     const [tipoNota, setTipoNota] = useState<'produto' | 'saida' | 'servico' | null>(null);
@@ -118,6 +122,7 @@ export default function FiscalPage() {
                 title: "Arquivos Importados com Sucesso",
                 description: `${fileNames}`,
             });
+            logAudit(setAuditLogs, 'IMPORT', 'Fiscal', `Importou ${files.length} arquivo(s) XML: ${fileNames}`);
             event.target.value = '';
         }
     };
@@ -1323,3 +1328,5 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave, isReadO
       </DialogContent>
     );
 }
+
+    

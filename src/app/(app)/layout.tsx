@@ -1,17 +1,20 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Header from '@/components/layout/header';
 import { SidebarNav } from '@/components/layout/sidebar-nav';
 import { Sidebar, SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { CompanyProvider, useCompany } from '@/hooks/use-company';
+import { AuditLog, logAudit } from '@/lib/audit-log';
 
 function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { currentCompany, isLoaded } = useCompany();
+  const { currentCompany, isLoaded, useScopedData } = useCompany();
+  const [, setAuditLogs] = useScopedData<AuditLog[]>('audit-trail-logs', []);
+  const loginLoggedRef = useRef(false);
 
   useEffect(() => {
     if (isLoaded) {
@@ -20,9 +23,15 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         if (pathname !== '/selecionar-empresa' && pathname !== '/minha-empresa') {
           router.push('/selecionar-empresa');
         }
+      } else {
+        // Log login only once per session when company is confirmed
+        if (!loginLoggedRef.current) {
+          logAudit(setAuditLogs, 'LOGIN', 'Autenticação', 'Login bem-sucedido no sistema.');
+          loginLoggedRef.current = true;
+        }
       }
     }
-  }, [isLoaded, currentCompany, pathname, router]);
+  }, [isLoaded, currentCompany, pathname, router, setAuditLogs]);
 
   // Avoid rendering the main layout if we are about to redirect or not ready
   if (!isLoaded || (!currentCompany && pathname !== '/selecionar-empresa' && pathname !== '/minha-empresa')) {

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -12,11 +13,14 @@ import { useCompany } from '@/hooks/use-company';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AuditLog, logAudit } from '@/lib/audit-log';
 
 export default function MinhaEmpresaPage() {
-  const { currentCompany, companies, updateCompany, switchCompany } = useCompany();
+  const { currentCompany, companies, updateCompany, switchCompany, useScopedData } = useCompany();
   const { toast } = useToast();
   const router = useRouter();
+  const [, setAuditLogs] = useScopedData<AuditLog[]>('audit-trail-logs', []);
+
 
   const [companyData, setCompanyData] = useState({
     razaoSocial: '',
@@ -144,6 +148,8 @@ export default function MinhaEmpresaPage() {
     };
     
     updateCompany(currentCompany, updatedCompany);
+    logAudit(setAuditLogs, 'UPDATE', 'Minha Empresa', 'Atualizou os dados cadastrais da empresa.');
+
 
     setTimeout(() => {
         toast({
@@ -437,3 +443,5 @@ export default function MinhaEmpresaPage() {
     </div>
   );
 }
+
+    
