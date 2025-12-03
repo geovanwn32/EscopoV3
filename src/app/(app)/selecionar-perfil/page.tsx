@@ -1,12 +1,13 @@
 
+
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Shield, KeyRound, Loader2, ArrowLeft, PlusCircle, Trash2 } from 'lucide-react';
 import { useCompany } from '@/hooks/use-company';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,7 +40,7 @@ export default function SelecionarPerfilPage() {
             setSelectedUser(user);
         } else {
             sessionStorage.setItem(`user-profile-${currentCompany}`, JSON.stringify(user));
-            router.push('/dashboard');
+            router.push('/selecionar-empresa');
         }
     };
 
@@ -50,7 +51,7 @@ export default function SelecionarPerfilPage() {
             if (password === selectedUser?.password) {
                 toast({ title: "Acesso Autorizado!", description: `Bem-vindo(a) ${selectedUser.name}.` });
                 sessionStorage.setItem(`user-profile-${currentCompany}`, JSON.stringify(selectedUser));
-                router.push('/dashboard');
+                router.push('/selecionar-empresa');
             } else {
                 toast({ variant: 'destructive', title: "Senha Incorreta", description: "A senha que você inseriu está incorreta. Tente novamente." });
                 setIsLoading(false);
@@ -94,18 +95,17 @@ export default function SelecionarPerfilPage() {
     };
     
     useEffect(() => {
-        if (!currentCompany) {
-            router.push('/selecionar-empresa');
-        }
-    }, [currentCompany, router]);
+        // Since this is one of the first pages, we don't check for company here.
+        // The layout will redirect if Firebase auth user is not present.
+    }, [router]);
 
     return (
         <div className="flex min-h-screen w-full items-center justify-center p-4 lg:p-8 animated-gradient">
             <div className="relative w-full max-w-4xl">
                  <Button asChild variant="ghost" className="absolute -top-14 left-0 z-10 text-card-foreground">
-                    <Link href="/selecionar-empresa">
+                    <Link href="/login">
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Trocar Empresa
+                        Trocar Login
                     </Link>
                 </Button>
                 <div className="text-center mb-8 text-card-foreground">
@@ -164,7 +164,7 @@ export default function SelecionarPerfilPage() {
                         <CardHeader>
                             <CardTitle>Nenhum Perfil Encontrado</CardTitle>
                             <CardDescription>
-                                Nenhum perfil de usuário foi cadastrado para esta empresa. Contate um administrador para criar seu acesso.
+                                Nenhum perfil de usuário foi cadastrado. Contate um administrador para criar seu acesso.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>

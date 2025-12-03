@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -49,7 +50,7 @@ export default function LoginForm() {
   useEffect(() => {
     if (!isUserLoading && user) {
       setIsAuthLoading(false);
-      router.push('/selecionar-empresa');
+      router.push('/selecionar-perfil');
     }
     if (!isUserLoading && userError) {
       setIsAuthLoading(false);

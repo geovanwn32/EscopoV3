@@ -25,17 +25,19 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isLoaded) {
-      // If no company is selected, redirect to company selection, except for that page itself.
-      if (!currentCompany && pathname !== '/selecionar-empresa') {
-        router.push('/selecionar-empresa');
-      } 
-      // If a company is selected but no profile is active, redirect to profile selection.
-      // This assumes you have a way to track the active profile, e.g., in sessionStorage
-      else if (currentCompany && !sessionStorage.getItem(`user-profile-${currentCompany}`) && pathname !== '/selecionar-perfil' && pathname !== '/selecionar-empresa') {
-         router.push('/selecionar-perfil');
+      const activeProfile = currentCompany ? sessionStorage.getItem(`user-profile-${currentCompany}`) : null;
+
+      // New Flow: Profile -> Company
+      // 1. If no profile, go to profile selection.
+      if (!activeProfile && pathname !== '/selecionar-perfil' && pathname !== '/selecionar-empresa' && pathname !== '/login') {
+          router.push('/selecionar-perfil');
       }
-      // Log the login audit once per session when the company is confirmed.
-      else if (currentCompany && !loginLoggedRef.current) {
+      // 2. If has profile but no company, go to company selection.
+      else if (activeProfile && !currentCompany && pathname !== '/selecionar-empresa') {
+        router.push('/selecionar-empresa');
+      }
+      // 3. Log login audit once everything is set.
+      else if (currentCompany && activeProfile && !loginLoggedRef.current) {
         logAudit(setAuditLogs, 'LOGIN', 'Autenticação', 'Login bem-sucedido no sistema.');
         loginLoggedRef.current = true;
       }
