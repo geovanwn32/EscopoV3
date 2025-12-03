@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { useCompany } from '@/hooks/use-company';
+import { useCompany, useLocalStorage } from '@/hooks/use-company';
 import { Badge } from '@/components/ui/badge';
 import { Check, X } from 'lucide-react';
 import { AuditLog, logAudit } from '@/lib/audit-log';
@@ -24,9 +24,8 @@ interface User {
 
 export default function AdminPage() {
     const { toast } = useToast();
-    const { useScopedData } = useCompany();
-    const [users, setUsers] = useScopedData<User[]>('global-users', []);
-    const [, setAuditLogs] = useScopedData<AuditLog[]>('audit-trail-logs', []);
+    const [users, setUsers] = useLocalStorage<User[]>('global-users', []);
+    const [, setAuditLogs] = useLocalStorage<AuditLog[]>('audit-trail-logs', []);
 
 
     const pendingUsers = useMemo(() => {
