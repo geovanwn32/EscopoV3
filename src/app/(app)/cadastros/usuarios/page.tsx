@@ -225,7 +225,7 @@ export default function UsuariosPage() {
                 </div>
             </div>
 
-            {activeProfile.isAdmin ? (
+            {activeProfile.isAdmin || activeProfile.isMaster ? (
                 <Card>
                     <CardHeader>
                         <div className="flex items-center justify-between">
@@ -352,12 +352,10 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfile 
 
 
     const otherAdminExists = useMemo(() => {
-        // When editing, check for another admin. When creating, check for any admin.
         return users.some(user => user.isAdmin && user.id !== item?.id);
     }, [users, item]);
 
     const otherMasterExists = useMemo(() => {
-        // When editing, check for another master. When creating, check for any master.
         return users.some(user => user.isMaster && user.id !== item?.id);
     }, [users, item]);
 
@@ -461,20 +459,22 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfile 
                         />
                     </div>
                 )}
-                 <div className="space-y-2 flex items-center justify-between rounded-lg border p-3">
-                    <div className='space-y-0.5'>
-                        <Label htmlFor="isAdmin" className='flex items-center'><ShieldCheck className='mr-2 h-4 w-4 text-primary' />Perfil de Administrador</Label>
-                        <p className='text-xs text-muted-foreground'>
-                            Concede acesso total a todos os módulos e empresas.
-                        </p>
+                 {activeProfile.isMaster && !isEditingSelf && (
+                     <div className="space-y-2 flex items-center justify-between rounded-lg border p-3">
+                        <div className='space-y-0.5'>
+                            <Label htmlFor="isAdmin" className='flex items-center'><ShieldCheck className='mr-2 h-4 w-4 text-primary' />Perfil de Administrador</Label>
+                            <p className='text-xs text-muted-foreground'>
+                                Concede acesso total a todos os módulos e empresas.
+                            </p>
+                        </div>
+                        <Switch
+                            id="isAdmin"
+                            checked={isAdmin}
+                            onCheckedChange={setIsAdmin}
+                            disabled={item?.isAdmin || isMaster}
+                        />
                     </div>
-                    <Switch
-                        id="isAdmin"
-                        checked={isAdmin}
-                        onCheckedChange={setIsAdmin}
-                        disabled={(isEditingSelf && item?.isAdmin) || (!item && otherAdminExists) || isMaster}
-                    />
-                </div>
+                 )}
                 <div className="space-y-2 flex items-center justify-between rounded-lg border p-3">
                     <div className='space-y-0.5'>
                         <Label htmlFor="status" className='flex items-center'>Status do Usuário</Label>
@@ -607,3 +607,6 @@ function MyProfileCard({ profile, onSave }: MyProfileCardProps) {
 
     
 
+
+
+    
