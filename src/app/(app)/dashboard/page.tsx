@@ -6,7 +6,6 @@ import { Settings, User, Briefcase, FileText, ArrowRight, MoreHorizontal, AlertT
 import { useCompany } from '@/hooks/use-company';
 import KpiCard from '@/components/dashboard/kpi-card';
 import ResultsChart from '@/components/dashboard/results-chart';
-import Agenda from '@/components/dashboard/agenda';
 import { useMemo } from 'react';
 import { Conta } from '@/types/financeiro';
 import { NotaFiscal } from '@/types/fiscal';
@@ -101,85 +100,80 @@ export default function DashboardPage() {
 
 
   return (
-    <div className="grid grid-cols-12 gap-6">
-        <div className="col-span-12 xl:col-span-9 flex flex-col gap-6">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                {allKpis.map((kpi) => (
-                <KpiCard key={kpi.id} {...kpi} />
-                ))}
-            </div>
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                <div className="lg:col-span-1">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Visão Geral</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                                <DonutChart
-                                data={[
-                                    { name: 'Receitas', value: kpiData.faturamento, color: 'hsl(var(--chart-2))' },
-                                    { name: 'Despesas', value: kpiData.despesas, color: 'hsl(var(--chart-1))' },
-                                ]}
-                                valueFormatter={(v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                                className="h-48"
-                            />
-                        </CardContent>
-                    </Card>
-                </div>
-                <div className="lg:col-span-2">
-                    <ResultsChart data={chartData} />
-                </div>
-            </div>
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-1">
-                <div className="lg:col-span-1">
-                    <Card className='flex flex-col h-full'>
-                         <CardHeader>
-                            <CardTitle className="flex items-center justify-between">
-                                <span>Notificações</span>
-                                {allNotifications.length > 0 && (
-                                    <span className="flex items-center text-sm font-medium text-muted-foreground">
-                                        <AlertTriangle className="mr-2 h-4 w-4 text-amber-500" />
-                                        {allNotifications.length} Pendência(s)
-                                    </span>
-                                )}
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex-grow">
-                             {allNotifications.length > 0 ? (
-                                <ScrollArea className="h-48">
-                                    <div className="space-y-3">
-                                    {allNotifications.map(notification => (
-                                        <div key={notification.id} className="flex items-center gap-4 rounded-lg border p-3">
-                                            <AlertTriangle className="h-6 w-6 text-destructive" />
-                                            <div className="flex-1">
-                                                <p className="font-semibold">{notification.title}</p>
-                                                <p className="text-sm text-muted-foreground">{notification.description}</p>
-                                                <p className="text-sm font-mono text-destructive">{notification.amount?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                                            </div>
-                                            <Button variant="ghost" size="icon" asChild>
-                                                <Link href={notification.link}>
-                                                    <ArrowRightCircle className="h-5 w-5 text-muted-foreground" />
-                                                </Link>
-                                            </Button>
-                                        </div>
-                                    ))}
-                                    </div>
-                                </ScrollArea>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-                                    <CheckCircle className="h-10 w-10 text-emerald-500 mb-2" />
-                                    <p className="font-medium text-foreground">Tudo em ordem!</p>
-                                    <p>Nenhuma notificação ou pendência no momento.</p>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
-        </div>
-         <aside className="col-span-12 xl:col-span-3">
-            <Agenda />
-        </aside>
+    <div className="flex flex-col gap-6">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {allKpis.map((kpi) => (
+          <KpiCard key={kpi.id} {...kpi} />
+          ))}
+      </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-1">
+              <Card>
+                  <CardHeader>
+                      <CardTitle>Visão Geral</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                          <DonutChart
+                          data={[
+                              { name: 'Receitas', value: kpiData.faturamento, color: 'hsl(var(--chart-2))' },
+                              { name: 'Despesas', value: kpiData.despesas, color: 'hsl(var(--chart-1))' },
+                          ]}
+                          valueFormatter={(v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          className="h-48"
+                      />
+                  </CardContent>
+              </Card>
+          </div>
+          <div className="lg:col-span-2">
+              <ResultsChart data={chartData} />
+          </div>
+      </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-1">
+          <div className="lg:col-span-1">
+              <Card className='flex flex-col h-full'>
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                          <span>Notificações</span>
+                          {allNotifications.length > 0 && (
+                              <span className="flex items-center text-sm font-medium text-muted-foreground">
+                                  <AlertTriangle className="mr-2 h-4 w-4 text-amber-500" />
+                                  {allNotifications.length} Pendência(s)
+                              </span>
+                          )}
+                      </CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex-grow">
+                        {allNotifications.length > 0 ? (
+                          <ScrollArea className="h-48">
+                              <div className="space-y-3">
+                              {allNotifications.map(notification => (
+                                  <div key={notification.id} className="flex items-center gap-4 rounded-lg border p-3">
+                                      <AlertTriangle className="h-6 w-6 text-destructive" />
+                                      <div className="flex-1">
+                                          <p className="font-semibold">{notification.title}</p>
+                                          <p className="text-sm text-muted-foreground">{notification.description}</p>
+                                          <p className="text-sm font-mono text-destructive">{notification.amount?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                                      </div>
+                                      <Button variant="ghost" size="icon" asChild>
+                                          <Link href={notification.link}>
+                                              <ArrowRightCircle className="h-5 w-5 text-muted-foreground" />
+                                          </Link>
+                                      </Button>
+                                  </div>
+                              ))}
+                              </div>
+                          </ScrollArea>
+                      ) : (
+                          <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                              <CheckCircle className="h-10 w-10 text-emerald-500 mb-2" />
+                              <p className="font-medium text-foreground">Tudo em ordem!</p>
+                              <p>Nenhuma notificação ou pendência no momento.</p>
+                          </div>
+                      )}
+                  </CardContent>
+              </Card>
+          </div>
+      </div>
     </div>
   );
 }
