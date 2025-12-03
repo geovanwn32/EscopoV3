@@ -74,7 +74,7 @@ export default function SelecionarEmpresaPage() {
   return (
     <>
     <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <div className="flex min-h-screen w-full items-center justify-center p-4 lg:p-8 login-gradient">
+        <div className="flex min-h-screen w-full items-center justify-center p-4 lg:p-8 animated-gradient">
             <div className="relative w-full max-w-5xl">
                 {currentCompany && (
                   <Button asChild variant="ghost" className="absolute -top-14 left-0 z-10 text-card-foreground">
@@ -327,5 +327,3 @@ function CompanyForm({ onSave, onCancel }: CompanyFormProps) {
     </DialogContent>
   );
 }
-
-    
