@@ -263,31 +263,57 @@
         },
         "empresaId": {
           "type": "string",
-          "description": "Referência para a empresa a qual o parceiro pertence. (Relacionamento: Empresa 1:N Parceiro)"
+          "description": "Referência para a empresa a qual o parceiro pertence."
         },
-        "tipo": {
+        "personType": {
           "type": "string",
-          "description": "Tipo do parceiro (Cliente, Fornecedor, Transportadora, etc.)."
+          "description": "Tipo de pessoa (FISICA ou JURIDICA).",
+          "enum": ["FISICA", "JURIDICA"]
         },
-        "nome": {
+        "name": {
           "type": "string",
-          "description": "Nome do parceiro."
+          "description": "Nome ou Razão Social do parceiro."
         },
-        "documento": {
+        "document": {
           "type": "string",
           "description": "CNPJ ou CPF do parceiro."
         },
-        "endereco": {
+        "type": {
           "type": "string",
-          "description": "Endereço do parceiro."
+          "description": "Tipo do parceiro (Cliente, Fornecedor, Transportadora, etc.).",
+          "enum": ["Cliente", "Fornecedor", "Transportadora"]
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "address": {
+          "type": "object",
+          "properties": {
+            "street": { "type": "string" },
+            "number": { "type": "string" },
+            "complement": { "type": "string" },
+            "neighborhood": { "type": "string" },
+            "city": { "type": "string" },
+            "state": { "type": "string" },
+            "zipCode": { "type": "string" }
+          }
+        },
+        "taxRegime": {
+          "type": "string",
+          "description": "Regime tributário do parceiro."
         }
       },
       "required": [
         "id",
         "empresaId",
-        "tipo",
-        "nome",
-        "documento"
+        "personType",
+        "name",
+        "document",
+        "type"
       ]
     },
     "Funcionario": {
@@ -892,5 +918,3 @@
     "reasoning": "The Firestore data structure is designed to support the ERP Contábil \"EscopoV3\" application, focusing on security, scalability, and debuggability. The design adheres to the principles of Authorization Independence, Clarity of Intent, DBAC (Database-Based Access Control), QAPs (Queries Are Not Filters), and Invariants. Authorization Independence is achieved through denormalization, specifically by including the `empresaId` in every document, enabling rules to validate access without relying on parent document data. Structural Segregation is used to maintain a homogeneous security posture within each collection. Access Modeling employs path-based ownership and membership maps for collaborative data. Data Clarity is enhanced through explicit state modeling using a dedicated `status` field and predictable schema. \n\n**Details on how Authorization Independence and QAPs are achieved:**\n\n*   **Authorization Independence:** Every document that belongs to an `Empresa` includes the `empresaId` field. Security rules can use this to verify that the current user has access to the `Empresa` document (through the `Usuarios` collection) without needing to perform a `get()` operation on the `Empresa` document itself. For example, rules for `/empresas/{empresaId}/lancamentos_fiscais/{lancamentoFiscalId}` will check if `request.auth.uid` exists in `/empresas/{empresaId}/usuarios/{uid}` or if the `empresaId` on the `lancamentos_fiscais` document matches an `Empresa` document the user has access to. This ensures that all security checks are atomic and independent of parent documents.\n*   **QAPs (Rules are not Filters):** The structure facilitates secure `list` operations because authorization rules can be applied directly at the collection level. Because all documents in collections like `/empresas/{empresaId}/lancamentos_fiscais` have the `empresaId` field, security rules can restrict access to only those documents where the `empresaId` matches an `Empresa` document the user has access to. This prevents the need to filter data on the client-side, ensuring that users only receive data they are authorized to access.\n\n*   **Audit Logs**: `/auditoria` are implemented at the root to allow for cross-company monitoring of actions. To constrain this data to only be read by admins, a separate `/roles_admin/{uid}` collection is leveraged to allow rule constraints."
   }
 }
-
-    

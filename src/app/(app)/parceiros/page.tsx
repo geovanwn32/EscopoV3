@@ -10,13 +10,15 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Partner } from '@/types/partner';
+import { Partner, PartnerType, PersonType } from '@/types/partner';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useCompany } from '@/hooks/use-company';
 import { AuditLog, logAudit } from '@/lib/audit-log';
+import { Separator } from '@/components/ui/separator';
 
 export default function ParceirosPage() {
     const { toast } = useToast();
@@ -33,7 +35,7 @@ export default function ParceirosPage() {
     const handleSavePartner = (partnerData: Omit<Partner, 'id'>) => {
         if (editingPartner) {
             // Update existing partner
-            setPartners(prev => prev.map(p => p.id === editingPartner.id ? { ...p, ...partnerData } : p));
+            setPartners(prev => prev.map(p => p.id === editingPartner.id ? { ...editingPartner, ...partnerData } : p));
             toast({
                 title: "Parceiro Atualizado!",
                 description: `O parceiro ${partnerData.name} foi atualizado com sucesso.`
@@ -135,9 +137,9 @@ export default function ParceirosPage() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Nome / Razão Social</TableHead>
-                                    <TableHead>CNPJ / CPF</TableHead>
+                                    <TableHead>Documento</TableHead>
                                     <TableHead>Tipo</TableHead>
-                                    <TableHead>Endereço</TableHead>
+                                    <TableHead>Contato</TableHead>
                                     <TableHead className="w-[64px]"></TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -150,7 +152,10 @@ export default function ParceirosPage() {
                                             <TableCell>
                                                 <Badge variant="secondary">{partner.type}</Badge>
                                             </TableCell>
-                                            <TableCell>{partner.address}</TableCell>
+                                            <TableCell className='text-muted-foreground text-xs'>
+                                                <div>{partner.email}</div>
+                                                <div>{partner.phone}</div>
+                                            </TableCell>
                                             <TableCell>
                                                  <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
@@ -215,37 +220,60 @@ interface PartnerFormProps {
 
 function PartnerForm({ onSave, onOpenChange, partner, isReadOnly }: PartnerFormProps) {
     const { toast } = useToast();
-    const [name, setName] = useState('');
+    const [personType, setPersonType] = useState<PersonType>('JURIDICA');
     const [document, setDocument] = useState('');
-    const [type, setType] = useState<'Cliente' | 'Fornecedor' | 'Transportadora' | undefined>(undefined);
-    const [address, setAddress] = useState('');
-    const [isQueryingCnpj, setIsQueryingCnpj] = useState(false);
+    const [name, setName] = useState('');
+    const [type, setType] = useState<PartnerType | undefined>(undefined);
+    const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
+    const [address, setAddress] = useState({
+        zipCode: '',
+        street: '',
+        number: '',
+        complement: '',
+        neighborhood: '',
+        city: '',
+        state: '',
+    });
+    const [taxRegime, setTaxRegime] = useState('');
+    const [isQueryingDoc, setIsQueryingDoc] = useState(false);
 
 
      useEffect(() => {
         if (partner) {
+            setPersonType(partner.personType);
             setName(partner.name);
             setDocument(partner.document);
             setType(partner.type);
-            setAddress(partner.address || '');
+            setEmail(partner.email || '');
+            setPhone(partner.phone || '');
+            setAddress(partner.address || { zipCode: '', street: '', number: '', complement: '', neighborhood: '', city: '', state: '' });
+            setTaxRegime(partner.taxRegime || '');
         } else {
+            // Reset form
+            setPersonType('JURIDICA');
             setName('');
             setDocument('');
             setType(undefined);
-            setAddress('');
+            setEmail('');
+            setPhone('');
+            setAddress({ zipCode: '', street: '', number: '', complement: '', neighborhood: '', city: '', state: '' });
+            setTaxRegime('');
         }
     }, [partner]);
 
-    const handleCnpjQuery = async () => {
-        const cnpj = document.replace(/\D/g, '');
-        if (!cnpj || cnpj.length !== 14) {
+    const handleDocQuery = async () => {
+        const docValue = document.replace(/\D/g, '');
+        if (personType === 'JURIDICA' && docValue.length !== 14) {
             toast({ variant: 'destructive', title: 'CNPJ inválido', description: 'Por favor, insira um CNPJ válido para consulta.' });
             return;
         }
+        // Could add CPF validation/query here in the future
+        if (personType === 'FISICA') return;
 
-        setIsQueryingCnpj(true);
+        setIsQueryingDoc(true);
         try {
-            const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+            const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${docValue}`);
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ message: 'CNPJ não encontrado ou API indisponível.' }));
                 throw new Error(errorData.message || `Erro: ${response.statusText}`);
@@ -253,7 +281,21 @@ function PartnerForm({ onSave, onOpenChange, partner, isReadOnly }: PartnerFormP
             const data = await response.json();
             
             setName(data.razao_social || '');
-            setAddress(`${data.logradouro || ''}, ${data.numero || ''} - ${data.bairro || ''}, ${data.municipio || ''} - ${data.uf || ''}`);
+            setAddress({
+                zipCode: data.cep || '',
+                street: data.logradouro || '',
+                number: data.numero || '',
+                complement: data.complemento || '',
+                neighborhood: data.bairro || '',
+                city: data.municipio || '',
+                state: data.uf || '',
+            });
+            setEmail(data.email || '');
+            setPhone(data.ddd_telefone_1 || '');
+
+            let regime = 'Outros';
+            if (data.opcao_pelo_simples) regime = 'Simples Nacional';
+            setTaxRegime(regime);
 
             toast({ title: 'CNPJ Consultado!', description: 'Os dados do parceiro foram preenchidos.' });
 
@@ -264,7 +306,7 @@ function PartnerForm({ onSave, onOpenChange, partner, isReadOnly }: PartnerFormP
                 description: error.message || 'Não foi possível buscar os dados do CNPJ.'
             });
         } finally {
-            setIsQueryingCnpj(false);
+            setIsQueryingDoc(false);
         }
     }
 
@@ -280,20 +322,40 @@ function PartnerForm({ onSave, onOpenChange, partner, isReadOnly }: PartnerFormP
             toast({
                 variant: 'destructive',
                 title: 'Campos Obrigatórios',
-                description: 'Por favor, preencha todos os campos para salvar o parceiro.'
+                description: 'Por favor, preencha Nome, Documento e Tipo para salvar.'
             });
             return;
         }
         
-        onSave({ name, document, type, address });
+        onSave({ personType, name, document, type, address, email, phone, taxRegime });
     };
+
+    const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { value } = e.target;
+        const onlyNumbers = value.replace(/\D/g, '');
+
+        if (personType === 'JURIDICA') {
+            let formatted = onlyNumbers;
+            if (formatted.length > 2) formatted = `${formatted.slice(0, 2)}.${formatted.slice(2)}`;
+            if (formatted.length > 6) formatted = `${formatted.slice(0, 6)}.${formatted.slice(6)}`;
+            if (formatted.length > 10) formatted = `${formatted.slice(0, 10)}/${formatted.slice(10)}`;
+            if (formatted.length > 15) formatted = `${formatted.slice(0, 15)}-${formatted.slice(15)}`;
+            setDocument(formatted.slice(0, 18));
+        } else { // FISICA
+             let formatted = onlyNumbers;
+            if (formatted.length > 3) formatted = `${formatted.slice(0, 3)}.${formatted.slice(3)}`;
+            if (formatted.length > 7) formatted = `${formatted.slice(0, 7)}.${formatted.slice(7)}`;
+            if (formatted.length > 11) formatted = `${formatted.slice(0, 11)}-${formatted.slice(11)}`;
+            setDocument(formatted.slice(0, 14));
+        }
+    }
     
     const dialogTitle = isReadOnly ? "Visualizar Parceiro" : partner ? "Editar Parceiro" : "Novo Parceiro";
     const dialogDescription = isReadOnly ? "Visualize os dados do parceiro." : "Preencha os dados para adicionar ou editar um parceiro.";
 
 
     return (
-        <DialogContent>
+        <DialogContent className="sm:max-w-3xl">
             <DialogHeader>
                 <DialogTitle>{dialogTitle}</DialogTitle>
                 <DialogDescription>
@@ -302,39 +364,113 @@ function PartnerForm({ onSave, onOpenChange, partner, isReadOnly }: PartnerFormP
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                    <Label htmlFor="document">CNPJ / CPF</Label>
-                    <div className="flex items-center gap-2">
-                        <Input id="document" value={document} onChange={(e) => setDocument(e.target.value)} required readOnly={isReadOnly} />
-                         {!isReadOnly && (
-                            <Button variant="outline" type="button" onClick={handleCnpjQuery} disabled={isQueryingCnpj}>
-                                {isQueryingCnpj ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                                <span className="sr-only">Consultar CNPJ</span>
-                            </Button>
-                        )}
+                    <Label>Tipo de Pessoa</Label>
+                    <RadioGroup defaultValue="JURIDICA" value={personType} onValueChange={(v: PersonType) => { setPersonType(v); setDocument(''); }} disabled={isReadOnly}>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="JURIDICA" id="r_juridica" />
+                            <Label htmlFor="r_juridica">Pessoa Jurídica (CNPJ)</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="FISICA" id="r_fisica" />
+                            <Label htmlFor="r_fisica">Pessoa Física (CPF)</Label>
+                        </div>
+                    </RadioGroup>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="document">{personType === 'JURIDICA' ? 'CNPJ' : 'CPF'}</Label>
+                        <div className="flex items-center gap-2">
+                            <Input id="document" value={document} onChange={handleDocumentChange} required readOnly={isReadOnly} />
+                             {personType === 'JURIDICA' && !isReadOnly && (
+                                <Button variant="outline" type="button" onClick={handleDocQuery} disabled={isQueryingDoc}>
+                                    {isQueryingDoc ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                                    <span className="sr-only">Consultar CNPJ</span>
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="name">{personType === 'JURIDICA' ? 'Razão Social' : 'Nome Completo'}</Label>
+                        <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required readOnly={isReadOnly} />
                     </div>
                 </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="name">Nome / Razão Social</Label>
-                    <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required readOnly={isReadOnly} />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <div className="space-y-2">
+                        <Label htmlFor="type">Tipo de Parceiro</Label>
+                        <Select value={type} onValueChange={(value) => setType(value as any)} required disabled={isReadOnly}>
+                            <SelectTrigger id="type">
+                                <SelectValue placeholder="Selecione o tipo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Cliente">Cliente</SelectItem>
+                                <SelectItem value="Fornecedor">Fornecedor</SelectItem>
+                                <SelectItem value="Transportadora">Transportadora</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="taxRegime">Regime Tributário</Label>
+                        <Input id="taxRegime" value={taxRegime} onChange={e => setTaxRegime(e.target.value)} readOnly={isReadOnly} />
+                    </div>
                 </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="address">Endereço</Label>
-                    <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} readOnly={isReadOnly} />
+
+                <Separator />
+                <h3 className='text-md font-medium'>Contato</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} readOnly={isReadOnly} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="phone">Telefone</Label>
+                        <Input id="phone" value={phone} onChange={e => setPhone(e.target.value)} readOnly={isReadOnly} />
+                    </div>
                 </div>
-                <div className="space-y-2">
-                    <Label htmlFor="type">Tipo</Label>
-                    <Select value={type} onValueChange={(value) => setType(value as any)} required disabled={isReadOnly}>
-                        <SelectTrigger id="type">
-                            <SelectValue placeholder="Selecione o tipo" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="Cliente">Cliente</SelectItem>
-                            <SelectItem value="Fornecedor">Fornecedor</SelectItem>
-                            <SelectItem value="Transportadora">Transportadora</SelectItem>
-                        </SelectContent>
-                    </Select>
+
+                <Separator />
+                <h3 className='text-md font-medium'>Endereço</h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="zipCode">CEP</Label>
+                        <Input id="zipCode" value={address.zipCode} onChange={e => setAddress(p => ({...p, zipCode: e.target.value}))} readOnly={isReadOnly} />
+                    </div>
+                     <div className="space-y-2 col-span-2">
+                        <Label htmlFor="street">Logradouro</Label>
+                        <Input id="street" value={address.street} onChange={e => setAddress(p => ({...p, street: e.target.value}))} readOnly={isReadOnly} />
+                    </div>
                 </div>
-                <DialogFooter>
+
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="number">Número</Label>
+                        <Input id="number" value={address.number} onChange={e => setAddress(p => ({...p, number: e.target.value}))} readOnly={isReadOnly} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="complement">Complemento</Label>
+                        <Input id="complement" value={address.complement} onChange={e => setAddress(p => ({...p, complement: e.target.value}))} readOnly={isReadOnly} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="neighborhood">Bairro</Label>
+                        <Input id="neighborhood" value={address.neighborhood} onChange={e => setAddress(p => ({...p, neighborhood: e.target.value}))} readOnly={isReadOnly} />
+                    </div>
+                </div>
+
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2 col-span-2">
+                        <Label htmlFor="city">Cidade</Label>
+                        <Input id="city" value={address.city} onChange={e => setAddress(p => ({...p, city: e.target.value}))} readOnly={isReadOnly} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="state">Estado</Label>
+                        <Input id="state" value={address.state} onChange={e => setAddress(p => ({...p, state: e.target.value}))} readOnly={isReadOnly} />
+                    </div>
+                </div>
+
+
+                <DialogFooter className='pt-4'>
                     <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                         {isReadOnly ? 'Fechar' : 'Cancelar'}
                     </Button>
@@ -345,4 +481,3 @@ function PartnerForm({ onSave, onOpenChange, partner, isReadOnly }: PartnerFormP
     );
 }
 
-    
