@@ -459,7 +459,7 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfile 
                         />
                     </div>
                 )}
-                 {activeProfile.isMaster && !isEditingSelf && (
+                 {activeProfile.isMaster && (
                      <div className="space-y-2 flex items-center justify-between rounded-lg border p-3">
                         <div className='space-y-0.5'>
                             <Label htmlFor="isAdmin" className='flex items-center'><ShieldCheck className='mr-2 h-4 w-4 text-primary' />Perfil de Administrador</Label>
@@ -471,7 +471,7 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfile 
                             id="isAdmin"
                             checked={isAdmin}
                             onCheckedChange={setIsAdmin}
-                            disabled={item?.isAdmin || isMaster}
+                            disabled={item?.isMaster || (item?.isAdmin && !otherAdminExists) || (!item && otherAdminExists)}
                         />
                     </div>
                  )}
@@ -608,5 +608,7 @@ function MyProfileCard({ profile, onSave }: MyProfileCardProps) {
     
 
 
+
+    
 
     
