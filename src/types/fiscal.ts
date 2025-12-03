@@ -1,5 +1,6 @@
 
 
+
 export interface ProductItem {
     id: number;
     name: string;
@@ -24,7 +25,7 @@ export interface NotaFiscal {
 
 export interface Product {
     id: number;
-    tipo: 'Produto' | 'Serviço';
+    tipo: 'Produto';
     codigo: string;
     descricao: string;
     valor: number;
@@ -42,6 +43,24 @@ export interface Product {
         cst: string;
         aliquota: number;
     };
+    pis: {
+        cst: string;
+        aliquota: number;
+    };
+    cofins: {
+        cst: string;
+        aliquota: number;
+    };
+}
+
+export interface Service {
+    id: number;
+    tipo: 'Serviço';
+    codigo: string;
+    descricao: string;
+    valor: number;
+    cfop: string;
+    codigoServicoLC116: string;
     pis: {
         cst: string;
         aliquota: number;
