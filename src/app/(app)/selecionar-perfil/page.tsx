@@ -126,7 +126,7 @@ export default function SelecionarPerfilPage() {
     
     const handleLogout = async () => {
         await auth.signOut();
-        sessionStorage.removeItem('user-profile');
+        sessionStorage.clear();
         router.push('/login');
     };
     
@@ -136,11 +136,9 @@ export default function SelecionarPerfilPage() {
     return (
         <div className="flex min-h-screen w-full items-center justify-center p-4 lg:p-8 animated-gradient">
             <div className="relative w-full max-w-4xl">
-                 <Button asChild variant="ghost" className="absolute -top-14 left-0 z-10 text-card-foreground">
-                    <Link href="/login">
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Trocar Login
-                    </Link>
+                 <Button variant="ghost" onClick={handleLogout} className="absolute -top-14 left-0 z-10 text-card-foreground">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    LOGOFF
                 </Button>
                 <div className="text-center mb-8 text-card-foreground">
                     <h1 className="text-3xl font-bold tracking-tight font-headline">Selecionar Perfil</h1>

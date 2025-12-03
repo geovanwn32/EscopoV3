@@ -53,7 +53,7 @@ export default function SelecionarEmpresaPage() {
   const handleLogout = async () => {
     await auth.signOut();
     localStorage.removeItem('currentCompany');
-    sessionStorage.removeItem('user-profile');
+    sessionStorage.clear();
     router.push('/login');
   };
 
@@ -361,3 +361,4 @@ function CompanyForm({ onSave, onCancel }: CompanyFormProps) {
     </DialogContent>
   );
 }
+
