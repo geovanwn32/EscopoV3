@@ -16,10 +16,17 @@ import { Product } from '@/types/fiscal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 
+interface UnidadeDeMedida {
+    id: number;
+    sigla: string;
+    descricao: string;
+}
+
 export default function ProdutosPage() {
     const { toast } = useToast();
     const { useScopedData } = useCompany();
     const [products, setProducts] = useScopedData<Product[]>('cadastros-produtos', []);
+    const [unidadesDeMedida] = useScopedData<UnidadeDeMedida[]>('cadastros-unidade-de-medida', []);
     
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<Product | null>(null);
@@ -98,6 +105,7 @@ export default function ProdutosPage() {
                                     onSave={handleSave} 
                                     onOpenChange={setIsDialogOpen}
                                     item={editingItem}
+                                    unidadesDeMedida={unidadesDeMedida}
                                 />
                             </Dialog>
                         </div>
@@ -171,6 +179,7 @@ interface ItemFormProps {
     onSave: (item: Omit<Product, 'id' | 'codigo'>) => void;
     onOpenChange: (open: boolean) => void;
     item: Product | null;
+    unidadesDeMedida: UnidadeDeMedida[];
 }
 
 const initialFormState: Omit<Product, 'id' | 'tipo' | 'codigo'> = {
@@ -187,7 +196,7 @@ const initialFormState: Omit<Product, 'id' | 'tipo' | 'codigo'> = {
     cofins: { cst: '', aliquota: 0 },
 };
 
-function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
+function ItemForm({ onSave, onOpenChange, item, unidadesDeMedida }: ItemFormProps) {
     const { toast } = useToast();
     const [formData, setFormData] = useState<Omit<Product, 'id' | 'tipo' | 'codigo'>>(initialFormState);
     
@@ -267,7 +276,16 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
                                 </div>
                                  <div className="space-y-2">
                                     <Label htmlFor="unidadeMedida">Unidade de Medida</Label>
-                                    <Input id="unidadeMedida" value={formData.unidadeMedida} onChange={(e) => handleInputChange('unidadeMedida', e.target.value)} required />
+                                    <Select value={formData.unidadeMedida} onValueChange={(v) => handleInputChange('unidadeMedida', v)} required>
+                                        <SelectTrigger id="unidadeMedida">
+                                            <SelectValue placeholder="Selecione..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {unidadesDeMedida.map(un => (
+                                                <SelectItem key={un.id} value={un.sigla}>{un.sigla} - {un.descricao}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             </div>
                         </CardContent>
