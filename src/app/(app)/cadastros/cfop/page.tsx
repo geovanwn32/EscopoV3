@@ -1,6 +1,6 @@
 'use client';
-import { useState, useMemo } from 'react';
-import { MoreHorizontal, Plus, Search, Trash2, Pencil } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -11,11 +11,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useCompany } from '@/hooks/use-company';
+import Link from 'next/link';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 
 interface Cfop {
     id: number;
     code: string;
     description: string;
+    application: string;
+    type: 'Entrada' | 'Saída';
 }
 
 export default function CfopPage() {
@@ -65,9 +70,17 @@ export default function CfopPage() {
 
     return (
         <div className="space-y-6">
-            <div className="space-y-1">
-                <h1 className="text-3xl font-bold tracking-tight font-headline">Cadastro de CFOP</h1>
-                <p className="text-muted-foreground">Gerencie os Códigos Fiscais de Operações e Prestações.</p>
+            <div className="flex items-center gap-4">
+                 <Link href="/cadastros">
+                    <Button variant="outline" size="icon" className="h-8 w-8">
+                        <ArrowLeft className="h-4 w-4" />
+                        <span className="sr-only">Voltar</span>
+                    </Button>
+                </Link>
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-bold tracking-tight font-headline">Cadastro de CFOP</h1>
+                    <p className="text-muted-foreground">Gerencie os Códigos Fiscais de Operações e Prestações.</p>
+                </div>
             </div>
 
             <Card>
@@ -100,8 +113,10 @@ export default function CfopPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="w-[150px]">Código</TableHead>
+                                    <TableHead className="w-[120px]">Código</TableHead>
                                     <TableHead>Descrição</TableHead>
+                                    <TableHead>Aplicação</TableHead>
+                                    <TableHead className="w-[100px]">Tipo</TableHead>
                                     <TableHead className="w-[64px]"></TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -110,6 +125,8 @@ export default function CfopPage() {
                                     <TableRow key={item.id}>
                                         <TableCell className="font-medium font-mono">{item.code}</TableCell>
                                         <TableCell>{item.description}</TableCell>
+                                        <TableCell className='text-muted-foreground text-xs'>{item.application}</TableCell>
+                                        <TableCell>{item.type}</TableCell>
                                         <TableCell>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
@@ -128,7 +145,7 @@ export default function CfopPage() {
                                     </TableRow>
                                 )) : (
                                     <TableRow>
-                                        <TableCell colSpan={3} className="h-24 text-center">Nenhum CFOP encontrado.</TableCell>
+                                        <TableCell colSpan={5} className="h-24 text-center">Nenhum CFOP encontrado.</TableCell>
                                     </TableRow>
                                 )}
                             </TableBody>
@@ -161,46 +178,70 @@ interface ItemFormProps {
 
 function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
     const { toast } = useToast();
-    const [code, setCode] = useState(item?.code || '');
-    const [description, setDescription] = useState(item?.description || '');
+    const [code, setCode] = useState('');
+    const [description, setDescription] = useState('');
+    const [application, setApplication] = useState('');
+    const [type, setType] = useState<'Entrada' | 'Saída' | undefined>(undefined);
 
-    useState(() => {
+    useEffect(() => {
         if (item) {
             setCode(item.code);
             setDescription(item.description);
+            setApplication(item.application);
+            setType(item.type);
         } else {
             setCode('');
             setDescription('');
+            setApplication('');
+            setType(undefined);
         }
-    });
+    }, [item]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!code || !description) {
+        if (!code || !description || !type || !application) {
             toast({
                 variant: 'destructive',
                 title: 'Campos Obrigatórios',
-                description: 'Por favor, preencha código e descrição.'
+                description: 'Por favor, preencha todos os campos.'
             });
             return;
         }
-        onSave({ code, description });
+        onSave({ code, description, application, type });
     };
     
     return (
-        <DialogContent>
+        <DialogContent className='sm:max-w-xl'>
             <DialogHeader>
                 <DialogTitle>{item ? 'Editar' : 'Novo'} CFOP</DialogTitle>
-                <DialogDescription>Preencha os dados do código fiscal.</DialogDescription>
+                <DialogDescription>Preencha os dados detalhados do código fiscal.</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                    <Label htmlFor="code">Código</Label>
-                    <Input id="code" value={code} onChange={(e) => setCode(e.target.value)} required />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="code">Código *</Label>
+                        <Input id="code" value={code} onChange={(e) => setCode(e.target.value)} required />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="type">Tipo *</Label>
+                        <Select value={type} onValueChange={(v) => setType(v as any)} required>
+                            <SelectTrigger id="type">
+                                <SelectValue placeholder="Selecione o tipo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Entrada">Entrada</SelectItem>
+                                <SelectItem value="Saída">Saída</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="description">Descrição</Label>
+                    <Label htmlFor="description">Descrição *</Label>
                     <Input id="description" value={description} onChange={(e) => setDescription(e.target.value)} required />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="application">Aplicação *</Label>
+                    <Textarea id="application" value={application} onChange={(e) => setApplication(e.target.value)} required placeholder="Ex: Venda de mercadoria adquirida ou recebida de terceiros." />
                 </div>
                 <DialogFooter>
                     <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
