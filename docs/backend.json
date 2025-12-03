@@ -268,7 +268,10 @@
         "personType": {
           "type": "string",
           "description": "Tipo de pessoa (FISICA ou JURIDICA).",
-          "enum": ["FISICA", "JURIDICA"]
+          "enum": [
+            "FISICA",
+            "JURIDICA"
+          ]
         },
         "name": {
           "type": "string",
@@ -281,7 +284,11 @@
         "type": {
           "type": "string",
           "description": "Tipo do parceiro (Cliente, Fornecedor, Transportadora, etc.).",
-          "enum": ["Cliente", "Fornecedor", "Transportadora"]
+          "enum": [
+            "Cliente",
+            "Fornecedor",
+            "Transportadora"
+          ]
         },
         "email": {
           "type": "string",
@@ -293,13 +300,27 @@
         "address": {
           "type": "object",
           "properties": {
-            "street": { "type": "string" },
-            "number": { "type": "string" },
-            "complement": { "type": "string" },
-            "neighborhood": { "type": "string" },
-            "city": { "type": "string" },
-            "state": { "type": "string" },
-            "zipCode": { "type": "string" }
+            "street": {
+              "type": "string"
+            },
+            "number": {
+              "type": "string"
+            },
+            "complement": {
+              "type": "string"
+            },
+            "neighborhood": {
+              "type": "string"
+            },
+            "city": {
+              "type": "string"
+            },
+            "state": {
+              "type": "string"
+            },
+            "zipCode": {
+              "type": "string"
+            }
           }
         },
         "taxRegime": {
@@ -354,6 +375,128 @@
         "salario": {
           "type": "number",
           "description": "Salário do funcionário."
+        },
+        "dataNascimento": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Data de nascimento."
+        },
+        "genero": {
+          "type": "string",
+          "enum": [
+            "Masculino",
+            "Feminino",
+            "Outro"
+          ]
+        },
+        "estadoCivil": {
+          "type": "string",
+          "enum": [
+            "Solteiro(a)",
+            "Casado(a)",
+            "Divorciado(a)",
+            "Viúvo(a)",
+            "União Estável"
+          ]
+        },
+        "nacionalidade": {
+          "type": "string"
+        },
+        "rg": {
+          "type": "string",
+          "description": "Número do RG."
+        },
+        "pis": {
+          "type": "string",
+          "description": "Número do PIS/PASEP."
+        },
+        "endereco": {
+          "type": "object",
+          "properties": {
+            "cep": {
+              "type": "string"
+            },
+            "logradouro": {
+              "type": "string"
+            },
+            "numero": {
+              "type": "string"
+            },
+            "complemento": {
+              "type": "string"
+            },
+            "bairro": {
+              "type": "string"
+            },
+            "cidade": {
+              "type": "string"
+            },
+            "uf": {
+              "type": "string"
+            }
+          }
+        },
+        "contato": {
+          "type": "object",
+          "properties": {
+            "telefone": {
+              "type": "string"
+            },
+            "email": {
+              "type": "string",
+              "format": "email"
+            }
+          }
+        },
+        "contrato": {
+          "type": "object",
+          "properties": {
+            "horarioTrabalho": {
+              "type": "string"
+            },
+            "tipoContrato": {
+              "type": "string",
+              "enum": [
+                "CLT",
+                "Estágio",
+                "PJ",
+                "Temporário"
+              ]
+            }
+          }
+        },
+        "dadosBancarios": {
+          "type": "object",
+          "properties": {
+            "banco": {
+              "type": "string"
+            },
+            "agencia": {
+              "type": "string"
+            },
+            "conta": {
+              "type": "string"
+            }
+          }
+        },
+        "dependentes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "number" },
+              "nome": {
+                "type": "string"
+              },
+              "cpf": {
+                "type": "string"
+              },
+              "dataNascimento": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
         }
       },
       "required": [
@@ -383,7 +526,10 @@
         "tipo": {
           "type": "string",
           "description": "Tipo (Produto ou Serviço).",
-          "enum": ["Produto", "Serviço"]
+          "enum": [
+            "Produto",
+            "Serviço"
+          ]
         },
         "codigo": {
           "type": "string",
@@ -421,33 +567,60 @@
           "type": "object",
           "description": "Informações do ICMS.",
           "properties": {
-            "cst": { "type": "string", "description": "Código de Situação Tributária." },
-            "aliquota": { "type": "number", "description": "Alíquota do ICMS." },
-            "baseCalculo": { "type": "number", "description": "Percentual de redução da base de cálculo." }
+            "cst": {
+              "type": "string",
+              "description": "Código de Situação Tributária."
+            },
+            "aliquota": {
+              "type": "number",
+              "description": "Alíquota do ICMS."
+            },
+            "baseCalculo": {
+              "type": "number",
+              "description": "Percentual de redução da base de cálculo."
+            }
           }
         },
         "ipi": {
           "type": "object",
           "description": "Informações do IPI.",
           "properties": {
-            "cst": { "type": "string", "description": "Código de Situação Tributária." },
-            "aliquota": { "type": "number", "description": "Alíquota do IPI." }
+            "cst": {
+              "type": "string",
+              "description": "Código de Situação Tributária."
+            },
+            "aliquota": {
+              "type": "number",
+              "description": "Alíquota do IPI."
+            }
           }
         },
         "pis": {
           "type": "object",
           "description": "Informações do PIS.",
           "properties": {
-            "cst": { "type": "string", "description": "Código de Situação Tributária." },
-            "aliquota": { "type": "number", "description": "Alíquota do PIS." }
+            "cst": {
+              "type": "string",
+              "description": "Código de Situação Tributária."
+            },
+            "aliquota": {
+              "type": "number",
+              "description": "Alíquota do PIS."
+            }
           }
         },
         "cofins": {
           "type": "object",
           "description": "Informações do COFINS.",
           "properties": {
-            "cst": { "type": "string", "description": "Código de Situação Tributária." },
-            "aliquota": { "type": "number", "description": "Alíquota do COFINS." }
+            "cst": {
+              "type": "string",
+              "description": "Código de Situação Tributária."
+            },
+            "aliquota": {
+              "type": "number",
+              "description": "Alíquota do COFINS."
+            }
           }
         }
       },

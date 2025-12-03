@@ -1,6 +1,7 @@
+
 'use client';
 import { useState, useMemo, useEffect } from 'react';
-import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft, CalendarIcon } from 'lucide-react';
+import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft, CalendarIcon, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -12,13 +13,15 @@ import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useCompany } from '@/hooks/use-company';
 import Link from 'next/link';
-import { Funcionario } from '@/types/pessoal';
+import { Funcionario, Dependente } from '@/types/pessoal';
 import { MoneyInput } from '@/components/ui/money-input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 
 export default function FuncionariosPage() {
@@ -176,35 +179,97 @@ interface ItemFormProps {
 
 function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
     const { toast } = useToast();
-    const [nome, setNome] = useState('');
-    const [cpf, setCpf] = useState('');
-    const [dataAdmissao, setDataAdmissao] = useState<Date | undefined>();
-    const [cargo, setCargo] = useState('');
-    const [departamento, setDepartamento] = useState('');
-    const [salario, setSalario] = useState(0);
+    const [formData, setFormData] = useState<Omit<Funcionario, 'id'>>({
+        nome: '',
+        cpf: '',
+        dataAdmissao: '',
+        cargo: '',
+        departamento: '',
+        salario: 0,
+        dataNascimento: '',
+        genero: 'Outro',
+        estadoCivil: 'Solteiro(a)',
+        nacionalidade: 'Brasileira',
+        rg: '',
+        pis: '',
+        endereco: { cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', uf: '' },
+        contato: { telefone: '', email: '' },
+        contrato: { horarioTrabalho: '', tipoContrato: 'CLT' },
+        dadosBancarios: { banco: '', agencia: '', conta: '' },
+        dependentes: [],
+    });
 
     useEffect(() => {
         if (item) {
-            setNome(item.nome);
-            setCpf(item.cpf);
-            setDataAdmissao(new Date(item.dataAdmissao));
-            setCargo(item.cargo);
-            setDepartamento(item.departamento);
-            setSalario(item.salario);
+            setFormData({
+                nome: item.nome || '',
+                cpf: item.cpf || '',
+                dataAdmissao: item.dataAdmissao || '',
+                cargo: item.cargo || '',
+                departamento: item.departamento || '',
+                salario: item.salario || 0,
+                dataNascimento: item.dataNascimento || '',
+                genero: item.genero || 'Outro',
+                estadoCivil: item.estadoCivil || 'Solteiro(a)',
+                nacionalidade: item.nacionalidade || 'Brasileira',
+                rg: item.rg || '',
+                pis: item.pis || '',
+                endereco: item.endereco || { cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', uf: '' },
+                contato: item.contato || { telefone: '', email: '' },
+                contrato: item.contrato || { horarioTrabalho: '', tipoContrato: 'CLT' },
+                dadosBancarios: item.dadosBancarios || { banco: '', agencia: '', conta: '' },
+                dependentes: item.dependentes || [],
+            });
         } else {
-            setNome('');
-            setCpf('');
-            setDataAdmissao(undefined);
-            setCargo('');
-            setDepartamento('');
-            setSalario(0);
+            setFormData({
+                nome: '', cpf: '', dataAdmissao: '', cargo: '', departamento: '', salario: 0, dataNascimento: '',
+                genero: 'Outro', estadoCivil: 'Solteiro(a)', nacionalidade: 'Brasileira', rg: '', pis: '',
+                endereco: { cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', uf: '' },
+                contato: { telefone: '', email: '' }, contrato: { horarioTrabalho: '', tipoContrato: 'CLT' },
+                dadosBancarios: { banco: '', agencia: '', conta: '' }, dependentes: [],
+            });
         }
     }, [item]);
     
 
+    const handleInputChange = (field: keyof Omit<Funcionario, 'id'>, value: any) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleNestedChange = (section: 'endereco' | 'contato' | 'contrato' | 'dadosBancarios', field: string, value: any) => {
+        setFormData(prev => ({
+            ...prev,
+            [section]: {
+                ...prev[section],
+                [field]: value,
+            }
+        }))
+    }
+
+    const addDependente = () => {
+        setFormData(prev => ({
+            ...prev,
+            dependentes: [...(prev.dependentes || []), { id: Date.now(), nome: '', cpf: '', dataNascimento: '' }]
+        }));
+    };
+
+    const removeDependente = (id: number) => {
+        setFormData(prev => ({
+            ...prev,
+            dependentes: prev.dependentes?.filter(d => d.id !== id)
+        }));
+    };
+
+    const handleDependenteChange = (id: number, field: keyof Omit<Dependente, 'id'>, value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            dependentes: prev.dependentes?.map(d => d.id === id ? { ...d, [field]: value } : d)
+        }));
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!nome || !cpf || !dataAdmissao || !cargo || salario <= 0) {
+        if (!formData.nome || !formData.cpf || !formData.dataAdmissao || !formData.cargo || formData.salario <= 0) {
             toast({
                 variant: 'destructive',
                 title: 'Campos Obrigatórios',
@@ -212,66 +277,205 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
             });
             return;
         }
-        onSave({ nome, cpf, dataAdmissao: dataAdmissao.toISOString(), cargo, departamento, salario });
+        onSave(formData);
     };
     
     return (
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="sm:max-w-4xl">
             <DialogHeader>
                 <DialogTitle>{item ? 'Editar' : 'Novo'} Funcionário</DialogTitle>
-                <DialogDescription>Preencha os dados do colaborador.</DialogDescription>
+                <DialogDescription>Preencha os dados do colaborador para realizar a admissão.</DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                    <Label htmlFor="nome">Nome Completo *</Label>
-                    <Input id="nome" value={nome} onChange={(e) => setNome(e.target.value)} required />
-                </div>
+            <form onSubmit={handleSubmit}>
+                 <Tabs defaultValue="pessoal" className="w-full">
+                    <TabsList className="grid w-full grid-cols-5 mb-4">
+                        <TabsTrigger value="pessoal">Dados Pessoais</TabsTrigger>
+                        <TabsTrigger value="contrato">Contrato</TabsTrigger>
+                        <TabsTrigger value="endereco">Endereço/Contato</TabsTrigger>
+                        <TabsTrigger value="bancario">Dados Bancários</TabsTrigger>
+                        <TabsTrigger value="dependentes">Dependentes</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="pessoal" className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="nome">Nome Completo *</Label>
+                            <Input id="nome" value={formData.nome} onChange={(e) => handleInputChange('nome', e.target.value)} required />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="cpf">CPF *</Label>
+                                <Input id="cpf" value={formData.cpf} onChange={(e) => handleInputChange('cpf', e.target.value)} required />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="rg">RG</Label>
+                                <Input id="rg" value={formData.rg} onChange={(e) => handleInputChange('rg', e.target.value)} />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="pis">PIS/PASEP</Label>
+                                <Input id="pis" value={formData.pis} onChange={(e) => handleInputChange('pis', e.target.value)} />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="dataNascimento">Data de Nascimento</Label>
+                                <Input id="dataNascimento" type="date" value={formData.dataNascimento?.split('T')[0]} onChange={(e) => handleInputChange('dataNascimento', e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="genero">Gênero</Label>
+                                <Select value={formData.genero} onValueChange={(v) => handleInputChange('genero', v)}><SelectTrigger id="genero"><SelectValue/></SelectTrigger><SelectContent>
+                                    <SelectItem value="Masculino">Masculino</SelectItem>
+                                    <SelectItem value="Feminino">Feminino</SelectItem>
+                                    <SelectItem value="Outro">Outro</SelectItem>
+                                </SelectContent></Select>
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="estadoCivil">Estado Civil</Label>
+                                 <Select value={formData.estadoCivil} onValueChange={(v) => handleInputChange('estadoCivil', v)}><SelectTrigger id="estadoCivil"><SelectValue/></SelectTrigger><SelectContent>
+                                    <SelectItem value="Solteiro(a)">Solteiro(a)</SelectItem>
+                                    <SelectItem value="Casado(a)">Casado(a)</SelectItem>
+                                    <SelectItem value="Divorciado(a)">Divorciado(a)</SelectItem>
+                                    <SelectItem value="Viúvo(a)">Viúvo(a)</SelectItem>
+                                    <SelectItem value="União Estável">União Estável</SelectItem>
+                                </SelectContent></Select>
+                            </div>
+                        </div>
+                    </TabsContent>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="cpf">CPF *</Label>
-                        <Input id="cpf" value={cpf} onChange={(e) => setCpf(e.target.value)} required />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="dataAdmissao">Data de Admissão *</Label>
-                         <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                variant={"outline"}
-                                className={cn(
-                                    "w-full justify-start text-left font-normal",
-                                    !dataAdmissao && "text-muted-foreground"
-                                )}
-                                >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {dataAdmissao ? format(dataAdmissao, "dd/MM/yyyy") : <span>Escolha uma data</span>}
+                    <TabsContent value="contrato" className="space-y-4">
+                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                             <div className="space-y-2">
+                                <Label htmlFor="dataAdmissao">Data de Admissão *</Label>
+                                <Input id="dataAdmissao" type="date" value={formData.dataAdmissao?.split('T')[0]} onChange={(e) => handleInputChange('dataAdmissao', e.target.value)} required />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="cargo">Cargo *</Label>
+                                <Input id="cargo" value={formData.cargo} onChange={(e) => handleInputChange('cargo', e.target.value)} required />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="departamento">Departamento</Label>
+                                <Input id="departamento" value={formData.departamento} onChange={(e) => handleInputChange('departamento', e.target.value)} />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                             <div className="space-y-2">
+                                <Label htmlFor="salario">Salário (R$) *</Label>
+                                <MoneyInput id="salario" value={formData.salario} onValueChange={(v) => handleInputChange('salario', v)} />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="tipoContrato">Tipo de Contrato</Label>
+                                 <Select value={formData.contrato.tipoContrato} onValueChange={(v) => handleNestedChange('contrato', 'tipoContrato', v)}><SelectTrigger id="tipoContrato"><SelectValue/></SelectTrigger><SelectContent>
+                                    <SelectItem value="CLT">CLT</SelectItem>
+                                    <SelectItem value="Estágio">Estágio</SelectItem>
+                                    <SelectItem value="PJ">PJ</SelectItem>
+                                    <SelectItem value="Temporário">Temporário</SelectItem>
+                                </SelectContent></Select>
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="horarioTrabalho">Horário de Trabalho</Label>
+                                <Input id="horarioTrabalho" value={formData.contrato.horarioTrabalho} onChange={(e) => handleNestedChange('contrato', 'horarioTrabalho', e.target.value)} placeholder="Ex: 08:00 às 18:00"/>
+                            </div>
+                        </div>
+                    </TabsContent>
+                    
+                     <TabsContent value="endereco" className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="cep">CEP</Label>
+                                <Input id="cep" value={formData.endereco.cep} onChange={(e) => handleNestedChange('endereco', 'cep', e.target.value)} />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div className="space-y-2 col-span-2">
+                                <Label htmlFor="logradouro">Logradouro</Label>
+                                <Input id="logradouro" value={formData.endereco.logradouro} onChange={(e) => handleNestedChange('endereco', 'logradouro', e.target.value)} />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="numero">Número</Label>
+                                <Input id="numero" value={formData.endereco.numero} onChange={(e) => handleNestedChange('endereco', 'numero', e.target.value)} />
+                            </div>
+                        </div>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="bairro">Bairro</Label>
+                                <Input id="bairro" value={formData.endereco.bairro} onChange={(e) => handleNestedChange('endereco', 'bairro', e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="complemento">Complemento</Label>
+                                <Input id="complemento" value={formData.endereco.complemento} onChange={(e) => handleNestedChange('endereco', 'complemento', e.target.value)} />
+                            </div>
+                        </div>
+                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                             <div className="space-y-2 col-span-2">
+                                <Label htmlFor="cidade">Cidade</Label>
+                                <Input id="cidade" value={formData.endereco.cidade} onChange={(e) => handleNestedChange('endereco', 'cidade', e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="uf">UF</Label>
+                                <Input id="uf" value={formData.endereco.uf} onChange={(e) => handleNestedChange('endereco', 'uf', e.target.value)} />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="telefone">Telefone</Label>
+                                <Input id="telefone" value={formData.contato.telefone} onChange={(e) => handleNestedChange('contato', 'telefone', e.target.value)} />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="email">E-mail</Label>
+                                <Input id="email" type="email" value={formData.contato.email} onChange={(e) => handleNestedChange('contato', 'email', e.target.value)} />
+                            </div>
+                        </div>
+                    </TabsContent>
+
+                     <TabsContent value="bancario" className="space-y-4">
+                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                             <div className="space-y-2">
+                                <Label htmlFor="banco">Banco</Label>
+                                <Input id="banco" value={formData.dadosBancarios.banco} onChange={(e) => handleNestedChange('dadosBancarios', 'banco', e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="agencia">Agência</Label>
+                                <Input id="agencia" value={formData.dadosBancarios.agencia} onChange={(e) => handleNestedChange('dadosBancarios', 'agencia', e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="conta">Conta</Label>
+                                <Input id="conta" value={formData.dadosBancarios.conta} onChange={(e) => handleNestedChange('dadosBancarios', 'conta', e.target.value)} />
+                            </div>
+                         </div>
+                    </TabsContent>
+
+                    <TabsContent value="dependentes" className="space-y-4">
+                        {formData.dependentes?.map((dep, index) => (
+                             <div key={dep.id} className="rounded-lg border p-4 space-y-4 relative">
+                                <h4 className='font-medium'>Dependente {index + 1}</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                     <div className="space-y-2 col-span-2">
+                                        <Label htmlFor={`dep-nome-${dep.id}`}>Nome Completo</Label>
+                                        <Input id={`dep-nome-${dep.id}`} value={dep.nome} onChange={(e) => handleDependenteChange(dep.id, 'nome', e.target.value)} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor={`dep-nasc-${dep.id}`}>Data de Nascimento</Label>
+                                        <Input id={`dep-nasc-${dep.id}`} type="date" value={dep.dataNascimento.split('T')[0]} onChange={(e) => handleDependenteChange(dep.id, 'dataNascimento', e.target.value)} />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor={`dep-cpf-${dep.id}`}>CPF</Label>
+                                        <Input id={`dep-cpf-${dep.id}`} value={dep.cpf} onChange={(e) => handleDependenteChange(dep.id, 'cpf', e.target.value)} />
+                                    </div>
+                                </div>
+                                <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7" onClick={() => removeDependente(dep.id)}>
+                                    <X className="h-4 w-4 text-muted-foreground" />
                                 </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                                <Calendar mode="single" selected={dataAdmissao} onSelect={setDataAdmissao} initialFocus locale={ptBR} />
-                            </PopoverContent>
-                        </Popover>
-                    </div>
-                </div>
-
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="cargo">Cargo *</Label>
-                        <Input id="cargo" value={cargo} onChange={(e) => setCargo(e.target.value)} required />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="departamento">Departamento</Label>
-                        <Input id="departamento" value={departamento} onChange={(e) => setDepartamento(e.target.value)} />
-                    </div>
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="salario">Salário (R$) *</Label>
-                    <MoneyInput id="salario" value={salario} onValueChange={setSalario} />
-                </div>
-                
-                <DialogFooter>
+                            </div>
+                        ))}
+                        <Button type="button" variant="outline" onClick={addDependente}>
+                            <Plus className="mr-2 h-4 w-4" /> Adicionar Dependente
+                        </Button>
+                    </TabsContent>
+                </Tabs>
+                <DialogFooter className='pt-6'>
                     <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-                    <Button type="submit">Salvar</Button>
+                    <Button type="submit">Salvar Admissão</Button>
                 </DialogFooter>
             </form>
         </DialogContent>
