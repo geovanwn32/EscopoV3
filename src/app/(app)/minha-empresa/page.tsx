@@ -429,6 +429,7 @@ export default function MinhaEmpresaPage() {
                                         <SelectItem value="simples">Simples Nacional</SelectItem>
                                         <SelectItem value="lucro_presumido">Lucro Presumido</SelectItem>
                                         <SelectItem value="lucro_real">Lucro Real</SelectItem>
+                                        <SelectItem value="mei">Microempreendedor Individual (MEI)</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -534,5 +535,3 @@ export default function MinhaEmpresaPage() {
     </div>
   );
 }
-
-    
