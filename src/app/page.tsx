@@ -156,7 +156,7 @@ function PlansSection() {
                     <h2 className="text-3xl font-bold tracking-tight">Planos flexíveis para cada necessidade</h2>
                     <p className="mt-4 text-muted-foreground max-w-xl mx-auto">Escolha o plano que melhor se adapta ao tamanho e complexidade da sua operação. Cancele quando quiser.</p>
                 </div>
-                <div className="mt-12 grid grid-cols-1 gap-8 lg:grid-cols-3 lg:max-w-5xl mx-auto">
+                <div className="mt-12 grid grid-cols-1 gap-8 lg:grid-cols-3 max-w-5xl mx-auto">
                     {plans.map(plan => (
                         <Card key={plan.name} className={cn("flex flex-col", plan.popular && "border-primary ring-2 ring-primary")}>
                             {plan.popular && <div className="bg-primary text-primary-foreground text-center text-sm font-bold py-1 rounded-t-lg">Mais Popular</div>}
