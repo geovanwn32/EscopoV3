@@ -338,18 +338,20 @@ const initialPermissions = modules.reduce((acc, module) => {
     return acc;
 }, {} as UserPermissions);
 
+const initialFormState: Omit<User, 'id'> = {
+    name: '',
+    email: '',
+    password: '',
+    isAdmin: false,
+    isMaster: false,
+    permissions: initialPermissions,
+    allowedCompanyIds: [],
+    status: 'Ativo',
+};
 
 function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfile }: ItemFormProps) {
     const { toast } = useToast();
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [isAdmin, setIsAdmin] = useState(false);
-    const [isMaster, setIsMaster] = useState(false);
-    const [permissions, setPermissions] = useState<UserPermissions>(initialPermissions);
-    const [allowedCompanyIds, setAllowedCompanyIds] = useState<number[]>([]);
-    const [status, setStatus] = useState<'Ativo' | 'Inativo'>('Ativo');
-
+    const [formData, setFormData] = useState(initialFormState);
 
     const otherAdminExists = useMemo(() => {
         return users.some(user => user.isAdmin && user.id !== item?.id);
@@ -361,48 +363,54 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfile 
 
     useEffect(() => {
         if (item) {
-            setName(item.name);
-            setEmail(item.email);
-            setPassword(''); 
-            setIsAdmin(item.isAdmin);
-            setIsMaster(item.isMaster || false);
-            setPermissions(item.permissions || initialPermissions);
-            setAllowedCompanyIds(item.allowedCompanyIds || []);
-            setStatus(item.status || 'Ativo');
+            setFormData({
+                name: item.name || '',
+                email: item.email || '',
+                password: '',
+                isAdmin: item.isAdmin || false,
+                isMaster: item.isMaster || false,
+                permissions: item.permissions || initialPermissions,
+                allowedCompanyIds: item.allowedCompanyIds || [],
+                status: item.status || 'Ativo',
+            });
         } else {
-            setName('');
-            setEmail('');
-            setPassword('');
-            setIsAdmin(false);
-            setIsMaster(false);
-            setPermissions(initialPermissions);
-            setAllowedCompanyIds([]);
-            setStatus('Ativo');
+            setFormData(initialFormState);
         }
     }, [item]);
     
     useEffect(() => {
-        if (isAdmin || isMaster) {
-          setAllowedCompanyIds(companies.map(c => c.id));
+        if (formData.isAdmin || formData.isMaster) {
+          setFormData(prev => ({
+              ...prev,
+              allowedCompanyIds: companies.map(c => c.id)
+          }));
         }
-    }, [isAdmin, isMaster, companies]);
+    }, [formData.isAdmin, formData.isMaster, companies]);
 
+    const handleInputChange = (field: keyof typeof formData, value: any) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
 
     const handlePermissionChange = (moduleId: string, checked: boolean) => {
-        setPermissions(prev => ({...prev, [moduleId]: checked}));
+        setFormData(prev => ({
+            ...prev,
+            permissions: { ...prev.permissions, [moduleId]: checked }
+        }));
     }
     
     const handleCompanyAccessChange = (companyId: number, checked: boolean) => {
-        if (isAdmin || isMaster) return; // Admins always have access to all companies
-        setAllowedCompanyIds(prev =>
-            checked ? [...prev, companyId] : prev.filter(id => id !== companyId)
-        );
+        if (formData.isAdmin || formData.isMaster) return;
+        setFormData(prev => ({
+            ...prev,
+            allowedCompanyIds: checked
+                ? [...prev.allowedCompanyIds, companyId]
+                : prev.allowedCompanyIds.filter(id => id !== companyId)
+        }));
     };
-
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!name || !email) {
+        if (!formData.name || !formData.email) {
             toast({
                 variant: 'destructive',
                 title: 'Campos Obrigatórios',
@@ -410,7 +418,7 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfile 
             });
             return;
         }
-        if (!item && !password) {
+        if (!item && !formData.password) {
              toast({
                 variant: 'destructive',
                 title: 'Campo Obrigatório',
@@ -418,7 +426,7 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfile 
             });
             return;
         }
-        onSave({ name, email, password, isAdmin, isMaster, permissions, allowedCompanyIds, status });
+        onSave(formData);
     };
     
     const isEditingSelf = item?.id === activeProfile.id;
@@ -432,29 +440,29 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfile 
             <form onSubmit={handleSubmit} className="space-y-4">
                  <div className="space-y-2">
                     <Label htmlFor="name">Nome Completo</Label>
-                    <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
+                    <Input id="name" value={formData.name} onChange={(e) => handleInputChange('name', e.target.value)} required />
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="email">E-mail</Label>
-                    <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                    <Input id="email" type="email" value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)} required />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="password">{item ? 'Nova Senha' : 'Senha'}</Label>
-                    <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={item ? "Deixe em branco para não alterar" : "Senha de acesso"} required={!item}/>
+                    <Input id="password" type="password" value={formData.password} onChange={(e) => handleInputChange('password', e.target.value)} placeholder={item ? "Deixe em branco para não alterar" : "Senha de acesso"} required={!item}/>
                 </div>
                 <Separator />
                 {activeProfile.isAdmin && isEditingSelf && (
                      <div className="space-y-2 flex items-center justify-between rounded-lg border p-3 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-900">
                         <div className='space-y-0.5'>
-                            <Label htmlFor="isMaster" className='flex items-center text-amber-900 dark:text-amber-300'><Crown className='mr-2 h-4 w-4' />Perfil Master</Label>
+                            <Label htmlFor="isMasterSwitch" className='flex items-center text-amber-900 dark:text-amber-300'><Crown className='mr-2 h-4 w-4' />Perfil Master</Label>
                             <p className='text-xs text-amber-700 dark:text-amber-500'>
                                 Concede acesso irrestrito e impede a própria exclusão.
                             </p>
                         </div>
                         <Switch
-                            id="isMaster"
-                            checked={isMaster}
-                            onCheckedChange={setIsMaster}
+                            id="isMasterSwitch"
+                            checked={formData.isMaster}
+                            onCheckedChange={(checked) => handleInputChange('isMaster', checked)}
                             disabled={otherMasterExists}
                         />
                     </div>
@@ -469,9 +477,9 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfile 
                         </div>
                         <Switch
                             id="isAdmin"
-                            checked={isAdmin}
-                            onCheckedChange={setIsAdmin}
-                            disabled={item?.isMaster || (item?.isAdmin && !otherAdminExists) || (!item && otherAdminExists)}
+                            checked={formData.isAdmin}
+                            onCheckedChange={(checked) => handleInputChange('isAdmin', checked)}
+                            disabled={item?.isMaster || (item?.isAdmin && !otherAdminExists)}
                         />
                     </div>
                  )}
@@ -484,9 +492,9 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfile 
                     </div>
                     <Switch
                         id="status"
-                        checked={status === 'Ativo'}
-                        onCheckedChange={(checked) => setStatus(checked ? 'Ativo' : 'Inativo')}
-                        disabled={isEditingSelf && (isAdmin || isMaster)}
+                        checked={formData.status === 'Ativo'}
+                        onCheckedChange={(checked) => handleInputChange('status', checked ? 'Ativo' : 'Inativo')}
+                        disabled={isEditingSelf && (formData.isAdmin || formData.isMaster)}
                     />
                 </div>
                  <div className="space-y-4 rounded-lg border p-4">
@@ -496,9 +504,9 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfile 
                             <div key={module.id} className="flex items-center gap-2">
                                 <Checkbox
                                     id={`perm-${module.id}`}
-                                    checked={isAdmin || isMaster || (permissions ? permissions[module.id] : false)}
+                                    checked={formData.isAdmin || formData.isMaster || (formData.permissions ? formData.permissions[module.id] : false)}
                                     onCheckedChange={(checked) => handlePermissionChange(module.id, !!checked)}
-                                    disabled={isAdmin || isMaster}
+                                    disabled={formData.isAdmin || formData.isMaster}
                                 />
                                 <Label htmlFor={`perm-${module.id}`} className="font-normal text-sm">{module.label}</Label>
                             </div>
@@ -512,9 +520,9 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfile 
                             <div key={company.id} className="flex items-center gap-2">
                                 <Checkbox
                                     id={`comp-${company.id}`}
-                                    checked={isAdmin || isMaster || allowedCompanyIds.includes(company.id)}
+                                    checked={formData.isAdmin || formData.isMaster || formData.allowedCompanyIds.includes(company.id)}
                                     onCheckedChange={(checked) => handleCompanyAccessChange(company.id, !!checked)}
-                                    disabled={isAdmin || isMaster}
+                                    disabled={formData.isAdmin || formData.isMaster}
                                 />
                                 <Label htmlFor={`comp-${company.id}`} className="font-normal text-sm flex items-center gap-2">
                                     <Building className='h-4 w-4 text-muted-foreground'/>
