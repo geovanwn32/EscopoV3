@@ -1,7 +1,7 @@
 
 'use client';
 import { useState, useMemo, useEffect } from 'react';
-import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft, CalendarIcon, X } from 'lucide-react';
+import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft, CalendarIcon, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -179,6 +179,7 @@ interface ItemFormProps {
 
 function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
     const { toast } = useToast();
+    const [isQueryingCep, setIsQueryingCep] = useState(false);
     const [formData, setFormData] = useState<Omit<Funcionario, 'id'>>({
         nome: '',
         cpf: '',
@@ -266,6 +267,47 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
             dependentes: prev.dependentes?.map(d => d.id === id ? { ...d, [field]: value } : d)
         }));
     };
+
+    const handleCepQuery = async () => {
+        const cep = formData.endereco.cep.replace(/\D/g, '');
+        if (!cep || cep.length !== 8) {
+            toast({ variant: 'destructive', title: 'CEP inválido', description: 'Por favor, insira um CEP válido com 8 dígitos.' });
+            return;
+        }
+
+        setIsQueryingCep(true);
+        try {
+            const response = await fetch(`https://brasilapi.com.br/api/cep/v1/${cep}`);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'CEP não encontrado ou API indisponível.' }));
+                throw new Error(errorData.message || `Erro: ${response.statusText}`);
+            }
+            const data = await response.json();
+
+            setFormData(prev => ({
+                ...prev,
+                endereco: {
+                    ...prev.endereco,
+                    logradouro: data.street || '',
+                    bairro: data.neighborhood || '',
+                    cidade: data.city || '',
+                    uf: data.state || '',
+                }
+            }));
+
+            toast({ title: 'CEP Consultado!', description: 'O endereço foi preenchido com sucesso.' });
+
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Erro na Consulta de CEP',
+                description: error.message || 'Não foi possível buscar os dados do CEP.'
+            });
+        } finally {
+            setIsQueryingCep(false);
+        }
+    }
+
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -378,10 +420,15 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
                     </TabsContent>
                     
                      <TabsContent value="endereco" className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="cep">CEP</Label>
-                                <Input id="cep" value={formData.endereco.cep} onChange={(e) => handleNestedChange('endereco', 'cep', e.target.value)} />
+                                <div className="flex gap-2">
+                                    <Input id="cep" value={formData.endereco.cep} onChange={(e) => handleNestedChange('endereco', 'cep', e.target.value)} />
+                                    <Button type="button" variant="outline" onClick={handleCepQuery} disabled={isQueryingCep}>
+                                        {isQueryingCep ? <Loader2 className="animate-spin h-4 w-4" /> : <Search className="h-4 w-4" />}
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                         <div className="grid grid-cols-3 gap-4">
@@ -481,3 +528,4 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
         </DialogContent>
     );
 }
+
