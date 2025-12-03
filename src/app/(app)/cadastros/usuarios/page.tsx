@@ -1,6 +1,6 @@
 'use client';
 import { useState, useMemo, useEffect } from 'react';
-import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft } from 'lucide-react';
+import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -15,12 +15,30 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { AuditLog, logAudit } from '@/lib/audit-log';
+import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
+
+const modules = [
+    { id: 'dashboard', label: 'Dashboard' },
+    { id: 'fiscal', label: 'Fiscal' },
+    { id: 'pessoal', label: 'Pessoal' },
+    { id: 'contabil', label: 'Contábil' },
+    { id: 'financeiro', label: 'Financeiro' },
+    { id: 'cadastros', label: 'Cadastros' },
+    { id: 'conectividade', label: 'Conectividade' },
+    { id: 'utilitarios', label: 'Utilitários' },
+];
+
+interface UserPermissions {
+    [key: string]: boolean;
+}
 
 interface User {
     id: number;
     name: string;
     email: string;
     isAdmin: boolean;
+    permissions: UserPermissions;
 }
 
 export default function UsuariosPage() {
@@ -72,6 +90,26 @@ export default function UsuariosPage() {
         ).sort((a, b) => a.name.localeCompare(b.name));
     }, [users, searchTerm]);
 
+    const renderPermissions = (user: User) => {
+        if (user.isAdmin) {
+            return <Badge>Administrador</Badge>;
+        }
+        const grantedModules = Object.entries(user.permissions || {})
+            .filter(([, hasAccess]) => hasAccess)
+            .map(([key]) => modules.find(m => m.id === key)?.label)
+            .filter(Boolean);
+
+        if (grantedModules.length === 0) {
+            return <Badge variant="secondary">Nenhuma Permissão</Badge>
+        }
+
+        if (grantedModules.length > 2) {
+             return <Badge variant="secondary">{grantedModules.slice(0, 2).join(', ')} + {grantedModules.length - 2}</Badge>
+        }
+
+        return <Badge variant="secondary">{grantedModules.join(', ')}</Badge>
+    }
+
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-4">
@@ -119,7 +157,7 @@ export default function UsuariosPage() {
                                 <TableRow>
                                     <TableHead>Nome</TableHead>
                                     <TableHead>Email</TableHead>
-                                    <TableHead>Perfil</TableHead>
+                                    <TableHead>Permissões</TableHead>
                                     <TableHead className="w-[64px]"></TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -129,9 +167,7 @@ export default function UsuariosPage() {
                                         <TableCell className="font-medium">{item.name}</TableCell>
                                         <TableCell>{item.email}</TableCell>
                                         <TableCell>
-                                            <Badge variant={item.isAdmin ? 'default' : 'secondary'}>
-                                                {item.isAdmin ? 'Administrador' : 'Usuário Padrão'}
-                                            </Badge>
+                                           {renderPermissions(item)}
                                         </TableCell>
                                         <TableCell>
                                             <DropdownMenu>
@@ -182,23 +218,36 @@ interface ItemFormProps {
     item: User | null;
 }
 
+const initialPermissions = modules.reduce((acc, module) => {
+    acc[module.id] = false;
+    return acc;
+}, {} as UserPermissions);
+
+
 function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
     const { toast } = useToast();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [isAdmin, setIsAdmin] = useState(false);
+    const [permissions, setPermissions] = useState<UserPermissions>(initialPermissions);
 
     useEffect(() => {
         if (item) {
             setName(item.name);
             setEmail(item.email);
             setIsAdmin(item.isAdmin);
+            setPermissions(item.permissions || initialPermissions);
         } else {
             setName('');
             setEmail('');
             setIsAdmin(false);
+            setPermissions(initialPermissions);
         }
     }, [item]);
+
+    const handlePermissionChange = (moduleId: string, checked: boolean) => {
+        setPermissions(prev => ({...prev, [moduleId]: checked}));
+    }
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -210,11 +259,11 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
             });
             return;
         }
-        onSave({ name, email, isAdmin });
+        onSave({ name, email, isAdmin, permissions });
     };
     
     return (
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
             <DialogHeader>
                 <DialogTitle>{item ? 'Editar' : 'Convidar'} Usuário</DialogTitle>
                 <DialogDescription>Preencha os dados e defina o perfil de acesso do usuário.</DialogDescription>
@@ -228,9 +277,10 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
                     <Label htmlFor="email">E-mail</Label>
                     <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
                 </div>
+                <Separator />
                  <div className="space-y-2 flex items-center justify-between rounded-lg border p-3">
                     <div className='space-y-0.5'>
-                        <Label htmlFor="isAdmin">Perfil de Administrador</Label>
+                        <Label htmlFor="isAdmin" className='flex items-center'><ShieldCheck className='mr-2 h-4 w-4 text-primary' />Perfil de Administrador</Label>
                         <p className='text-xs text-muted-foreground'>
                             Concede acesso total a todos os módulos e configurações.
                         </p>
@@ -240,6 +290,22 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
                         checked={isAdmin}
                         onCheckedChange={setIsAdmin}
                     />
+                </div>
+                 <div className="space-y-4 rounded-lg border p-4">
+                    <h3 className="font-medium text-sm">Permissões de Módulo</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                        {modules.map(module => (
+                            <div key={module.id} className="flex items-center gap-2">
+                                <Checkbox
+                                    id={`perm-${module.id}`}
+                                    checked={isAdmin || permissions[module.id]}
+                                    onCheckedChange={(checked) => handlePermissionChange(module.id, !!checked)}
+                                    disabled={isAdmin}
+                                />
+                                <Label htmlFor={`perm-${module.id}`} className="font-normal text-sm">{module.label}</Label>
+                            </div>
+                        ))}
+                    </div>
                 </div>
                 <DialogFooter>
                     <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
