@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useLocalStorage } from '@/hooks/use-company';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, Calendar as CalendarIcon } from 'lucide-react';
+import { Check, X, Calendar as CalendarIcon, Shield, User } from 'lucide-react';
 import { AuditLog, logAudit } from '@/lib/audit-log';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -38,8 +38,14 @@ export default function AdminPage() {
     
     const [userToApprove, setUserToApprove] = useState<User | null>(null);
 
-    const pendingUsers = useMemo(() => {
-        return users.filter(user => user.status === 'Pendente');
+    // Filter out the master user from the list displayed
+    const displayUsers = useMemo(() => {
+        return users.filter(user => !user.isMaster)
+                    .sort((a, b) => {
+                        if (a.status === 'Pendente' && b.status !== 'Pendente') return -1;
+                        if (a.status !== 'Pendente' && b.status === 'Pendente') return 1;
+                        return a.name.localeCompare(b.name);
+                    });
     }, [users]);
     
     const handleApproval = (userId: number, expiryDate: Date) => {
@@ -73,18 +79,31 @@ export default function AdminPage() {
         logAudit(setAuditLogs, 'DELETE', 'Admin', `Recusou o usuário "${user.name}".`);
     }
 
+    const getStatusBadge = (status: User['status']) => {
+        switch (status) {
+            case 'Ativo':
+                return <Badge variant="default" className="bg-emerald-500 hover:bg-emerald-600"><Check className="mr-1 h-3 w-3"/>Ativo</Badge>;
+            case 'Inativo':
+                return <Badge variant="destructive">Inativo</Badge>;
+            case 'Pendente':
+                return <Badge variant="secondary">Pendente</Badge>;
+            default:
+                return <Badge variant="outline">Desconhecido</Badge>;
+        }
+    };
+
     return (
       <div className="space-y-6">
         <div className="space-y-1">
           <h1 className="text-3xl font-bold tracking-tight font-headline">Painel de Administração</h1>
           <p className="text-muted-foreground">
-            Gerencie usuários pendentes, licenças e configurações do sistema.
+            Gerencie usuários, aprove solicitações e controle as licenças de acesso ao sistema.
           </p>
         </div>
         <Card>
             <CardHeader>
-                <CardTitle>Logins Pendentes de Aprovação</CardTitle>
-                <CardDescription>Abaixo estão os usuários que solicitaram acesso e aguardam sua liberação.</CardDescription>
+                <CardTitle>Gerenciamento de Usuários</CardTitle>
+                <CardDescription>Abaixo estão todos os usuários do sistema. Aprove os pendentes e gerencie os ativos.</CardDescription>
             </CardHeader>
             <CardContent>
                  <div className="rounded-md border">
@@ -94,32 +113,43 @@ export default function AdminPage() {
                                 <TableHead>Nome</TableHead>
                                 <TableHead>Email</TableHead>
                                 <TableHead>Status</TableHead>
+                                <TableHead>Licença Expira em</TableHead>
                                 <TableHead className="w-[180px] text-center">Ações</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {pendingUsers.length > 0 ? pendingUsers.map(user => (
-                                <TableRow key={user.id}>
-                                    <TableCell className="font-medium">{user.name}</TableCell>
-                                    <TableCell>{user.email}</TableCell>
-                                    <TableCell>
-                                        <Badge variant="secondary">{user.status}</Badge>
+                            {displayUsers.length > 0 ? displayUsers.map(user => (
+                                <TableRow key={user.id} className={user.status === 'Pendente' ? 'bg-muted/50' : ''}>
+                                    <TableCell className="font-medium flex items-center gap-2">
+                                        {user.isAdmin ? <Shield className='h-4 w-4 text-primary' /> : <User className='h-4 w-4 text-muted-foreground' />}
+                                        {user.name}
                                     </TableCell>
-                                    <TableCell className="text-center space-x-2">
-                                        <Button size="sm" variant="outline" className="text-red-500 border-red-500/50 hover:bg-red-500/10 hover:text-red-600" onClick={() => handleRejection(user.id)}>
-                                            <X className="mr-2 h-4 w-4"/>
-                                            Recusar
-                                        </Button>
-                                         <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600" onClick={() => setUserToApprove(user)}>
-                                            <Check className="mr-2 h-4 w-4"/>
-                                            Aprovar
-                                        </Button>
+                                    <TableCell>{user.email}</TableCell>
+                                    <TableCell>{getStatusBadge(user.status)}</TableCell>
+                                    <TableCell>
+                                        {user.dataExpiracaoLicenca ? format(new Date(user.dataExpiracaoLicenca), 'dd/MM/yyyy') : 'N/A'}
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                        {user.status === 'Pendente' ? (
+                                            <div className="space-x-2">
+                                                <Button size="sm" variant="outline" className="text-red-500 border-red-500/50 hover:bg-red-500/10 hover:text-red-600" onClick={() => handleRejection(user.id)}>
+                                                    <X className="mr-2 h-4 w-4"/>
+                                                    Recusar
+                                                </Button>
+                                                <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600" onClick={() => setUserToApprove(user)}>
+                                                    <Check className="mr-2 h-4 w-4"/>
+                                                    Aprovar
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <span className='text-xs text-muted-foreground'>-</span>
+                                        )}
                                     </TableCell>
                                 </TableRow>
                             )) : (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                                        Nenhum usuário pendente de aprovação.
+                                    <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                                        Nenhum usuário para gerenciar no momento.
                                     </TableCell>
                                 </TableRow>
                             )}
