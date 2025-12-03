@@ -11,8 +11,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useRouter } from 'next/navigation';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth, useUser } from '@/firebase';
-import { GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
+import { initiateEmailSignUp, initiateEmailSignIn } from '@/firebase/non-blocking-login';
 
 // Tipagem para os dados do formulário
 type FormInputs = {
@@ -36,7 +37,7 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 export default function LoginForm() {
   const router = useRouter();
   const auth = useAuth();
-  const { user, isUserLoading } = useUser();
+  const { user, isUserLoading, userError } = useUser();
   const { toast } = useToast();
 
   const [isSignUp, setIsSignUp] = useState(false);
@@ -47,9 +48,22 @@ export default function LoginForm() {
 
   useEffect(() => {
     if (!isUserLoading && user) {
+      setIsAuthLoading(false);
       router.push('/selecionar-empresa');
     }
-  }, [user, isUserLoading, router]);
+    if (!isUserLoading && userError) {
+      setIsAuthLoading(false);
+      toast({
+        variant: 'destructive',
+        title: isSignUp ? "Erro ao Criar Conta" : "Erro de Login",
+        description: (userError as any).code === 'auth/email-already-in-use' 
+            ? 'Este e-mail já está em uso.'
+            : (userError as any).code === 'auth/wrong-password' || (userError as any).code === 'auth/user-not-found' || (userError as any).code === 'auth/invalid-credential'
+            ? 'E-mail ou senha inválidos.'
+            : 'Ocorreu um erro. Por favor, tente novamente.',
+      });
+    }
+  }, [user, isUserLoading, userError, router, toast, isSignUp]);
 
   const handleGoogleSignIn = async () => {
     setIsAuthLoading(true);
@@ -68,31 +82,16 @@ export default function LoginForm() {
     }
   };
 
-  const onSubmit: SubmitHandler<FormInputs> = async (data) => {
+  const onSubmit: SubmitHandler<FormInputs> = (data) => {
     setIsAuthLoading(true);
-    try {
-      if (isSignUp) {
-        await createUserWithEmailAndPassword(auth, data.email, data.password);
-      } else {
-        await signInWithEmailAndPassword(auth, data.email, data.password);
-      }
-      // Redirection is handled by the useEffect hook
-    } catch (error: any) {
-       console.error("Email/Password Auth Error:", error);
-       toast({
-        variant: 'destructive',
-        title: isSignUp ? "Erro ao Criar Conta" : "Erro de Login",
-        description: error.code === 'auth/email-already-in-use' 
-            ? 'Este e-mail já está em uso.'
-            : error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found'
-            ? 'E-mail ou senha inválidos.'
-            : 'Ocorreu um erro. Por favor, tente novamente.',
-      });
-       setIsAuthLoading(false);
+    if (isSignUp) {
+      initiateEmailSignUp(auth, data.email, data.password);
+    } else {
+      initiateEmailSignIn(auth, data.email, data.password);
     }
   };
 
-  if (isUserLoading || user) {
+  if (isUserLoading || (!isAuthLoading && user)) {
     return (
       <div className="flex justify-center items-center h-full">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

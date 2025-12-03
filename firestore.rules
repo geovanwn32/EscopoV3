@@ -80,6 +80,25 @@ service cloud.firestore {
       return request.resource.data.empresaId == resource.data.empresaId;
     }
 
+    /**
+     * Validates that the `id` field is not changed during an update.
+     */
+    function idIsImmutable() {
+      return request.resource.data.id == resource.data.id;
+    }
+
+    /**
+     * Validates the schema for a Usuario document.
+     */
+    function isValidUsuario(data) {
+      return data.id is string &&
+             data.nome is string &&
+             data.email is string && data.email.matches('.*@.*') &&
+             data.empresaId is string &&
+             (data.isAdmin == null || data.isAdmin is bool);
+    }
+    
+
     // --------------------------------
     // Company Data
     // --------------------------------
@@ -111,8 +130,22 @@ service cloud.firestore {
     match /empresas/{empresaId}/usuarios/{usuarioId} {
       allow get: if isCompanyMember(empresaId) || isGlobalAdmin();
       allow list: if isCompanyMember(empresaId) || isGlobalAdmin();
-      allow create: if request.auth.uid == usuarioId && incomingDataMatchesCompany(empresaId) && request.resource.data.id == usuarioId;
-      allow update: if resource != null && (request.auth.uid == usuarioId || isCompanyAdmin(empresaId)) && companyIdIsImmutable() && request.resource.data.id == resource.data.id;
+
+      // Allow a user to create their own user document
+      allow create: if request.auth.uid == usuarioId && 
+                       incomingDataMatchesCompany(empresaId) &&
+                       request.resource.data.id == usuarioId &&
+                       isValidUsuario(request.resource.data);
+
+      // Allow a user to update their own document, or a company admin to update any user.
+      // Prevent users from escalating their own privileges.
+      allow update: if resource != null &&
+                       (request.auth.uid == usuarioId || isCompanyAdmin(empresaId)) &&
+                       companyIdIsImmutable() &&
+                       idIsImmutable() &&
+                       isValidUsuario(request.resource.data) &&
+                       (isCompanyAdmin(empresaId) || request.resource.data.isAdmin == resource.data.isAdmin);
+
       allow delete: if resource != null && isCompanyAdmin(empresaId);
     }
 
