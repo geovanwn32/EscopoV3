@@ -39,6 +39,7 @@ interface User {
     email: string;
     isAdmin: boolean;
     permissions: UserPermissions;
+    password?: string;
 }
 
 export default function UsuariosPage() {
@@ -54,7 +55,12 @@ export default function UsuariosPage() {
 
     const handleSave = (itemData: Omit<User, 'id'>) => {
         if (editingItem) {
-            setUsers(prev => prev.map(i => i.id === editingItem.id ? { ...editingItem, ...itemData } : i));
+            const updatedUser = { ...editingItem, ...itemData };
+            // Do not update password if it's empty during an edit
+            if (!itemData.password) {
+                delete updatedUser.password;
+            }
+            setUsers(prev => prev.map(i => i.id === editingItem.id ? updatedUser : i));
             toast({ title: "Usuário Atualizado!", description: "Os dados do usuário foram atualizados." });
             logAudit(setAuditLogs, 'UPDATE', 'Usuários', `Atualizou o usuário "${itemData.name}".`);
         } else {
@@ -228,6 +234,7 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
     const { toast } = useToast();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [isAdmin, setIsAdmin] = useState(false);
     const [permissions, setPermissions] = useState<UserPermissions>(initialPermissions);
 
@@ -235,11 +242,13 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
         if (item) {
             setName(item.name);
             setEmail(item.email);
+            setPassword(''); // Do not show existing password
             setIsAdmin(item.isAdmin);
             setPermissions(item.permissions || initialPermissions);
         } else {
             setName('');
             setEmail('');
+            setPassword('');
             setIsAdmin(false);
             setPermissions(initialPermissions);
         }
@@ -259,7 +268,16 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
             });
             return;
         }
-        onSave({ name, email, isAdmin, permissions });
+        // Password is only required when creating a new user
+        if (!item && !password) {
+             toast({
+                variant: 'destructive',
+                title: 'Campo Obrigatório',
+                description: 'A senha é obrigatória para novos usuários.'
+            });
+            return;
+        }
+        onSave({ name, email, password, isAdmin, permissions });
     };
     
     return (
@@ -276,6 +294,10 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
                  <div className="space-y-2">
                     <Label htmlFor="email">E-mail</Label>
                     <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="password">Senha</Label>
+                    <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={item ? "Deixe em branco para não alterar" : "Senha de acesso"} required={!item}/>
                 </div>
                 <Separator />
                  <div className="space-y-2 flex items-center justify-between rounded-lg border p-3">
