@@ -58,9 +58,6 @@ export default function UsuariosPage() {
 
     const loggedInUserIsAdmin = useMemo(() => {
         if (!firebaseUser || !users) return false;
-        // In this global user model, we assume the logged-in Firebase user
-        // maps to a profile. We check that profile's isAdmin flag.
-        // For simplicity, we'll check based on the active user profile stored in session.
         const activeProfile = sessionStorage.getItem(`user-profile-${currentCompany}`);
         if (activeProfile) {
             const profile: User = JSON.parse(activeProfile);
@@ -211,6 +208,7 @@ export default function UsuariosPage() {
                                         onSave={handleSave} 
                                         onOpenChange={setIsDialogOpen}
                                         item={editingItem}
+                                        users={users}
                                     />
                                 </Dialog>
                             </div>
@@ -283,6 +281,7 @@ interface ItemFormProps {
     onSave: (item: Omit<User, 'id'>) => void;
     onOpenChange: (open: boolean) => void;
     item: User | null;
+    users: User[];
 }
 
 const initialPermissions = modules.reduce((acc, module) => {
@@ -291,13 +290,17 @@ const initialPermissions = modules.reduce((acc, module) => {
 }, {} as UserPermissions);
 
 
-function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
+function ItemForm({ onSave, onOpenChange, item, users }: ItemFormProps) {
     const { toast } = useToast();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isAdmin, setIsAdmin] = useState(false);
     const [permissions, setPermissions] = useState<UserPermissions>(initialPermissions);
+
+    const anotherAdminExists = useMemo(() => {
+        return users.some(user => user.isAdmin && user.id !== item?.id);
+    }, [users, item]);
 
     useEffect(() => {
         if (item) {
@@ -372,6 +375,7 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
                         id="isAdmin"
                         checked={isAdmin}
                         onCheckedChange={setIsAdmin}
+                        disabled={anotherAdminExists && !isAdmin}
                     />
                 </div>
                  <div className="space-y-4 rounded-lg border p-4">
