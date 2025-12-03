@@ -36,7 +36,7 @@ function Header() {
                     ))}
                 </nav>
                 <div className="flex items-center gap-4">
-                    <Button variant="ghost" asChild>
+                    <Button variant="outline" asChild>
                         <Link href="/login">Entrar</Link>
                     </Button>
                     <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Toggle Menu">
