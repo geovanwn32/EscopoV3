@@ -20,6 +20,7 @@ import { ptBR } from 'date-fns/locale';
 
 interface User {
     id: number;
+    uid: string;
     name: string;
     email: string;
     isAdmin: boolean;
@@ -28,6 +29,7 @@ interface User {
     allowedCompanyIds: number[];
     password?: string;
     status: 'Ativo' | 'Inativo' | 'Pendente';
+    creationDate?: string; // ISO string
     dataExpiracaoLicenca?: string; // ISO string
 }
 
@@ -44,7 +46,7 @@ export default function AdminPage() {
                     .sort((a, b) => {
                         if (a.status === 'Pendente' && b.status !== 'Pendente') return -1;
                         if (a.status !== 'Pendente' && b.status === 'Pendente') return 1;
-                        return a.name.localeCompare(b.name);
+                        return new Date(b.creationDate || 0).getTime() - new Date(a.creationDate || 0).getTime();
                     });
     }, [users]);
     
@@ -112,6 +114,8 @@ export default function AdminPage() {
                             <TableRow>
                                 <TableHead>Nome</TableHead>
                                 <TableHead>Email</TableHead>
+                                <TableHead>UID Firebase</TableHead>
+                                <TableHead>Data Criação</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Licença Expira em</TableHead>
                                 <TableHead className="w-[180px] text-center">Ações</TableHead>
@@ -125,6 +129,10 @@ export default function AdminPage() {
                                         {user.name}
                                     </TableCell>
                                     <TableCell>{user.email}</TableCell>
+                                    <TableCell className="font-mono text-xs text-muted-foreground">{user.uid}</TableCell>
+                                    <TableCell>
+                                        {user.creationDate ? format(new Date(user.creationDate), 'dd/MM/yyyy HH:mm') : 'N/A'}
+                                    </TableCell>
                                     <TableCell>{getStatusBadge(user.status)}</TableCell>
                                     <TableCell>
                                         {user.dataExpiracaoLicenca ? format(new Date(user.dataExpiracaoLicenca), 'dd/MM/yyyy') : 'N/A'}
@@ -148,7 +156,7 @@ export default function AdminPage() {
                                 </TableRow>
                             )) : (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                                         Nenhum usuário para gerenciar no momento.
                                     </TableCell>
                                 </TableRow>
@@ -252,3 +260,5 @@ function ApprovalDialog({ user, onOpenChange, onApprove }: ApprovalDialogProps) 
         </Dialog>
     )
 }
+
+    

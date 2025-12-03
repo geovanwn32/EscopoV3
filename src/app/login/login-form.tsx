@@ -18,6 +18,7 @@ import { useLocalStorage } from '@/hooks/use-company';
 
 interface UserProfile {
     id: number;
+    uid: string;
     name: string;
     email: string;
     isAdmin: boolean;
@@ -26,6 +27,7 @@ interface UserProfile {
     permissions: Record<string, boolean>;
     allowedCompanyIds: number[];
     status: 'Ativo' | 'Inativo' | 'Pendente';
+    creationDate?: string; // ISO string
     dataExpiracaoLicenca?: string; // ISO string
 }
 
@@ -63,7 +65,7 @@ function InnerLoginForm() {
   
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormInputs>();
 
-  const defaultAdminUser: Omit<UserProfile, 'id'> = {
+  const defaultAdminUser: Omit<UserProfile, 'id' | 'uid' | 'creationDate'> = {
     name: 'Geovani Nunes',
     email: 'geovanisilvadeoliveira447@gmail.com',
     isAdmin: true,
@@ -81,7 +83,8 @@ function InnerLoginForm() {
     
     // User is authenticated
     if (user) {
-        const { email, displayName } = user;
+        const { email, displayName, uid, metadata } = user;
+        const creationTime = metadata.creationTime;
         let existingProfile = users.find(u => u.email === email);
         
         if (existingProfile) {
@@ -119,6 +122,8 @@ function InnerLoginForm() {
 
             const newUserProfile: UserProfile = {
                 id: Date.now(),
+                uid: uid,
+                creationDate: creationTime,
                 name: displayName || email || 'Novo Usuário',
                 email: email!,
                 isAdmin: isFirstUser || isAdminEmail,
@@ -333,3 +338,5 @@ export default function LoginForm() {
       <InnerLoginForm />
   )
 }
+
+    
