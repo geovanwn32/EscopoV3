@@ -1,6 +1,6 @@
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Package, Users, Handshake, Truck, Briefcase, FileText, FileType, FileSignature, Scale } from 'lucide-react';
+import { Package, Users, Handshake, Briefcase, FileText, FileSignature, Scale, Table, Globe, BookText, AreaChart } from 'lucide-react';
 import Link from 'next/link';
 
 const cadastroItens = [
@@ -48,7 +48,7 @@ const cadastroItens = [
     },
     {
         href: '/cadastros/tipo-negociacao',
-        icon: <FileType className="h-8 w-8" />,
+        icon: <FileSignature className="h-8 w-8" />,
         label: 'Tipos de Negociação',
         description: 'Condições e tipos de negociação comercial.',
          color: "text-fuchsia-600 bg-fuchsia-100/80 group-hover:bg-fuchsia-600 dark:bg-fuchsia-900/40 dark:text-fuchsia-400 dark:group-hover:bg-fuchsia-500",
@@ -59,6 +59,34 @@ const cadastroItens = [
         label: 'Unidades de Medida',
         description: 'Gerencie as unidades de medida para produtos.',
         color: "text-rose-600 bg-rose-100/80 group-hover:bg-rose-600 dark:bg-rose-900/40 dark:text-rose-400 dark:group-hover:bg-rose-500",
+    },
+    {
+        href: '/cadastros/tabelas-cst',
+        icon: <Table className="h-8 w-8" />,
+        label: 'Tabelas CST/CSOSN',
+        description: 'Gerencie códigos de situação tributária.',
+        color: "text-cyan-600 bg-cyan-100/80 group-hover:bg-cyan-600 dark:bg-cyan-900/40 dark:text-cyan-400 dark:group-hover:bg-cyan-500",
+    },
+    {
+        href: '/cadastros/tabela-ibge',
+        icon: <Globe className="h-8 w-8" />,
+        label: 'Tabela IBGE',
+        description: 'Consulte códigos de municípios brasileiros.',
+        color: "text-blue-600 bg-blue-100/80 group-hover:bg-blue-600 dark:bg-blue-900/40 dark:text-blue-400 dark:group-hover:bg-blue-500",
+    },
+    {
+        href: '/cadastros/historicos-contabeis',
+        icon: <BookText className="h-8 w-8" />,
+        label: 'Históricos Contábeis',
+        description: 'Padrões de descrição para lançamentos contábeis.',
+        color: "text-violet-600 bg-violet-100/80 group-hover:bg-violet-600 dark:bg-violet-900/40 dark:text-violet-400 dark:group-hover:bg-violet-500",
+    },
+    {
+        href: '/cadastros/indices',
+        icon: <AreaChart className="h-8 w-8" />,
+        label: 'Índices Econômicos',
+        description: 'Consulte indicadores como INPC, IPCA, etc.',
+        color: "text-lime-600 bg-lime-100/80 group-hover:bg-lime-600 dark:bg-lime-900/40 dark:text-lime-400 dark:group-hover:bg-lime-500",
     },
 ]
 
@@ -77,7 +105,7 @@ export default function CadastrosPage() {
                     <CardTitle>Módulos de Cadastro</CardTitle>
                     <CardDescription>Selecione uma das opções abaixo para gerenciar.</CardDescription>
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {cadastroItens.map((item) => (
                         <Link key={item.href} href={item.href}>
                             <div className="group flex h-full cursor-pointer flex-col gap-2 rounded-lg border bg-card p-6 text-card-foreground shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
