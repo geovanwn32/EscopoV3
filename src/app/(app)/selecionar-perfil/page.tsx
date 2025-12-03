@@ -1,10 +1,11 @@
+
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Shield, KeyRound, Loader2, ArrowLeft } from 'lucide-react';
 import { useCompany } from '@/hooks/use-company';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
