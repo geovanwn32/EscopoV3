@@ -361,7 +361,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "ProdutoServico",
       "type": "object",
-      "description": "Entidade que representa um produto ou serviço.",
+      "description": "Entidade que representa um produto ou serviço com seus dados fiscais e tributários.",
       "properties": {
         "id": {
           "type": "string",
@@ -369,11 +369,12 @@
         },
         "empresaId": {
           "type": "string",
-          "description": "Referência para a empresa a qual o produto/serviço pertence. (Relacionamento: Empresa 1:N ProdutoServico)"
+          "description": "Referência para a empresa a qual o produto/serviço pertence."
         },
         "tipo": {
           "type": "string",
-          "description": "Tipo (Produto ou Serviço)."
+          "description": "Tipo (Produto ou Serviço).",
+          "enum": ["Produto", "Serviço"]
         },
         "codigo": {
           "type": "string",
@@ -386,6 +387,59 @@
         "valor": {
           "type": "number",
           "description": "Valor unitário do produto/serviço."
+        },
+        "unidadeMedida": {
+          "type": "string",
+          "description": "Unidade de medida (ex: UN, KG, CX)."
+        },
+        "ncm": {
+          "type": "string",
+          "description": "Nomenclatura Comum do Mercosul."
+        },
+        "cest": {
+          "type": "string",
+          "description": "Código Especificador da Substituição Tributária."
+        },
+        "cfop": {
+          "type": "string",
+          "description": "Código Fiscal de Operações e Prestações (padrão para saídas)."
+        },
+        "origem": {
+          "type": "string",
+          "description": "Origem da mercadoria (0-Nacional, 1-Estrangeira, etc.)."
+        },
+        "icms": {
+          "type": "object",
+          "description": "Informações do ICMS.",
+          "properties": {
+            "cst": { "type": "string", "description": "Código de Situação Tributária." },
+            "aliquota": { "type": "number", "description": "Alíquota do ICMS." },
+            "baseCalculo": { "type": "number", "description": "Percentual de redução da base de cálculo." }
+          }
+        },
+        "ipi": {
+          "type": "object",
+          "description": "Informações do IPI.",
+          "properties": {
+            "cst": { "type": "string", "description": "Código de Situação Tributária." },
+            "aliquota": { "type": "number", "description": "Alíquota do IPI." }
+          }
+        },
+        "pis": {
+          "type": "object",
+          "description": "Informações do PIS.",
+          "properties": {
+            "cst": { "type": "string", "description": "Código de Situação Tributária." },
+            "aliquota": { "type": "number", "description": "Alíquota do PIS." }
+          }
+        },
+        "cofins": {
+          "type": "object",
+          "description": "Informações do COFINS.",
+          "properties": {
+            "cst": { "type": "string", "description": "Código de Situação Tributária." },
+            "aliquota": { "type": "number", "description": "Alíquota do COFINS." }
+          }
         }
       },
       "required": [

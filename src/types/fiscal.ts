@@ -22,4 +22,33 @@ export interface NotaFiscal {
     sourceXmlId?: number; // Armazena o ID do arquivo XML de origem
 }
 
+export interface Product {
+    id: number;
+    tipo: 'Produto' | 'Serviço';
+    codigo: string;
+    descricao: string;
+    valor: number;
+    unidadeMedida: string;
+    ncm: string;
+    cest: string;
+    cfop: string;
+    origem: string;
+    icms: {
+        cst: string;
+        aliquota: number;
+        baseCalculo: number;
+    };
+    ipi: {
+        cst: string;
+        aliquota: number;
+    };
+    pis: {
+        cst: string;
+        aliquota: number;
+    };
+    cofins: {
+        cst: string;
+        aliquota: number;
+    };
+}
     

@@ -12,13 +12,9 @@ import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useCompany } from '@/hooks/use-company';
 import Link from 'next/link';
-
-interface Product {
-    id: number;
-    code: string;
-    description: string;
-    value: number;
-}
+import { Product } from '@/types/fiscal';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 
 export default function ProdutosPage() {
     const { toast } = useToast();
@@ -60,9 +56,9 @@ export default function ProdutosPage() {
 
     const filteredItems = useMemo(() => {
         return products.filter(item =>
-            item.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.description.toLowerCase().includes(searchTerm.toLowerCase())
-        ).sort((a, b) => a.description.localeCompare(b.description));
+            item.codigo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.descricao.toLowerCase().includes(searchTerm.toLowerCase())
+        ).sort((a, b) => a.descricao.localeCompare(b.descricao));
     }, [products, searchTerm]);
 
     return (
@@ -113,6 +109,8 @@ export default function ProdutosPage() {
                                 <TableRow>
                                     <TableHead className="w-[150px]">Código</TableHead>
                                     <TableHead>Descrição</TableHead>
+                                    <TableHead>NCM</TableHead>
+                                    <TableHead>CFOP</TableHead>
                                     <TableHead className="w-[150px] text-right">Valor (R$)</TableHead>
                                     <TableHead className="w-[64px]"></TableHead>
                                 </TableRow>
@@ -120,9 +118,11 @@ export default function ProdutosPage() {
                             <TableBody>
                                 {filteredItems.length > 0 ? filteredItems.map(item => (
                                     <TableRow key={item.id}>
-                                        <TableCell className="font-medium font-mono">{item.code}</TableCell>
-                                        <TableCell>{item.description}</TableCell>
-                                        <TableCell className="text-right font-mono">{item.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</TableCell>
+                                        <TableCell className="font-medium font-mono">{item.codigo}</TableCell>
+                                        <TableCell>{item.descricao}</TableCell>
+                                        <TableCell className="font-mono">{item.ncm}</TableCell>
+                                        <TableCell className="font-mono">{item.cfop}</TableCell>
+                                        <TableCell className="text-right font-mono">{item.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</TableCell>
                                         <TableCell>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
@@ -141,7 +141,7 @@ export default function ProdutosPage() {
                                     </TableRow>
                                 )) : (
                                     <TableRow>
-                                        <TableCell colSpan={4} className="h-24 text-center">Nenhum produto encontrado.</TableCell>
+                                        <TableCell colSpan={6} className="h-24 text-center">Nenhum produto encontrado.</TableCell>
                                     </TableRow>
                                 )}
                             </TableBody>
@@ -172,56 +172,180 @@ interface ItemFormProps {
     item: Product | null;
 }
 
+const initialFormState: Omit<Product, 'id' | 'tipo'> = {
+    codigo: '',
+    descricao: '',
+    valor: 0,
+    unidadeMedida: 'UN',
+    ncm: '',
+    cest: '',
+    cfop: '',
+    origem: '0',
+    icms: { cst: '', aliquota: 0, baseCalculo: 0 },
+    ipi: { cst: '', aliquota: 0 },
+    pis: { cst: '', aliquota: 0 },
+    cofins: { cst: '', aliquota: 0 },
+};
+
 function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
     const { toast } = useToast();
-    const [code, setCode] = useState('');
-    const [description, setDescription] = useState('');
-    const [value, setValue] = useState<number | ''>('');
+    const [formData, setFormData] = useState<Omit<Product, 'id' | 'tipo'>>(initialFormState);
     
     useEffect(() => {
         if (item) {
-            setCode(item.code);
-            setDescription(item.description);
-            setValue(item.value);
+            setFormData({
+                codigo: item.codigo ?? '',
+                descricao: item.descricao ?? '',
+                valor: item.valor ?? 0,
+                unidadeMedida: item.unidadeMedida ?? 'UN',
+                ncm: item.ncm ?? '',
+                cest: item.cest ?? '',
+                cfop: item.cfop ?? '',
+                origem: item.origem ?? '0',
+                icms: item.icms ?? { cst: '', aliquota: 0, baseCalculo: 0 },
+                ipi: item.ipi ?? { cst: '', aliquota: 0 },
+                pis: item.pis ?? { cst: '', aliquota: 0 },
+                cofins: item.cofins ?? { cst: '', aliquota: 0 },
+            });
         } else {
-            setCode('');
-            setDescription('');
-            setValue('');
+            setFormData(initialFormState);
         }
     }, [item]);
 
+    const handleInputChange = (field: keyof typeof formData, value: any) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleTaxChange = (tax: 'icms' | 'ipi' | 'pis' | 'cofins', field: string, value: any) => {
+        setFormData(prev => ({
+            ...prev,
+            [tax]: {
+                ...prev[tax],
+                [field]: value
+            }
+        }));
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!code || !description || value === '') {
+        if (!formData.codigo || !formData.descricao || formData.valor <= 0) {
             toast({
                 variant: 'destructive',
                 title: 'Campos Obrigatórios',
-                description: 'Por favor, preencha todos os campos do produto.'
+                description: 'Código, Descrição e Valor (maior que zero) são obrigatórios.'
             });
             return;
         }
-        onSave({ code, description, value: Number(value) });
+        onSave({ ...formData, tipo: 'Produto' });
     };
     
     return (
-        <DialogContent>
+        <DialogContent className="sm:max-w-4xl">
             <DialogHeader>
                 <DialogTitle>{item ? 'Editar' : 'Novo'} Produto</DialogTitle>
-                <DialogDescription>Preencha os dados do produto.</DialogDescription>
+                <DialogDescription>Preencha os dados fiscais e tributários do produto.</DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                    <Label htmlFor="code">Código do Produto</Label>
-                    <Input id="code" value={code} onChange={(e) => setCode(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="description">Descrição</Label>
-                    <Input id="description" value={description} onChange={(e) => setDescription(e.target.value)} required />
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="value">Valor Unitário (R$)</Label>
-                    <Input id="value" type="number" step="0.01" value={value} onChange={(e) => setValue(parseFloat(e.target.value) || '')} required />
+            <form onSubmit={handleSubmit}>
+                <div className="space-y-6 py-4">
+                    {/* Dados Gerais */}
+                    <Card>
+                        <CardHeader><CardTitle>Dados Gerais</CardTitle></CardHeader>
+                        <CardContent className="space-y-4">
+                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="codigo">Código do Produto</Label>
+                                    <Input id="codigo" value={formData.codigo} onChange={(e) => handleInputChange('codigo', e.target.value)} required />
+                                </div>
+                                <div className="space-y-2 col-span-2">
+                                    <Label htmlFor="descricao">Descrição</Label>
+                                    <Input id="descricao" value={formData.descricao} onChange={(e) => handleInputChange('descricao', e.target.value)} required />
+                                </div>
+                            </div>
+                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                 <div className="space-y-2">
+                                    <Label htmlFor="valor">Valor Unitário (R$)</Label>
+                                    <Input id="valor" type="number" step="0.01" value={formData.valor} onChange={(e) => handleInputChange('valor', parseFloat(e.target.value) || 0)} required />
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label htmlFor="unidadeMedida">Unidade de Medida</Label>
+                                    <Input id="unidadeMedida" value={formData.unidadeMedida} onChange={(e) => handleInputChange('unidadeMedida', e.target.value)} required />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                     {/* Dados Fiscais */}
+                    <Card>
+                        <CardHeader><CardTitle>Dados Fiscais</CardTitle></CardHeader>
+                        <CardContent className="space-y-4">
+                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                 <div className="space-y-2">
+                                    <Label htmlFor="ncm">NCM</Label>
+                                    <Input id="ncm" value={formData.ncm} onChange={(e) => handleInputChange('ncm', e.target.value)} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="cest">CEST</Label>
+                                    <Input id="cest" value={formData.cest} onChange={(e) => handleInputChange('cest', e.target.value)} />
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label htmlFor="cfop">CFOP Padrão</Label>
+                                    <Input id="cfop" value={formData.cfop} onChange={(e) => handleInputChange('cfop', e.target.value)} />
+                                </div>
+                            </div>
+                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="origem">Origem da Mercadoria</Label>
+                                    <Select value={formData.origem} onValueChange={(v) => handleInputChange('origem', v)}>
+                                        <SelectTrigger id="origem"><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="0">0 - Nacional</SelectItem>
+                                            <SelectItem value="1">1 - Estrangeira (Importação direta)</SelectItem>
+                                            <SelectItem value="2">2 - Estrangeira (Adquirida no mercado interno)</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                             </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Tributos */}
+                    <Card>
+                        <CardHeader><CardTitle>Tributos</CardTitle></CardHeader>
+                        <CardContent className="space-y-4">
+                            {/* ICMS */}
+                            <h4 className="font-semibold text-primary">ICMS</h4>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 items-end">
+                                <div className="space-y-2"><Label>CST</Label><Input value={formData.icms.cst} onChange={(e) => handleTaxChange('icms', 'cst', e.target.value)}/></div>
+                                <div className="space-y-2"><Label>Alíquota (%)</Label><Input type="number" value={formData.icms.aliquota} onChange={(e) => handleTaxChange('icms', 'aliquota', parseFloat(e.target.value) || 0)}/></div>
+                            </div>
+                            <Separator />
+                            {/* IPI */}
+                            <h4 className="font-semibold text-primary">IPI</h4>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 items-end">
+                                <div className="space-y-2"><Label>CST</Label><Input value={formData.ipi.cst} onChange={(e) => handleTaxChange('ipi', 'cst', e.target.value)} /></div>
+                                <div className="space-y-2"><Label>Alíquota (%)</Label><Input type="number" value={formData.ipi.aliquota} onChange={(e) => handleTaxChange('ipi', 'aliquota', parseFloat(e.target.value) || 0)} /></div>
+                            </div>
+                             <Separator />
+                            {/* PIS/COFINS */}
+                            <div className='grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4'>
+                                <div>
+                                    <h4 className="font-semibold text-primary">PIS</h4>
+                                    <div className="grid grid-cols-2 gap-4 items-end mt-2">
+                                        <div className="space-y-2"><Label>CST</Label><Input value={formData.pis.cst} onChange={(e) => handleTaxChange('pis', 'cst', e.target.value)} /></div>
+                                        <div className="space-y-2"><Label>Alíquota (%)</Label><Input type="number" value={formData.pis.aliquota} onChange={(e) => handleTaxChange('pis', 'aliquota', parseFloat(e.target.value) || 0)} /></div>
+                                    </div>
+                                </div>
+                                 <div>
+                                    <h4 className="font-semibold text-primary">COFINS</h4>
+                                    <div className="grid grid-cols-2 gap-4 items-end mt-2">
+                                        <div className="space-y-2"><Label>CST</Label><Input value={formData.cofins.cst} onChange={(e) => handleTaxChange('cofins', 'cst', e.target.value)} /></div>
+                                        <div className="space-y-2"><Label>Alíquota (%)</Label><Input type="number" value={formData.cofins.aliquota} onChange={(e) => handleTaxChange('cofins', 'aliquota', parseFloat(e.target.value) || 0)} /></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
                 </div>
                 <DialogFooter>
                     <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
