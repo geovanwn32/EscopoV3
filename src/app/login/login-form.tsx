@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -114,19 +115,25 @@ export default function LoginForm() {
           )}
           <div className="space-y-2">
             <Label htmlFor="email">Email:</Label>
-            <Input id="email" type="email" {...register("email", { required: true })} placeholder="email@exemplo.com" className="bg-muted/50 border-0" />
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input id="email" type="email" {...register("email", { required: true })} placeholder="email@exemplo.com" className="bg-muted/50 border-0 pl-10" />
+            </div>
           </div>
-          <div className="space-y-2 relative">
+          <div className="space-y-2">
             <Label htmlFor="password">Senha:</Label>
-            <Input id="password" type={showPassword ? "text" : "password"} {...register("password", { required: true, minLength: 6 })} placeholder="Sua senha" className="bg-muted/50 border-0 pr-10" />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-9 text-muted-foreground"
-              aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-            >
-              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-            </button>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input id="password" type={showPassword ? "text" : "password"} {...register("password", { required: true, minLength: 6 })} placeholder="Sua senha" className="bg-muted/50 border-0 pl-10 pr-10" />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
           </div>
 
           <div className="flex items-center justify-between text-sm pt-2">
