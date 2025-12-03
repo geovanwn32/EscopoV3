@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useState } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
-import { Mail, Lock, Eye, EyeOff, Phone } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Phone, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -33,123 +34,78 @@ export default function LoginForm() {
   const router = useRouter();
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormInputs>();
 
   const onSubmit: SubmitHandler<FormInputs> = (data) => {
+    setIsLoading(true);
     console.log(data); // Em um app real, aqui você faria a chamada para a API
-    router.push('/selecionar-empresa');
+    setTimeout(() => {
+        setIsLoading(false);
+        router.push('/selecionar-empresa');
+    }, 1000);
   };
 
   return (
-    <div className="p-8 sm:p-12 flex flex-col justify-center">
-      <div className="max-w-md w-full mx-auto">
-        <h2 className="text-3xl font-bold mb-2">{isSignUp ? "Criar Conta" : "Login"}</h2>
-        <p className="text-muted-foreground mb-8">{isSignUp ? "Insira seus dados para começar." : "Insira seus dados para acessar o sistema."}</p>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <div className="mx-auto grid w-[350px] gap-6">
+        <div className="grid gap-2 text-center">
+            <h1 className="text-3xl font-bold">{isSignUp ? "Criar Conta" : "Login"}</h1>
+            <p className="text-balance text-muted-foreground">
+            {isSignUp ? "Insira seus dados para criar sua conta" : "Insira seu email para acessar sua conta"}
+            </p>
+        </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
           {isSignUp && (
-            <div className="space-y-2">
-              <Label htmlFor="fullname">Nome Completo:</Label>
-              <Input id="fullname" type="text" {...register("fullname", { required: true })} placeholder="Seu nome completo" className="bg-muted/50 border-0" />
+            <div className="grid gap-2">
+              <Label htmlFor="fullname">Nome Completo</Label>
+              <Input id="fullname" type="text" {...register("fullname", { required: true })} placeholder="Seu nome completo" />
             </div>
           )}
-          <div className="space-y-2">
-            <Label htmlFor="email">Email:</Label>
-            <Input id="email" type="email" {...register("email", { required: true })} placeholder="email@exemplo.com" className="bg-muted/50 border-0" />
+          <div className="grid gap-2">
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" type="email" {...register("email", { required: true })} placeholder="email@exemplo.com" />
           </div>
-          <div className="space-y-2 relative">
-            <Label htmlFor="password">Senha:</Label>
-            <Input id="password" type={showPassword ? "text" : "password"} {...register("password", { required: true, minLength: 6 })} placeholder="Sua senha" className="bg-muted/50 border-0 pr-10" />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-9 text-muted-foreground"
-              aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-            >
-              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between text-sm pt-2">
-            <div className='flex items-center'>
-              {isSignUp ? (
-                <div className="flex items-start">
-                  <Checkbox id="terms" />
-                  <Label htmlFor="terms" className="ml-2 font-normal text-muted-foreground text-xs">
-                    Envie-me ofertas e dicas de aprendizado.
-                  </Label>
-                </div>
-              ) : (
-                <>
-                  <Checkbox id="remember" {...register("remember")} />
-                  <Label htmlFor="remember" className="ml-2 font-normal text-muted-foreground">Lembrar-me</Label>
-                </>
-              )}
+          <div className="grid gap-2">
+             <div className="flex items-center">
+                <Label htmlFor="password">Senha</Label>
+                {!isSignUp && (
+                    <a href="#" className="ml-auto inline-block text-sm underline">
+                        Esqueceu sua senha?
+                    </a>
+                )}
+             </div>
+            <div className="relative">
+              <Input id="password" type={showPassword ? "text" : "password"} {...register("password", { required: true, minLength: 6 })} placeholder="Sua senha" />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
             </div>
-            {!isSignUp && (
-              <a href="#" className="font-medium text-primary hover:underline">
-                Esqueceu sua senha?
-              </a>
-            )}
           </div>
-
-          <Button type="submit" className="w-full font-semibold text-lg py-6 mt-6">
-            {isSignUp ? 'Continuar' : 'Entrar'}
+          
+          <Button type="submit" className="w-full font-semibold" disabled={isLoading}>
+             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isSignUp ? 'Criar minha conta' : 'Entrar'}
           </Button>
+
+            <Button variant="outline" className="w-full" disabled={isLoading}>
+                <GoogleIcon className="mr-2 h-4 w-4" />
+                Login com Google
+            </Button>
         </form>
 
-        <div className="relative my-8">
-          <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-          <div className="relative flex justify-center text-xs"><span className="bg-card px-2 text-muted-foreground">Ou continue com</span></div>
-        </div>
-
-        <div className="flex justify-center">
-          <Button variant="outline" className="gap-2 bg-white text-gray-700 border-gray-300 shadow-sm hover:bg-gray-100 dark:bg-card-foreground/5 dark:border-border dark:text-foreground dark:hover:bg-card-foreground/10 transition-colors">
-            <GoogleIcon />
-            Login com Google
-          </Button>
-        </div>
-
-        <p className="text-center text-sm text-muted-foreground mt-8">
+        <div className="mt-4 text-center text-sm">
           {isSignUp ? 'Já tem uma conta?' : "Não tem uma conta?"}{' '}
-          <button type="button" onClick={() => setIsSignUp(!isSignUp)} className="font-medium text-primary hover:underline">
+          <button type="button" onClick={() => setIsSignUp(!isSignUp)} className="font-medium text-primary hover:underline" disabled={isLoading}>
             {isSignUp ? 'Entrar' : 'Crie uma agora'}
           </button>
-        </p>
-
-        <div className="border-t mt-8 pt-6 text-center">
-          <p className="text-sm text-muted-foreground mb-4">Precisa de Ajuda?</p>
-            <TooltipProvider>
-              <div className="flex justify-center gap-4">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" asChild className='text-muted-foreground hover:text-primary transition-colors'>
-                        <a href="https://wa.me/5562998554529" target="_blank" rel="noopener noreferrer" aria-label="Entrar em contato via WhatsApp">
-                          <Phone className="h-5 w-5" />
-                        </a>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>WhatsApp</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" asChild className='text-muted-foreground hover:text-primary transition-colors'>
-                        <a href="mailto:geovaniwn@gmail.com" aria-label="Enviar email para o suporte">
-                          <Mail className="h-5 w-5" />
-                        </a>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Email</p>
-                    </TooltipContent>
-                  </Tooltip>
-              </div>
-            </TooltipProvider>
         </div>
       </div>
-    </div>
   );
 }
+
