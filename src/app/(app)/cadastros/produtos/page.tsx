@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { Product } from '@/types/fiscal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { MoneyInput } from '@/components/ui/money-input';
 
 interface UnidadeDeMedida {
     id: number;
@@ -271,8 +272,12 @@ function ItemForm({ onSave, onOpenChange, item, unidadesDeMedida }: ItemFormProp
                             </div>
                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                  <div className="space-y-2">
-                                    <Label htmlFor="valor">Valor Unitário (R$)</Label>
-                                    <Input id="valor" type="number" step="0.01" value={formData.valor} onChange={(e) => handleInputChange('valor', parseFloat(e.target.value) || 0)} required />
+                                    <Label htmlFor="valor">Valor Unitário</Label>
+                                    <MoneyInput
+                                        id="valor"
+                                        value={formData.valor}
+                                        onValueChange={(value) => handleInputChange('valor', value)}
+                                    />
                                 </div>
                                  <div className="space-y-2">
                                     <Label htmlFor="unidadeMedida">Unidade de Medida</Label>
