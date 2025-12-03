@@ -1,7 +1,8 @@
 
+
 'use client';
 import { useState, useMemo, useEffect } from 'react';
-import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft, ShieldCheck, ShieldAlert, Building, KeyRound, User as UserIcon, Save } from 'lucide-react';
+import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft, ShieldCheck, ShieldAlert, Building, KeyRound, User as UserIcon, Save, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -40,6 +41,7 @@ interface User {
     name: string;
     email: string;
     isAdmin: boolean;
+    isMaster?: boolean;
     permissions: UserPermissions;
     allowedCompanyIds: number[];
     password?: string;
@@ -66,8 +68,7 @@ export default function UsuariosPage() {
             const profileString = sessionStorage.getItem('user-profile');
             if (profileString) {
                 try {
-                    const profile = JSON.parse(profileString);
-                    setActiveProfile(profile);
+                    setActiveProfile(JSON.parse(profileString));
                 } catch (e) { console.error("Failed to parse profile", e); }
             }
         }
@@ -75,23 +76,31 @@ export default function UsuariosPage() {
 
     const handleSave = (itemData: Omit<User, 'id'>) => {
         const action = editingItem ? 'UPDATE' : 'CREATE';
+        let logDetails = '';
 
         if (editingItem) {
+            const originalUser = users.find(u => u.id === editingItem.id);
             const updatedUser = { ...editingItem, ...itemData };
             if (!itemData.password) {
                 delete updatedUser.password;
             }
+            
             setUsers(prev => prev.map(user => user.id === editingItem.id ? updatedUser : user));
             toast({ title: "Usuário Atualizado!", description: "Os dados do usuário foram atualizados." });
+
+            logDetails = `Atualizou o usuário "${itemData.name}".`;
+
+            if (originalUser && !originalUser.isMaster && updatedUser.isMaster) {
+                logAudit(setAuditLogs, 'UPDATE', 'Usuários', `O usuário "${itemData.name}" tornou-se Master.`);
+            }
+
         } else {
             const newItem: User = { ...itemData, id: Date.now() };
             setUsers(prev => [...prev, newItem]);
             toast({ title: "Usuário Adicionado!", description: "Um novo usuário foi convidado para a empresa." });
+            logDetails = `Criou o usuário "${itemData.name}" (${itemData.email}).`;
         }
 
-        const logDetails = action === 'CREATE'
-            ? `Criou o usuário "${itemData.name}" (${itemData.email}).`
-            : `Atualizou o usuário "${itemData.name}".`;
         logAudit(setAuditLogs, action, 'Usuários', logDetails);
 
         setIsDialogOpen(false);
@@ -100,11 +109,19 @@ export default function UsuariosPage() {
 
 
     const handleDeleteClick = (item: User) => {
-        if (item.isAdmin) {
-            toast({
+        if (item.isMaster) {
+             toast({
                 variant: 'destructive',
                 title: 'Ação não permitida',
-                description: 'Não é possível excluir o perfil de administrador principal.',
+                description: 'Não é possível excluir o perfil Master.',
+            });
+            return;
+        }
+        if (item.isAdmin && users.filter(u => u.isAdmin && !u.isMaster).length <= 1 && users.some(u => u.isMaster)) {
+             toast({
+                variant: 'destructive',
+                title: 'Ação não permitida',
+                description: 'Não é possível excluir o único perfil de administrador.',
             });
             return;
         }
@@ -151,6 +168,9 @@ export default function UsuariosPage() {
     }, [users, searchTerm]);
 
     const renderPermissions = (user: User) => {
+        if (user.isMaster) {
+            return <Badge><Crown className="mr-1 h-3 w-3" /> Master</Badge>;
+        }
         if (user.isAdmin) {
             return <Badge>Administrador</Badge>;
         }
@@ -228,7 +248,7 @@ export default function UsuariosPage() {
                                         item={editingItem}
                                         users={users}
                                         companies={companies}
-                                        activeProfileId={activeProfile.id}
+                                        activeProfile={activeProfile}
                                     />
                                 </Dialog>
                             </div>
@@ -310,7 +330,7 @@ interface ItemFormProps {
     item: User | null;
     users: User[];
     companies: { id: number, name: string }[];
-    activeProfileId: number;
+    activeProfile: User;
 }
 
 const initialPermissions = modules.reduce((acc, module) => {
@@ -319,24 +339,21 @@ const initialPermissions = modules.reduce((acc, module) => {
 }, {} as UserPermissions);
 
 
-function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfileId }: ItemFormProps) {
+function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfile }: ItemFormProps) {
     const { toast } = useToast();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isAdmin, setIsAdmin] = useState(false);
+    const [isMaster, setIsMaster] = useState(false);
     const [permissions, setPermissions] = useState<UserPermissions>(initialPermissions);
     const [allowedCompanyIds, setAllowedCompanyIds] = useState<number[]>([]);
     const [status, setStatus] = useState<'Ativo' | 'Inativo'>('Ativo');
 
 
-    const adminAlreadyExists = useMemo(() => {
-        // If editing, check if another admin exists.
-        if (item) {
-            return users.some(user => user.isAdmin && user.id !== item.id);
-        }
-        // If creating, check if any admin exists.
-        return users.some(user => user.isAdmin);
+    const otherMasterExists = useMemo(() => {
+        // When editing, check for another master. When creating, check for any master.
+        return users.some(user => user.isMaster && user.id !== item?.id);
     }, [users, item]);
 
     useEffect(() => {
@@ -345,6 +362,7 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfileI
             setEmail(item.email);
             setPassword(''); 
             setIsAdmin(item.isAdmin);
+            setIsMaster(item.isMaster || false);
             setPermissions(item.permissions || initialPermissions);
             setAllowedCompanyIds(item.allowedCompanyIds || []);
             setStatus(item.status || 'Ativo');
@@ -353,6 +371,7 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfileI
             setEmail('');
             setPassword('');
             setIsAdmin(false);
+            setIsMaster(false);
             setPermissions(initialPermissions);
             setAllowedCompanyIds([]);
             setStatus('Ativo');
@@ -360,10 +379,10 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfileI
     }, [item]);
     
     useEffect(() => {
-        if (isAdmin) {
+        if (isAdmin || isMaster) {
           setAllowedCompanyIds(companies.map(c => c.id));
         }
-    }, [isAdmin, companies]);
+    }, [isAdmin, isMaster, companies]);
 
 
     const handlePermissionChange = (moduleId: string, checked: boolean) => {
@@ -371,7 +390,7 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfileI
     }
     
     const handleCompanyAccessChange = (companyId: number, checked: boolean) => {
-        if (isAdmin) return; // Admins always have access to all companies
+        if (isAdmin || isMaster) return; // Admins always have access to all companies
         setAllowedCompanyIds(prev =>
             checked ? [...prev, companyId] : prev.filter(id => id !== companyId)
         );
@@ -396,10 +415,10 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfileI
             });
             return;
         }
-        onSave({ name, email, password, isAdmin, permissions, allowedCompanyIds, status });
+        onSave({ name, email, password, isAdmin, isMaster, permissions, allowedCompanyIds, status });
     };
     
-    const isEditingSelf = item?.id === activeProfileId;
+    const isEditingSelf = item?.id === activeProfile.id;
 
     return (
         <DialogContent className="sm:max-w-lg">
@@ -421,6 +440,22 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfileI
                     <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={item ? "Deixe em branco para não alterar" : "Senha de acesso"} required={!item}/>
                 </div>
                 <Separator />
+                {activeProfile.isMaster && isEditingSelf && (
+                     <div className="space-y-2 flex items-center justify-between rounded-lg border p-3 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-900">
+                        <div className='space-y-0.5'>
+                            <Label htmlFor="isMaster" className='flex items-center text-amber-900 dark:text-amber-300'><Crown className='mr-2 h-4 w-4' />Perfil Master</Label>
+                            <p className='text-xs text-amber-700 dark:text-amber-500'>
+                                Concede acesso irrestrito e impede a própria exclusão.
+                            </p>
+                        </div>
+                        <Switch
+                            id="isMaster"
+                            checked={isMaster}
+                            onCheckedChange={setIsMaster}
+                            disabled={otherMasterExists}
+                        />
+                    </div>
+                )}
                  <div className="space-y-2 flex items-center justify-between rounded-lg border p-3">
                     <div className='space-y-0.5'>
                         <Label htmlFor="isAdmin" className='flex items-center'><ShieldCheck className='mr-2 h-4 w-4 text-primary' />Perfil de Administrador</Label>
@@ -432,7 +467,7 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfileI
                         id="isAdmin"
                         checked={isAdmin}
                         onCheckedChange={setIsAdmin}
-                        disabled={isEditingSelf || adminAlreadyExists}
+                        disabled={isEditingSelf || isMaster}
                     />
                 </div>
                 <div className="space-y-2 flex items-center justify-between rounded-lg border p-3">
@@ -446,7 +481,7 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfileI
                         id="status"
                         checked={status === 'Ativo'}
                         onCheckedChange={(checked) => setStatus(checked ? 'Ativo' : 'Inativo')}
-                        disabled={isEditingSelf && isAdmin}
+                        disabled={isEditingSelf && (isAdmin || isMaster)}
                     />
                 </div>
                  <div className="space-y-4 rounded-lg border p-4">
@@ -456,9 +491,9 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfileI
                             <div key={module.id} className="flex items-center gap-2">
                                 <Checkbox
                                     id={`perm-${module.id}`}
-                                    checked={isAdmin || (permissions ? permissions[module.id] : false)}
+                                    checked={isAdmin || isMaster || (permissions ? permissions[module.id] : false)}
                                     onCheckedChange={(checked) => handlePermissionChange(module.id, !!checked)}
-                                    disabled={isAdmin}
+                                    disabled={isAdmin || isMaster}
                                 />
                                 <Label htmlFor={`perm-${module.id}`} className="font-normal text-sm">{module.label}</Label>
                             </div>
@@ -472,9 +507,9 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfileI
                             <div key={company.id} className="flex items-center gap-2">
                                 <Checkbox
                                     id={`comp-${company.id}`}
-                                    checked={isAdmin || allowedCompanyIds.includes(company.id)}
+                                    checked={isAdmin || isMaster || allowedCompanyIds.includes(company.id)}
                                     onCheckedChange={(checked) => handleCompanyAccessChange(company.id, !!checked)}
-                                    disabled={isAdmin}
+                                    disabled={isAdmin || isMaster}
                                 />
                                 <Label htmlFor={`comp-${company.id}`} className="font-normal text-sm flex items-center gap-2">
                                     <Building className='h-4 w-4 text-muted-foreground'/>
