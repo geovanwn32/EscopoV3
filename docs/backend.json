@@ -31,6 +31,51 @@
           "type": "string",
           "description": "URL da logomarca da empresa.",
           "format": "uri"
+        },
+        "inscricaoEstadual": {
+          "type": "string",
+          "description": "Inscrição Estadual da empresa."
+        },
+        "inscricaoMunicipal": {
+          "type": "string",
+          "description": "Inscrição Municipal da empresa."
+        },
+        "inscricaoSuframa": {
+          "type": "string",
+          "description": "Inscrição na SUFRAMA."
+        },
+        "telefone": {
+          "type": "string",
+          "description": "Telefone de contato da empresa."
+        },
+        "email": {
+          "type": "string",
+          "description": "E-mail de contato da empresa.",
+          "format": "email"
+        },
+        "regimeTributario": {
+          "type": "string",
+          "description": "Regime tributário da empresa (ex: Simples Nacional, Lucro Presumido)."
+        },
+        "classificacaoTributaria": {
+          "type": "string",
+          "description": "Classificação tributária (eSocial/EFD-Reinf)."
+        },
+        "cnaePrincipal": {
+          "type": "string",
+          "description": "CNAE Fiscal Principal da empresa."
+        },
+        "contadorNome": {
+          "type": "string",
+          "description": "Nome do contador responsável."
+        },
+        "contadorCpf": {
+          "type": "string",
+          "description": "CPF do contador responsável."
+        },
+        "contadorCrc": {
+          "type": "string",
+          "description": "Número do CRC do contador."
         }
       },
       "required": [
