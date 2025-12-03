@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { User, Shield, KeyRound, Loader2, ArrowLeft, PlusCircle } from 'lucide-react';
 import { useCompany } from '@/hooks/use-company';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -97,14 +97,14 @@ export default function SelecionarPerfilPage() {
                     </p>
                 </div>
                 
+                {users.length > 0 ? (
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                     {users.map((user) => (
                         <Card
                             key={user.id}
-                            onClick={() => handleProfileSelect(user)}
-                            className="cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1 focus-within:shadow-lg"
+                            className="flex flex-col justify-between transition-shadow hover:shadow-lg focus-within:shadow-lg"
                         >
-                            <CardContent className="flex flex-col items-center justify-center p-6 text-center space-y-4">
+                            <CardContent className="flex flex-col flex-grow items-center justify-center p-6 text-center space-y-4">
                                 <Avatar className="h-20 w-20 border-2">
                                     <AvatarFallback className="bg-muted">
                                         {user.isAdmin ? (
@@ -119,6 +119,12 @@ export default function SelecionarPerfilPage() {
                                     <p className="text-sm text-muted-foreground">{user.isAdmin ? "Administrador" : "Usuário"}</p>
                                 </div>
                             </CardContent>
+                            <CardFooter className="p-2 border-t">
+                                <Button className="w-full" onClick={() => handleProfileSelect(user)}>
+                                    <KeyRound className="mr-2 h-4 w-4" />
+                                    Acessar
+                                </Button>
+                            </CardFooter>
                         </Card>
                     ))}
                     <Card
@@ -131,6 +137,19 @@ export default function SelecionarPerfilPage() {
                         </CardContent>
                     </Card>
                 </div>
+                ) : (
+                     <Card className="w-full max-w-lg mx-auto text-center">
+                        <CardHeader>
+                            <CardTitle>Nenhum Perfil Encontrado</CardTitle>
+                            <CardDescription>
+                                Nenhum perfil de usuário foi cadastrado para esta empresa. Contate um administrador para criar seu acesso.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-xs text-muted-foreground">Se você é o administrador, pode cadastrar usuários em <Link href="/cadastros/usuarios" className='font-semibold text-primary hover:underline'>Cadastros &gt; Usuários e Perfis</Link> após o primeiro acesso.</p>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
 
             <Dialog open={!!selectedUser} onOpenChange={(open) => !open && handleDialogClose()}>
