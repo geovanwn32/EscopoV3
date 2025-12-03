@@ -1,9 +1,8 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MoreHorizontal, Plus, Search, Trash2, Eye, Pencil, Loader2 } from 'lucide-react';
+import { MoreHorizontal, Plus, Search, Trash2, Eye, Pencil, Loader2, ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,6 +19,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useCompany } from '@/hooks/use-company';
 import { AuditLog, logAudit } from '@/lib/audit-log';
 import { Separator } from '@/components/ui/separator';
+import Link from 'next/link';
 
 export default function ParceirosPage() {
     const { toast } = useToast();
@@ -96,11 +96,19 @@ export default function ParceirosPage() {
 
     return (
         <div className="space-y-6">
-            <div className="space-y-1">
-                <h1 className="text-3xl font-bold tracking-tight font-headline">Cadastro de Parceiros</h1>
-                <p className="text-muted-foreground">
-                    Gerencie seus clientes, fornecedores e transportadoras.
-                </p>
+            <div className="flex items-center gap-4">
+                 <Link href="/cadastros">
+                    <Button variant="outline" size="icon" className="h-8 w-8">
+                        <ArrowLeft className="h-4 w-4" />
+                        <span className="sr-only">Voltar</span>
+                    </Button>
+                </Link>
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-bold tracking-tight font-headline">Cadastro de Parceiros</h1>
+                    <p className="text-muted-foreground">
+                        Gerencie seus clientes, fornecedores e transportadoras.
+                    </p>
+                </div>
             </div>
 
             <Card>
@@ -491,4 +499,4 @@ function PartnerForm({ onSave, onOpenChange, partner, isReadOnly }: PartnerFormP
 }
 
 
-
+    
