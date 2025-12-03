@@ -2,7 +2,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Shield, KeyRound, Loader2, ArrowLeft, PlusCircle, Trash2 } from 'lucide-react';
+import { User, Shield, KeyRound, Loader2, ArrowLeft, PlusCircle, Trash2, LogOut } from 'lucide-react';
 import { useCompany } from '@/hooks/use-company';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -13,18 +13,21 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useAuth } from '@/firebase';
 
 interface UserProfile {
     id: number;
     name: string;
     email: string;
     isAdmin: boolean;
+    isMaster?: boolean;
     password?: string;
     status: 'Ativo' | 'Inativo';
 }
 
 export default function SelecionarPerfilPage() {
     const router = useRouter();
+    const auth = useAuth();
     const { useScopedData } = useCompany();
     const [users, setUsers] = useScopedData<UserProfile[]>('global-users', []);
     const { toast } = useToast();
@@ -74,11 +77,13 @@ export default function SelecionarPerfilPage() {
         setIsLoading(false);
     }
     
-    const handleSaveNewUser = (userData: Omit<UserProfile, 'id' | 'isAdmin' | 'permissions' | 'status'>) => {
+    const handleSaveNewUser = (userData: Omit<UserProfile, 'id' | 'isAdmin' | 'isMaster' | 'permissions' | 'status'>) => {
+        const isFirstUser = users.length === 0;
         const newUser: UserProfile = {
             id: Date.now(),
             ...userData,
-            isAdmin: users.length === 0, 
+            isAdmin: isFirstUser, // First user is always admin
+            isMaster: isFirstUser, // First user is always master
             permissions: {},
             status: 'Ativo',
         };
@@ -88,7 +93,15 @@ export default function SelecionarPerfilPage() {
     };
 
     const handleDeleteClick = (user: UserProfile) => {
-        if (user.isAdmin && users.filter(u => u.isAdmin).length <= 1) {
+        if (user.isMaster) {
+             toast({
+                variant: 'destructive',
+                title: 'Ação não permitida',
+                description: 'Não é possível excluir o perfil Master.',
+            });
+            return;
+        }
+        if (user.isAdmin && users.filter(u => u.isAdmin && !u.isMaster).length <= 1) {
             toast({
                 variant: 'destructive',
                 title: 'Ação não permitida',
@@ -109,6 +122,12 @@ export default function SelecionarPerfilPage() {
             });
             setUserToDelete(null);
         }
+    };
+    
+    const handleLogout = async () => {
+        await auth.signOut();
+        sessionStorage.removeItem('user-profile');
+        router.push('/login');
     };
     
     useEffect(() => {
@@ -140,7 +159,9 @@ export default function SelecionarPerfilPage() {
                             <CardContent className="flex flex-col flex-grow items-center justify-center p-6 text-center space-y-4">
                                 <Avatar className="h-20 w-20 border-2">
                                     <AvatarFallback className="bg-muted">
-                                        {user.isAdmin ? (
+                                        {user.isMaster ? (
+                                            <Shield className="h-10 w-10 text-amber-500" />
+                                        ) : user.isAdmin ? (
                                             <Shield className="h-10 w-10 text-primary" />
                                         ) : (
                                             <User className="h-10 w-10 text-muted-foreground" />
@@ -149,7 +170,7 @@ export default function SelecionarPerfilPage() {
                                 </Avatar>
                                 <div className="space-y-1">
                                     <h2 className="text-lg font-semibold">{user.name}</h2>
-                                    <p className="text-sm text-muted-foreground">{user.isAdmin ? "Administrador" : "Usuário"}</p>
+                                    <p className="text-sm text-muted-foreground">{user.isMaster ? "Master" : user.isAdmin ? "Administrador" : "Usuário"}</p>
                                 </div>
                             </CardContent>
                             <CardFooter className="p-2 border-t flex items-center gap-1">
@@ -157,13 +178,25 @@ export default function SelecionarPerfilPage() {
                                     <KeyRound className="mr-2 h-4 w-4" />
                                     Acessar
                                 </Button>
-                                <Button variant="ghost" size="icon" className="text-destructive/70 hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDeleteClick(user)}>
-                                    <Trash2 className="h-4 w-4"/>
-                                    <span className="sr-only">Excluir</span>
-                                </Button>
+                                {!user.isMaster && (
+                                    <Button variant="ghost" size="icon" className="text-destructive/70 hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDeleteClick(user)}>
+                                        <Trash2 className="h-4 w-4"/>
+                                        <span className="sr-only">Excluir</span>
+                                    </Button>
+                                )}
                             </CardFooter>
                         </Card>
                     ))}
+                     <Card 
+                        onClick={() => setIsAddUserOpen(true)}
+                        className="cursor-pointer transition-transform hover:scale-105 hover:shadow-lg focus:scale-105 focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary border-dashed bg-card/50 hover:bg-card flex flex-col items-center justify-center"
+                        tabIndex={0}
+                    >
+                        <CardContent className="flex flex-col items-center justify-center p-6 text-center text-muted-foreground">
+                            <PlusCircle className="h-10 w-10 mb-4"/>
+                            <h2 className="text-lg font-semibold">Adicionar Perfil</h2>
+                        </CardContent>
+                    </Card>
                 </div>
                 ) : (
                      <Card className="w-full max-w-lg mx-auto text-center">
@@ -244,7 +277,7 @@ export default function SelecionarPerfilPage() {
 interface AddUserDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSave: (data: Omit<UserProfile, 'id' | 'isAdmin' | 'permissions' | 'status'>) => void;
+    onSave: (data: Omit<UserProfile, 'id' | 'isAdmin' | 'isMaster' | 'permissions' | 'status'>) => void;
     isFirstUser: boolean;
 }
 

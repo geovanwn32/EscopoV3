@@ -1,4 +1,5 @@
 
+
 import { Building2, ArrowLeft } from 'lucide-react';
 import LoginForm from './login-form';
 import Link from 'next/link';
@@ -21,12 +22,6 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen w-full items-center justify-center p-4 lg:p-8 animated-gradient">
         <div className="relative w-full h-full">
-            <Button asChild variant="ghost" className="absolute top-4 left-4 z-10 text-card-foreground">
-                <Link href="/">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Voltar
-                </Link>
-            </Button>
             <div className="grid grid-cols-1 md:grid-cols-2 max-w-6xl w-full mx-auto bg-card text-card-foreground rounded-3xl shadow-2xl overflow-hidden border ring-1 ring-black/5">
                 {/* Left Panel */}
                 <div className="relative hidden md:flex flex-col justify-between p-8 lg:p-12 bg-primary text-primary-foreground">

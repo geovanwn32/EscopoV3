@@ -2,7 +2,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Building2, PlusCircle, Trash2, Pencil, LogIn, Loader2, Search, ArrowLeft } from 'lucide-react';
+import { Building2, PlusCircle, Trash2, Pencil, LogIn, Loader2, Search, ArrowLeft, LogOut } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
 
 import { useCompany, type Company } from '@/hooks/use-company';
@@ -17,9 +17,11 @@ import { Label } from '@/components/ui/label';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useAuth } from '@/firebase';
 
 export default function SelecionarEmpresaPage() {
   const router = useRouter();
+  const auth = useAuth();
   const { companies, switchCompany, addCompany, deleteCompany, isLoaded, currentCompany } = useCompany();
   const [itemToDelete, setItemToDelete] = useState<number | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -48,6 +50,12 @@ export default function SelecionarEmpresaPage() {
     return companies.filter(company => activeProfile.allowedCompanyIds?.includes(company.id));
   }, [companies, activeProfile, isLoaded]);
 
+  const handleLogout = async () => {
+    await auth.signOut();
+    localStorage.removeItem('currentCompany');
+    sessionStorage.removeItem('user-profile');
+    router.push('/login');
+  };
 
   const handleSelectCompany = (companyId: number) => {
     switchCompany(companyId, false); // Switch but don't navigate
@@ -100,12 +108,18 @@ export default function SelecionarEmpresaPage() {
     <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <div className="flex min-h-screen w-full items-center justify-center p-4 lg:p-8 animated-gradient">
             <div className="relative w-full max-w-5xl">
-                <Button asChild variant="ghost" className="absolute -top-14 left-0 z-10 text-card-foreground">
-                    <Link href="/selecionar-perfil">
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Trocar Perfil
-                    </Link>
-                </Button>
+                <div className='absolute -top-14 left-0 z-10 flex gap-4'>
+                    <Button asChild variant="ghost" className=" text-card-foreground">
+                        <Link href="/selecionar-perfil">
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Trocar Perfil
+                        </Link>
+                    </Button>
+                    <Button variant="ghost" className=" text-card-foreground" onClick={handleLogout}>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        LOGOFF
+                    </Button>
+                </div>
                 <div className="text-center mb-8 text-card-foreground">
                     <h1 className="text-3xl font-bold tracking-tight font-headline">Selecionar Empresa</h1>
                     <p className="text-muted-foreground">
