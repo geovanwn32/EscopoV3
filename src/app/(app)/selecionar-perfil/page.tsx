@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -154,15 +155,6 @@ export default function SelecionarPerfilPage() {
                             </CardFooter>
                         </Card>
                     ))}
-                    <Card
-                        onClick={() => setIsAddUserOpen(true)}
-                        className="cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1 focus-within:shadow-lg border-dashed bg-card/50 hover:bg-card flex items-center justify-center"
-                    >
-                        <CardContent className="p-6 text-center text-muted-foreground">
-                             <PlusCircle className="h-10 w-10 mx-auto mb-4"/>
-                            <h2 className="text-lg font-semibold">Adicionar Perfil</h2>
-                        </CardContent>
-                    </Card>
                 </div>
                 ) : (
                      <Card className="w-full max-w-lg mx-auto text-center">
