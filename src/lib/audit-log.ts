@@ -1,7 +1,6 @@
 
-import { useCompany } from "@/hooks/use-company";
 
-type AuditLogAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'IMPORT' | 'LOGOUT';
+export type AuditLogAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'IMPORT' | 'LOGOUT';
 
 export interface AuditLog {
   id: string;
@@ -19,15 +18,27 @@ export const logAudit = (
     module: string,
     details: string
 ) => {
+    let userName = 'Sistema'; // Default user
+    if (typeof window !== 'undefined') {
+        const profileString = sessionStorage.getItem('user-profile');
+        if (profileString) {
+            try {
+                const profile = JSON.parse(profileString);
+                userName = profile.name || 'Usuário Desconhecido';
+            } catch (e) {
+                // Ignore parsing error, use default
+            }
+        }
+    }
+
+
     const newLog: AuditLog = {
         id: crypto.randomUUID(),
         timestamp: new Date(),
-        user: 'Geovani Nunes', // Hardcoded for now
+        user: userName,
         action,
         module,
         details,
     };
     setter(prevLogs => [newLog, ...prevLogs]);
 };
-
-    

@@ -32,6 +32,8 @@ const CompanyContext = createContext<CompanyContextType | undefined>(undefined);
 const LS_COMPANIES_KEY = 'companies';
 const LS_CURRENT_COMPANY_KEY = 'currentCompany';
 
+// This is a global storage hook, not scoped to a company.
+// Should only be used for data that is truly global (e.g., the list of users).
 export function useLocalStorage<T>(key: string, defaultValue: T): [T, (value: T | ((prev: T) => T)) => void] {
     const defaultValueRef = useRef(defaultValue);
 

@@ -8,8 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Search, Tag, Type } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useCompany } from '@/hooks/use-company';
 import type { AuditLog } from '@/lib/audit-log';
+import { useLocalStorage } from '@/hooks/use-company';
 
 type AuditLogAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'IMPORT' | 'LOGOUT';
 
@@ -17,9 +17,8 @@ type AuditLogAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'IMPORT' | 'LOG
 const initialLogs: AuditLog[] = [];
 
 export default function AuditTrailPage() {
-    const { useScopedData } = useCompany();
-    // Logs are now scoped to the company
-    const [logs, setLogs] = useScopedData<AuditLog[]>('audit-trail-logs', initialLogs);
+    // Logs are now global, not scoped to the company
+    const [logs, setLogs] = useLocalStorage<AuditLog[]>('audit-trail-logs', initialLogs);
     const [searchTerm, setSearchTerm] = useState('');
     const [moduleFilter, setModuleFilter] = useState('all');
     const [actionFilter, setActionFilter] = useState('all');
@@ -148,5 +147,3 @@ export default function AuditTrailPage() {
         </div>
     );
 }
-
-    

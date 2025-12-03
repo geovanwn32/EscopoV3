@@ -40,7 +40,7 @@ interface User {
 export default function AdminPage() {
     const { toast } = useToast();
     const [users, setUsers] = useLocalStorage<User[]>('global-users', []);
-    const [, setAuditLogs] = useLocalStorage<AuditLog[]>('audit-trail-logs', []);
+    const [auditLogs, setAuditLogs] = useLocalStorage<AuditLog[]>('audit-trail-logs', []);
     
     const [userToApprove, setUserToApprove] = useState<User | null>(null);
     const [userToDelete, setUserToDelete] = useState<User | null>(null);

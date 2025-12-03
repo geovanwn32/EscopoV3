@@ -16,7 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Partner, PartnerType, PersonType } from '@/types/partner';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useCompany } from '@/hooks/use-company';
+import { useCompany, useLocalStorage } from '@/hooks/use-company';
 import { AuditLog, logAudit } from '@/lib/audit-log';
 import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
@@ -25,7 +25,7 @@ export default function ParceirosPage() {
     const { toast } = useToast();
     const { useScopedData } = useCompany();
     const [partners, setPartners] = useScopedData<Partner[]>('partners', []);
-    const [, setAuditLogs] = useScopedData<AuditLog[]>('audit-trail-logs', []);
+    const [auditLogs, setAuditLogs] = useLocalStorage<AuditLog[]>('audit-trail-logs', []);
 
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -510,7 +510,3 @@ function PartnerForm({ onSave, onOpenChange, partner, isReadOnly }: PartnerFormP
         </DialogContent>
     );
 }
-
-
-    
-    
