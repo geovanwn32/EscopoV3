@@ -192,26 +192,14 @@ function PlansSection() {
 function AboutSection() {
     return (
         <section id="sobre" className="w-full py-16 sm:py-24">
-            <div className="container grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-                <div className="order-2 md:order-1">
-                    <h2 className="text-3xl font-bold tracking-tight">Sobre o EscopoV3</h2>
-                    <p className="mt-6 text-lg text-muted-foreground">
-                        Nascemos da necessidade de criar uma ferramenta verdadeiramente integrada e intuitiva para o mercado contábil brasileiro. Nossa missão é empoderar contadores e empresários com tecnologia de ponta, transformando tarefas complexas em processos simples e automatizados.
-                    </p>
-                    <p className="mt-4 text-lg text-muted-foreground">
-                        Acreditamos que, com a ferramenta certa, a gestão contábil deixa de ser uma obrigação e se torna uma poderosa aliada estratégica para o crescimento de qualquer negócio.
-                    </p>
-                </div>
-                <div className="order-1 md:order-2">
-                     <Image
-                        src="https://picsum.photos/seed/teamwork/600/400"
-                        alt="Equipe colaborando em um escritório"
-                        width={600}
-                        height={400}
-                        className="rounded-lg shadow-lg"
-                        data-ai-hint="trabalho em equipe"
-                    />
-                </div>
+            <div className="container text-center max-w-3xl mx-auto">
+                <h2 className="text-3xl font-bold tracking-tight">Sobre o EscopoV3</h2>
+                <p className="mt-6 text-lg text-muted-foreground">
+                    Nascemos da necessidade de criar uma ferramenta verdadeiramente integrada e intuitiva para o mercado contábil brasileiro. Nossa missão é empoderar contadores e empresários com tecnologia de ponta, transformando tarefas complexas em processos simples e automatizados.
+                </p>
+                <p className="mt-4 text-lg text-muted-foreground">
+                    Acreditamos que, com a ferramenta certa, a gestão contábil deixa de ser uma obrigação e se torna uma poderosa aliada estratégica para o crescimento de qualquer negócio.
+                </p>
             </div>
         </section>
     )
