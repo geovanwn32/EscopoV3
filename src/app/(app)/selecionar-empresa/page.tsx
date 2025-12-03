@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
 import { Building2, PlusCircle, Trash2, Pencil, LogIn, Loader2, Search, ArrowLeft } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 
 import { useCompany, type Company } from '@/hooks/use-company';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,6 +24,30 @@ export default function SelecionarEmpresaPage() {
   const [itemToDelete, setItemToDelete] = useState<number | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const { toast } = useToast();
+  
+  const [activeProfile, setActiveProfile] = useState<{isAdmin: boolean, allowedCompanyIds: number[]} | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+        const profileString = sessionStorage.getItem('user-profile');
+        if (profileString) {
+            try {
+                setActiveProfile(JSON.parse(profileString));
+            } catch (e) {
+                console.error("Failed to parse user profile from session storage", e);
+            }
+        }
+    }
+  }, []);
+
+  const displayedCompanies = useMemo(() => {
+    if (!isLoaded || !activeProfile) return [];
+    if (activeProfile.isAdmin) {
+      return companies;
+    }
+    return companies.filter(company => activeProfile.allowedCompanyIds?.includes(company.id));
+  }, [companies, activeProfile, isLoaded]);
+
 
   const handleSelectCompany = (companyId: number) => {
     switchCompany(companyId, false); // Switch but don't navigate
@@ -92,9 +117,9 @@ export default function SelecionarEmpresaPage() {
                      <div className="flex justify-center items-center h-64">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
-                ) : companies.length > 0 ? (
+                ) : displayedCompanies.length > 0 ? (
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                    {companies.map((company) => (
+                    {displayedCompanies.map((company) => (
                     <Card
                         key={company.id}
                         className="flex flex-col justify-between transition-shadow hover:shadow-lg focus-within:shadow-lg"
@@ -148,20 +173,20 @@ export default function SelecionarEmpresaPage() {
                         </CardFooter>
                     </Card>
                     ))}
-
-                    <Card 
-                        onClick={handleAddNewCompany}
-                        className="cursor-pointer transition-transform hover:scale-105 hover:shadow-lg focus:scale-105 focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary border-dashed bg-card/50 hover:bg-card"
-                        tabIndex={0}
-                    >
-                        <CardContent className="flex flex-col items-center justify-center p-6 text-center space-y-4 h-full">
-                            <div className="flex flex-col items-center justify-center text-muted-foreground">
-                                <PlusCircle className="h-10 w-10 mb-4"/>
-                                <h2 className="text-lg font-semibold">Adicionar Nova Empresa</h2>
-                            </div>
-                        </CardContent>
-                    </Card>
-
+                    {activeProfile?.isAdmin && (
+                        <Card 
+                            onClick={handleAddNewCompany}
+                            className="cursor-pointer transition-transform hover:scale-105 hover:shadow-lg focus:scale-105 focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary border-dashed bg-card/50 hover:bg-card"
+                            tabIndex={0}
+                        >
+                            <CardContent className="flex flex-col items-center justify-center p-6 text-center space-y-4 h-full">
+                                <div className="flex flex-col items-center justify-center text-muted-foreground">
+                                    <PlusCircle className="h-10 w-10 mb-4"/>
+                                    <h2 className="text-lg font-semibold">Adicionar Nova Empresa</h2>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
                 </div>
                 ) : (
                 <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)]">

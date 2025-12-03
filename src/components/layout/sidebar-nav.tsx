@@ -24,33 +24,34 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { useCompany } from '@/hooks/use-company';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { useEffect, useState, useMemo } from 'react';
 
 interface NavItem {
+  id: string;
   href: string;
   label: string;
   icon: React.ElementType;
 }
 
-const navItems: NavItem[] = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/fiscal', label: 'Fiscal', icon: FileText },
-  { href: '/pessoal', label: 'Pessoal', icon: Users },
-  { href: '/contabil', label: 'Contábil', icon: Book },
-  { href: '/financeiro', label: 'Financeiro', icon: Banknote },
-  { href: '/cadastros', label: 'Cadastros', icon: Archive },
-  { href: '/conectividade', label: 'Conectividade', icon: Plug },
-  { href: '/utilitarios', label: 'Utilitários', icon: Wrench },
-  // { href: '/configuracoes', label: 'Configurações', icon: Settings },
+const allNavItems: NavItem[] = [
+  { id: 'dashboard', href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'fiscal', href: '/fiscal', label: 'Fiscal', icon: FileText },
+  { id: 'pessoal', href: '/pessoal', label: 'Pessoal', icon: Users },
+  { id: 'contabil', href: '/contabil', label: 'Contábil', icon: Book },
+  { id: 'financeiro', href: '/financeiro', label: 'Financeiro', icon: Banknote },
+  { id: 'cadastros', href: '/cadastros', label: 'Cadastros', icon: Archive },
+  { id: 'conectividade', href: '/conectividade', label: 'Conectividade', icon: Plug },
+  { id: 'utilitarios', href: '/utilitarios', label: 'Utilitários', icon: Wrench },
 ];
 
 const cadastroItems: NavItem[] = [
-    { href: '/parceiros', label: 'Parceiros', icon: Archive },
-    { href: '/produtos', label: 'Produtos', icon: Archive },
-    { href: '/servicos', label: 'Serviços', icon: Archive },
-    { href: '/funcionarios', label: 'Funcionários', icon: Archive },
-    { href: '/socios', label: 'Sócios', icon: Archive },
-    { href: '/aliquotas', label: 'Alíquotas', icon: Archive },
-    { href: '/rubricas', label: 'Rubricas', icon: Archive },
+    { id: 'parceiros', href: '/parceiros', label: 'Parceiros', icon: Archive },
+    { id: 'produtos', href: '/produtos', label: 'Produtos', icon: Archive },
+    { id: 'servicos', href: '/servicos', label: 'Serviços', icon: Archive },
+    { id: 'funcionarios', href: '/funcionarios', label: 'Funcionários', icon: Archive },
+    { id: 'socios', href: '/socios', label: 'Sócios', icon: Archive },
+    { id: 'aliquotas', href: '/aliquotas', label: 'Alíquotas', icon: Archive },
+    { id: 'rubricas', href: '/rubricas', label: 'Rubricas', icon: Archive },
 ];
 
 
@@ -58,6 +59,34 @@ export function SidebarNav() {
   const pathname = usePathname();
   const { open } = useSidebar();
   const { companies, currentCompany } = useCompany();
+  
+  const [activeProfile, setActiveProfile] = useState<{isAdmin: boolean, permissions: Record<string, boolean>} | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+        const profileString = sessionStorage.getItem('user-profile');
+        if (profileString) {
+            try {
+                setActiveProfile(JSON.parse(profileString));
+            } catch (e) {
+                console.error("Failed to parse user profile from session storage", e);
+            }
+        }
+    }
+  }, []);
+
+  const visibleNavItems = useMemo(() => {
+    if (!activeProfile) return [];
+    if (activeProfile.isAdmin) {
+      return allNavItems;
+    }
+    // Dashboard is always visible
+    const filteredItems = allNavItems.filter(item => 
+        item.id === 'dashboard' || activeProfile.permissions[item.id]
+    );
+    return filteredItems;
+  }, [activeProfile]);
+
 
   const activeCompany = companies.find(c => c.id === currentCompany);
 
@@ -96,7 +125,7 @@ export function SidebarNav() {
 
       <nav className="flex-1 space-y-2">
         <TooltipProvider delayDuration={0}>
-            {navItems.map((item) => (
+            {visibleNavItems.map((item) => (
             <Tooltip key={item.label}>
                 <TooltipTrigger asChild>
                     <Link href={item.href}>
