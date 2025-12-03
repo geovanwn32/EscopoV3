@@ -47,7 +47,6 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
             <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
             <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
             <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.222,0-9.619-3.317-11.28-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
-fio
             <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C39.901,36.639,44,30.836,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
         </svg>
     )
@@ -133,7 +132,7 @@ function InnerLoginForm() {
             }
             // User is active, proceed to company selection
             sessionStorage.setItem('user-profile', JSON.stringify(existingProfile));
-            router.push('/selecionar-perfil');
+            router.push('/selecionar-empresa');
         } else {
             // New user, create a profile
             const isFirstUser = users.length === 0;
@@ -158,7 +157,7 @@ function InnerLoginForm() {
                 router.push('/pending');
             } else {
                  sessionStorage.setItem('user-profile', JSON.stringify(newUserProfile));
-                 router.push('/selecionar-perfil');
+                 router.push('/selecionar-empresa');
             }
         }
         setIsAuthLoading(false);
@@ -229,35 +228,37 @@ function InnerLoginForm() {
   }
 
   return (
-    <div className="p-8 sm:p-12 flex flex-col justify-center">
-      <div className="max-w-md w-full mx-auto">
-        <h2 className="text-3xl font-bold mb-2">{isSignUp ? "Criar Conta" : "Login"}</h2>
-        <p className="text-muted-foreground mb-8">{isSignUp ? "Insira seus dados para começar." : "Insira seus dados para acessar o sistema."}</p>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <div className="mx-auto grid w-[350px] gap-6">
+        <div className="grid gap-2 text-center">
+            <h1 className="text-3xl font-bold">{isSignUp ? "Criar Conta" : "Login"}</h1>
+            <p className="text-balance text-muted-foreground">
+            {isSignUp ? "Insira seus dados para criar sua conta" : "Insira seu email para acessar sua conta"}
+            </p>
+        </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
           {isSignUp && (
-            <div className="space-y-2">
-              <Label htmlFor="fullname">Nome Completo:</Label>
-              <div className="relative">
-                <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input id="fullname" type="text" {...register("fullname", { required: "O nome é obrigatório" })} placeholder="Seu nome completo" className="bg-muted/50 pl-10" />
+            <div className="grid gap-2">
+              <Label htmlFor="fullname">Nome Completo</Label>
+              <Input id="fullname" type="text" {...register("fullname", { required: "O nome é obrigatório" })} placeholder="Seu nome completo" />
                 {errors.fullname && <p className="text-xs text-destructive mt-1">{errors.fullname.message}</p>}
-              </div>
             </div>
           )}
-          <div className="space-y-2">
-            <Label htmlFor="email">Email:</Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="email" type="email" {...register("email", { required: "O e-mail é obrigatório" })} placeholder="email@exemplo.com" className="bg-muted/50 pl-10" />
-              {errors.email && <p className="text-xs text-destructive mt-1">{errors.email.message}</p>}
-            </div>
+          <div className="grid gap-2">
+            <Label htmlFor="email">Email</Label>
+             <Input id="email" type="email" {...register("email", { required: "O e-mail é obrigatório" })} placeholder="email@exemplo.com" />
+             {errors.email && <p className="text-xs text-destructive mt-1">{errors.email.message}</p>}
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Senha:</Label>
+          <div className="grid gap-2">
+             <div className="flex items-center">
+                <Label htmlFor="password">Senha</Label>
+                {!isSignUp && (
+                    <a href="#" className="ml-auto inline-block text-sm underline">
+                        Esqueceu sua senha?
+                    </a>
+                )}
+             </div>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="password" type={showPassword ? "text" : "password"} {...register("password", { required: "A senha é obrigatória", minLength: { value: 6, message: "A senha deve ter pelo menos 6 caracteres" } })} placeholder="Sua senha" className="bg-muted/50 pl-10 pr-10" />
+              <Input id="password" type={showPassword ? "text" : "password"} {...register("password", { required: "A senha é obrigatória", minLength: { value: 6, message: "A senha deve ter pelo menos 6 caracteres" } })} placeholder="Sua senha" />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
@@ -271,98 +272,33 @@ function InnerLoginForm() {
           </div>
           
           {isSignUp && (
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmar Senha:</Label>
+             <div className="grid gap-2">
+              <Label htmlFor="confirmPassword">Confirmar Senha</Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input id="confirmPassword" type="password" {...register("confirmPassword", { required: "A confirmação da senha é obrigatória", validate: value => value === passwordValue || "As senhas não coincidem" })} placeholder="Repita sua senha" className="bg-muted/50 pl-10" />
+                <Input id="confirmPassword" type="password" {...register("confirmPassword", { required: "A confirmação da senha é obrigatória", validate: value => value === passwordValue || "As senhas não coincidem" })} placeholder="Repita sua senha" />
               </div>
               {errors.confirmPassword && <p className="text-xs text-destructive mt-1">{errors.confirmPassword.message}</p>}
             </div>
           )}
 
-
-          <div className="flex items-center justify-between text-sm pt-2">
-            <div className='flex items-center'>
-              {isSignUp ? (
-                <div className="flex items-start">
-                  <Checkbox id="terms" />
-                  <Label htmlFor="terms" className="ml-2 font-normal text-muted-foreground text-xs">
-                    Envie-me ofertas e dicas de aprendizado.
-                  </Label>
-                </div>
-              ) : (
-                <>
-                  <Checkbox id="remember" {...register("remember")} />
-                  <Label htmlFor="remember" className="ml-2 font-normal text-muted-foreground">Lembrar-me</Label>
-                </>
-              )}
-            </div>
-            {!isSignUp && (
-              <a href="#" className="font-medium text-primary hover:underline">
-                Esqueceu sua senha?
-              </a>
-            )}
-          </div>
-
-          <Button type="submit" className="w-full font-semibold text-lg py-6 mt-6" disabled={isAuthLoading}>
+          <Button type="submit" className="w-full font-semibold" disabled={isAuthLoading}>
              {isAuthLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isSignUp ? 'Continuar' : 'Entrar'}
+            {isSignUp ? 'Criar minha conta' : 'Entrar'}
           </Button>
+
+            <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isAuthLoading}>
+                {isAuthLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-4 w-4" />}
+                Login com Google
+            </Button>
         </form>
 
-        <div className="relative my-8">
-          <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-          <div className="relative flex justify-center text-xs"><span className="bg-card px-2 text-muted-foreground">Ou continue com</span></div>
-        </div>
-
-        <div className="flex justify-center">
-          <Button variant="outline" className="gap-2 bg-white text-gray-700 border-gray-300 shadow-sm hover:bg-gray-100 dark:bg-card-foreground/5 dark:border-border dark:text-foreground dark:hover:bg-card-foreground/10 transition-colors" onClick={handleGoogleSignIn} disabled={isAuthLoading}>
-            {isAuthLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon />}
-            Login com Google
-          </Button>
-        </div>
-
-        <p className="text-center text-sm text-muted-foreground mt-8">
+        <div className="mt-4 text-center text-sm">
           {isSignUp ? 'Já tem uma conta?' : "Não tem uma conta?"}{' '}
           <button type="button" onClick={() => setIsSignUp(!isSignUp)} className="font-medium text-primary hover:underline" disabled={isAuthLoading}>
             {isSignUp ? 'Entrar' : 'Crie uma agora'}
           </button>
-        </p>
-
-        <div className="border-t mt-8 pt-6 text-center">
-          <p className="text-sm text-muted-foreground mb-4">Precisa de Ajuda?</p>
-            <TooltipProvider>
-              <div className="flex justify-center gap-4">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" asChild className='text-muted-foreground hover:text-primary transition-colors'>
-                        <a href="https://wa.me/5562998554529" target="_blank" rel="noopener noreferrer" aria-label="Entrar em contato via WhatsApp">
-                          <Phone className="h-5 w-5" />
-                        </a>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>WhatsApp</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" asChild className='text-muted-foreground hover:text-primary transition-colors'>
-                        <a href="mailto:geovaniwn@gmail.com" aria-label="Enviar email para o suporte">
-                          <Mail className="h-5 w-5" />
-                        </a>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Email</p>
-                    </TooltipContent>
-                  </Tooltip>
-              </div>
-            </TooltipProvider>
         </div>
       </div>
-    </div>
   );
 }
 
@@ -372,5 +308,3 @@ export default function LoginForm() {
       <InnerLoginForm />
   )
 }
-
-    
