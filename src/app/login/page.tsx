@@ -27,7 +27,7 @@ export default function LoginPage() {
                     Voltar
                 </Link>
             </Button>
-            <div className="grid grid-cols-1 lg:grid-cols-2 max-w-6xl w-full mx-auto bg-card text-card-foreground rounded-3xl shadow-2xl overflow-hidden mt-16 lg:mt-0">
+            <div className="grid grid-cols-1 lg:grid-cols-2 max-w-6xl w-full mx-auto bg-card text-card-foreground rounded-3xl shadow-2xl overflow-hidden border ring-1 ring-black/5">
 
                 {/* Left Panel */}
                 <div className="relative hidden lg:flex flex-col justify-between items-center p-12 bg-primary text-primary-foreground text-center">
