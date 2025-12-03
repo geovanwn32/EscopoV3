@@ -104,9 +104,11 @@ function FeaturesSection() {
 
     return (
         <section id="features" className="w-full py-16 sm:py-24">
-            <div className="container text-center">
-                 <h2 className="text-3xl font-bold tracking-tight">Tudo que você precisa em um só lugar</h2>
-                <p className="mt-4 text-muted-foreground max-w-2xl mx-auto">De lançamentos fiscais a relatórios financeiros, nossa plataforma centraliza todas as suas necessidades contábeis com ferramentas poderosas e intuitivas.</p>
+            <div className="container">
+                 <div className="text-center">
+                    <h2 className="text-3xl font-bold tracking-tight">Tudo que você precisa em um só lugar</h2>
+                    <p className="mt-4 text-muted-foreground max-w-2xl mx-auto">De lançamentos fiscais a relatórios financeiros, nossa plataforma centraliza todas as suas necessidades contábeis com ferramentas poderosas e intuitivas.</p>
+                </div>
                 <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-3">
                     {features.map((feature, i) => (
                         <div key={i} className="flex flex-col items-center text-center">
