@@ -1,15 +1,15 @@
 
+
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Building2, MoreVertical, PlusCircle, Trash2, Pencil, Eye, Loader2, Search, ArrowLeft } from 'lucide-react';
+import { Building2, PlusCircle, Trash2, Pencil, LogIn, Loader2, Search, ArrowLeft } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { useCompany, type Company } from '@/hooks/use-company';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function SelecionarEmpresaPage() {
   const router = useRouter();
@@ -74,7 +75,7 @@ export default function SelecionarEmpresaPage() {
   return (
     <>
     <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <div className="flex min-h-screen w-full items-center justify-center p-4 lg:p-8">
+        <div className="flex min-h-screen w-full items-center justify-center p-4 lg:p-8 animated-gradient">
             <div className="relative w-full max-w-5xl">
                 {currentCompany && (
                   <Button asChild variant="ghost" className="absolute -top-14 left-0 z-10 text-card-foreground">
@@ -100,33 +101,8 @@ export default function SelecionarEmpresaPage() {
                     {companies.map((company) => (
                     <Card
                         key={company.id}
-                        className="relative flex flex-col justify-between transition-shadow hover:shadow-lg focus-within:shadow-lg"
+                        className="flex flex-col justify-between transition-shadow hover:shadow-lg focus-within:shadow-lg"
                     >
-                         <div className="absolute top-2 right-2 z-10">
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                        <MoreVertical className="h-4 w-4" />
-                                        <span className="sr-only">Ações</span>
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => handleSelectCompany(company.id)}>
-                                        <Eye className="mr-2 h-4 w-4" />
-                                        Selecionar
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleEditCompany(company)}>
-                                        <Pencil className="mr-2 h-4 w-4" />
-                                        Editar
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleDeleteCompany(company.id)} className="text-destructive focus:text-destructive">
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Excluir
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-
                         <div 
                             onClick={() => handleSelectCompany(company.id)}
                             className='cursor-pointer flex-grow p-6 flex flex-col items-center justify-center text-center space-y-4'
@@ -144,11 +120,34 @@ export default function SelecionarEmpresaPage() {
                                 {company.data?.cnpj && <p className="text-sm text-muted-foreground">{company.data.cnpj}</p>}
                             </div>
                         </div>
-                        <CardFooter className='p-2 border-t invisible'>
-                            <div className='flex justify-end w-full'>
-                               <Button variant="ghost" size="icon" className="h-8 w-8">
-                                    <MoreVertical className="h-4 w-4" />
-                                </Button>
+                        <CardFooter className='p-2 border-t bg-card/20'>
+                            <div className='flex justify-around items-center w-full'>
+                               <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="text-emerald-500 hover:text-emerald-500 hover:bg-emerald-500/10" onClick={() => handleSelectCompany(company.id)}>
+                                                <LogIn className="h-5 w-5" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent><p>Selecionar</p></TooltipContent>
+                                    </Tooltip>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary hover:bg-primary/10" onClick={() => handleEditCompany(company)}>
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent><p>Editar</p></TooltipContent>
+                                    </Tooltip>
+                                     <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="text-destructive/70 hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteCompany(company.id)}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent><p>Excluir</p></TooltipContent>
+                                    </Tooltip>
+                               </TooltipProvider>
                             </div>
                         </CardFooter>
                     </Card>
