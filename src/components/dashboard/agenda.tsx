@@ -46,11 +46,11 @@ export default function Agenda() {
             className="rounded-2xl border bg-card"
             locale={ptBR}
             classNames={{
-                day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-                day_today: "bg-primary/20 text-primary",
-                head_cell: "text-muted-foreground rounded-md w-full font-normal text-[0.8rem]",
-                cell: "w-10 h-10",
-                day: "w-10 h-10",
+              day_selected: "bg-accent text-accent-foreground hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+              day_today: "bg-transparent text-primary rounded-full border border-primary",
+              head_cell: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
+              cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+              day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100",
             }}
              components={{
                 IconLeft: () => <ChevronLeft className="h-4 w-4" />,
@@ -58,9 +58,9 @@ export default function Agenda() {
                 DayContent: ({ date, ...props }) => {
                     const hasEvent = eventDays.some(eventDate => eventDate.toDateString() === date.toDateString());
                     return (
-                        <div className="relative">
+                        <div className="relative h-9 w-9 flex items-center justify-center">
                             {props.children}
-                            {hasEvent && <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" />}
+                            {hasEvent && <div className="absolute bottom-1 w-1 h-1 rounded-full bg-primary" />}
                         </div>
                     );
                 }
