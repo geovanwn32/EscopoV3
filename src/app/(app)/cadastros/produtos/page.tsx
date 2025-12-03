@@ -26,12 +26,13 @@ export default function ProdutosPage() {
     const [editingItem, setEditingItem] = useState<Product | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const handleSave = (itemData: Omit<Product, 'id'>) => {
+    const handleSave = (itemData: Omit<Product, 'id' | 'codigo'>) => {
         if (editingItem) {
             setProducts(prev => prev.map(i => i.id === editingItem.id ? { ...editingItem, ...itemData } : i));
             toast({ title: "Produto Atualizado!", description: "O produto foi atualizado com sucesso." });
         } else {
-            const newItem: Product = { ...itemData, id: Date.now() };
+            const newCode = (products.length + 1).toString();
+            const newItem: Product = { ...itemData, id: Date.now(), codigo: newCode };
             setProducts(prev => [...prev, newItem]);
             toast({ title: "Produto Adicionado!", description: "O novo produto foi salvo no seu catálogo." });
         }
@@ -167,13 +168,12 @@ export default function ProdutosPage() {
 }
 
 interface ItemFormProps {
-    onSave: (item: Omit<Product, 'id'>) => void;
+    onSave: (item: Omit<Product, 'id' | 'codigo'>) => void;
     onOpenChange: (open: boolean) => void;
     item: Product | null;
 }
 
-const initialFormState: Omit<Product, 'id' | 'tipo'> = {
-    codigo: '',
+const initialFormState: Omit<Product, 'id' | 'tipo' | 'codigo'> = {
     descricao: '',
     valor: 0,
     unidadeMedida: 'UN',
@@ -189,12 +189,11 @@ const initialFormState: Omit<Product, 'id' | 'tipo'> = {
 
 function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
     const { toast } = useToast();
-    const [formData, setFormData] = useState<Omit<Product, 'id' | 'tipo'>>(initialFormState);
+    const [formData, setFormData] = useState<Omit<Product, 'id' | 'tipo' | 'codigo'>>(initialFormState);
     
     useEffect(() => {
         if (item) {
             setFormData({
-                codigo: item.codigo ?? '',
                 descricao: item.descricao ?? '',
                 valor: item.valor ?? 0,
                 unidadeMedida: item.unidadeMedida ?? 'UN',
@@ -228,11 +227,11 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.codigo || !formData.descricao || formData.valor <= 0) {
+        if (!formData.descricao || formData.valor <= 0) {
             toast({
                 variant: 'destructive',
                 title: 'Campos Obrigatórios',
-                description: 'Código, Descrição e Valor (maior que zero) são obrigatórios.'
+                description: 'Descrição e Valor (maior que zero) são obrigatórios.'
             });
             return;
         }
@@ -252,13 +251,13 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
                         <CardHeader><CardTitle>Dados Gerais</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="codigo">Código do Produto</Label>
-                                    <Input id="codigo" value={formData.codigo} onChange={(e) => handleInputChange('codigo', e.target.value)} required />
-                                </div>
                                 <div className="space-y-2 col-span-2">
                                     <Label htmlFor="descricao">Descrição</Label>
                                     <Input id="descricao" value={formData.descricao} onChange={(e) => handleInputChange('descricao', e.target.value)} required />
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label htmlFor="codigo">Código do Produto</Label>
+                                    <Input id="codigo" value={item?.codigo || "Automático"} disabled />
                                 </div>
                             </div>
                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
