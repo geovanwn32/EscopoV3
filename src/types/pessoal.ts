@@ -1,8 +1,15 @@
+
 export interface Dependente {
     id: number;
     nome: string;
     cpf: string;
     dataNascimento: string; // ISO string
+}
+
+export interface AnotacaoCarteira {
+    id: number;
+    data: string; // ISO string
+    descricao: string;
 }
 
 export interface Funcionario {
@@ -48,4 +55,6 @@ export interface Funcionario {
     };
     // Dependentes
     dependentes?: Dependente[];
+    // Anotações na Carteira de Trabalho
+    anotacoesCarteira?: AnotacaoCarteira[];
 }

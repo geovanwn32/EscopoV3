@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Empresa": {
@@ -497,6 +498,18 @@
               }
             }
           }
+        },
+        "anotacoesCarteira": {
+            "type": "array",
+            "description": "Anotações na Carteira de Trabalho.",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": { "type": "number" },
+                    "data": { "type": "string", "format": "date-time" },
+                    "descricao": { "type": "string" }
+                }
+            }
         }
       },
       "required": [

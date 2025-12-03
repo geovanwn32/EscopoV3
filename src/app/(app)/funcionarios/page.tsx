@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useCompany } from '@/hooks/use-company';
 import Link from 'next/link';
-import { Funcionario, Dependente } from '@/types/pessoal';
+import { Funcionario, Dependente, AnotacaoCarteira } from '@/types/pessoal';
 import { MoneyInput } from '@/components/ui/money-input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -22,6 +22,7 @@ import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 
 
 export default function FuncionariosPage() {
@@ -198,6 +199,7 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
         contrato: { horarioTrabalho: '', tipoContrato: 'CLT' },
         dadosBancarios: { banco: '', agencia: '', conta: '' },
         dependentes: [],
+        anotacoesCarteira: [],
     });
 
     useEffect(() => {
@@ -220,6 +222,7 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
                 contrato: item.contrato || { horarioTrabalho: '', tipoContrato: 'CLT' },
                 dadosBancarios: item.dadosBancarios || { banco: '', agencia: '', conta: '' },
                 dependentes: item.dependentes || [],
+                anotacoesCarteira: item.anotacoesCarteira || [],
             });
         } else {
             setFormData({
@@ -227,7 +230,7 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
                 genero: 'Outro', estadoCivil: 'Solteiro(a)', nacionalidade: 'Brasileira', rg: '', pis: '',
                 endereco: { cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', uf: '' },
                 contato: { telefone: '', email: '' }, contrato: { horarioTrabalho: '', tipoContrato: 'CLT' },
-                dadosBancarios: { banco: '', agencia: '', conta: '' }, dependentes: [],
+                dadosBancarios: { banco: '', agencia: '', conta: '' }, dependentes: [], anotacoesCarteira: [],
             });
         }
     }, [item]);
@@ -265,6 +268,27 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
         setFormData(prev => ({
             ...prev,
             dependentes: prev.dependentes?.map(d => d.id === id ? { ...d, [field]: value } : d)
+        }));
+    };
+
+    const addAnotacao = () => {
+        setFormData(prev => ({
+            ...prev,
+            anotacoesCarteira: [...(prev.anotacoesCarteira || []), { id: Date.now(), data: new Date().toISOString(), descricao: '' }]
+        }));
+    };
+
+    const removeAnotacao = (id: number) => {
+        setFormData(prev => ({
+            ...prev,
+            anotacoesCarteira: prev.anotacoesCarteira?.filter(a => a.id !== id)
+        }));
+    };
+
+    const handleAnotacaoChange = (id: number, field: keyof Omit<AnotacaoCarteira, 'id'>, value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            anotacoesCarteira: prev.anotacoesCarteira?.map(a => a.id === id ? { ...a, [field]: value } : a)
         }));
     };
 
@@ -330,12 +354,13 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
             </DialogHeader>
             <form onSubmit={handleSubmit}>
                  <Tabs defaultValue="pessoal" className="w-full">
-                    <TabsList className="grid w-full grid-cols-5 mb-4">
+                    <TabsList className="grid w-full grid-cols-6 mb-4">
                         <TabsTrigger value="pessoal">Dados Pessoais</TabsTrigger>
                         <TabsTrigger value="contrato">Contrato</TabsTrigger>
                         <TabsTrigger value="endereco">Endereço/Contato</TabsTrigger>
                         <TabsTrigger value="bancario">Dados Bancários</TabsTrigger>
                         <TabsTrigger value="dependentes">Dependentes</TabsTrigger>
+                        <TabsTrigger value="anotacoes">Anotações CTPS</TabsTrigger>
                     </TabsList>
                     
                     <TabsContent value="pessoal" className="space-y-4">
@@ -519,6 +544,29 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
                             <Plus className="mr-2 h-4 w-4" /> Adicionar Dependente
                         </Button>
                     </TabsContent>
+                    <TabsContent value="anotacoes" className="space-y-4">
+                        {formData.anotacoesCarteira?.map((anotacao, index) => (
+                             <div key={anotacao.id} className="rounded-lg border p-4 space-y-4 relative">
+                                <h4 className='font-medium'>Anotação {index + 1}</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                     <div className="space-y-2">
+                                        <Label htmlFor={`anot-data-${anotacao.id}`}>Data</Label>
+                                        <Input id={`anot-data-${anotacao.id}`} type="date" value={anotacao.data.split('T')[0]} onChange={(e) => handleAnotacaoChange(anotacao.id, 'data', e.target.value)} />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor={`anot-desc-${anotacao.id}`}>Descrição</Label>
+                                    <Textarea id={`anot-desc-${anotacao.id}`} value={anotacao.descricao} onChange={(e) => handleAnotacaoChange(anotacao.id, 'descricao', e.target.value)} />
+                                </div>
+                                <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7" onClick={() => removeAnotacao(anotacao.id)}>
+                                    <X className="h-4 w-4 text-muted-foreground" />
+                                </Button>
+                            </div>
+                        ))}
+                        <Button type="button" variant="outline" onClick={addAnotacao}>
+                            <Plus className="mr-2 h-4 w-4" /> Adicionar Anotação
+                        </Button>
+                    </TabsContent>
                 </Tabs>
                 <DialogFooter className='pt-6'>
                     <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
@@ -528,4 +576,3 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
         </DialogContent>
     );
 }
-
