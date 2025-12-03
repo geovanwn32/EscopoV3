@@ -1,7 +1,7 @@
 
 'use client';
 import { useState, useMemo, useEffect } from 'react';
-import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft, ShieldCheck, ShieldAlert, Building } from 'lucide-react';
+import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft, ShieldCheck, ShieldAlert, Building, KeyRound, User as UserIcon, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -57,26 +57,20 @@ export default function UsuariosPage() {
     const [itemToDelete, setItemToDelete] = useState<User | null>(null);
     const [editingItem, setEditingItem] = useState<User | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [activeProfile, setActiveProfile] = useState<User | null>(null);
 
-    const loggedInUserIsAdmin = useMemo(() => {
-        if (!firebaseUser) return false;
-        
-        const activeProfileString = sessionStorage.getItem('user-profile');
-        if (activeProfileString) {
-            try {
-                const profile = JSON.parse(activeProfileString);
-                // On first run, a user might not be in the `users` list yet, so trust the sessionStorage profile
-                if(profile.isAdmin) return true;
-            } catch (e) {
-                console.error("Failed to parse user profile from session storage", e);
+
+    useEffect(() => {
+        if (firebaseUser) {
+            const profileString = sessionStorage.getItem('user-profile');
+            if (profileString) {
+                try {
+                    const profile = JSON.parse(profileString);
+                    setActiveProfile(profile);
+                } catch (e) { console.error("Failed to parse profile", e); }
             }
         }
-        
-        // As a fallback, check the persisted users list
-        const userInList = users.find(u => u.email === firebaseUser.email);
-        return userInList?.isAdmin ?? false;
-
-    }, [firebaseUser, users]);
+    }, [firebaseUser]);
 
     const handleSave = (itemData: Omit<User, 'id'>) => {
         if (editingItem) {
@@ -152,6 +146,20 @@ export default function UsuariosPage() {
         setEditingItem(null); // Explicitly set editingItem to null for new user
         setIsDialogOpen(true);
     }
+    
+    const handleMyProfileSave = (newPassword: string) => {
+        if (!activeProfile) return;
+
+        const updatedProfile = { ...activeProfile, password: newPassword };
+        setUsers(prev => prev.map(u => u.id === activeProfile.id ? updatedProfile : u));
+
+        // Also update the session storage to reflect the change immediately for the current session
+        sessionStorage.setItem('user-profile', JSON.stringify(updatedProfile));
+
+        toast({ title: "Senha Atualizada!", description: "Sua senha de acesso foi alterada com sucesso." });
+        logAudit(setAuditLogs, 'UPDATE', 'Meu Perfil', 'Alterou a própria senha.');
+    };
+
 
     const filteredItems = useMemo(() => {
         return users.filter(item =>
@@ -180,6 +188,27 @@ export default function UsuariosPage() {
         return <Badge variant="secondary">{grantedModules.join(', ')}</Badge>
     }
 
+    if (!activeProfile) {
+        // Fallback for when profile is not loaded yet
+        return (
+            <div className="space-y-6">
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-bold tracking-tight font-headline">Usuários e Perfis</h1>
+                </div>
+                <Card>
+                    <CardHeader>
+                         <CardTitle className="flex items-center gap-2 text-muted-foreground">
+                            <ShieldAlert className="h-6 w-6" /> Carregando...
+                        </CardTitle>
+                        <CardDescription>
+                            Verificando suas permissões de acesso.
+                        </CardDescription>
+                    </CardHeader>
+                </Card>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-4">
@@ -195,21 +224,7 @@ export default function UsuariosPage() {
                 </div>
             </div>
 
-            {!loggedInUserIsAdmin ? (
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-destructive">
-                            <ShieldAlert className="h-6 w-6" /> Acesso Negado
-                        </CardTitle>
-                        <CardDescription>
-                            Você não tem permissão para visualizar ou gerenciar os usuários deste sistema. Apenas administradores podem acessar esta seção.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-sm text-muted-foreground">Por favor, contate o administrador da sua empresa se você acredita que deveria ter acesso a esta funcionalidade.</p>
-                    </CardContent>
-                </Card>
-            ) : (
+            {activeProfile.isAdmin ? (
                 <Card>
                     <CardHeader>
                         <div className="flex items-center justify-between">
@@ -282,6 +297,8 @@ export default function UsuariosPage() {
                         </div>
                     </CardContent>
                 </Card>
+            ) : (
+                <MyProfileCard profile={activeProfile} onSave={handleMyProfileSave} />
             )}
 
             <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
@@ -300,6 +317,7 @@ export default function UsuariosPage() {
     );
 }
 
+// FORMULÁRIO DO ADMINISTRADOR
 interface ItemFormProps {
     onSave: (item: Omit<User, 'id'>) => void;
     onOpenChange: (open: boolean) => void;
@@ -325,11 +343,9 @@ function ItemForm({ onSave, onOpenChange, item, users, companies }: ItemFormProp
 
 
     const anotherAdminExists = useMemo(() => {
-        // If creating a new user, check if any user is an admin.
         if (!item) {
             return users.some(user => user.isAdmin);
         }
-        // If editing, check if another user (not the one being edited) is an admin.
         return users.some(user => user.isAdmin && user.id !== item.id);
     }, [users, item]);
 
@@ -352,10 +368,9 @@ function ItemForm({ onSave, onOpenChange, item, users, companies }: ItemFormProp
     }, [item]);
     
     useEffect(() => {
-    // If the user is an admin, they should have access to all companies.
-    if (isAdmin) {
-      setAllowedCompanyIds(companies.map(c => c.id));
-    }
+        if (isAdmin) {
+          setAllowedCompanyIds(companies.map(c => c.id));
+        }
     }, [isAdmin, companies]);
 
 
@@ -381,7 +396,6 @@ function ItemForm({ onSave, onOpenChange, item, users, companies }: ItemFormProp
             });
             return;
         }
-        // Password is only required when creating a new user
         if (!item && !password) {
              toast({
                 variant: 'destructive',
@@ -424,7 +438,7 @@ function ItemForm({ onSave, onOpenChange, item, users, companies }: ItemFormProp
                         id="isAdmin"
                         checked={isAdmin}
                         onCheckedChange={setIsAdmin}
-                        disabled={!item?.isAdmin && anotherAdminExists}
+                        disabled={item ? (item.isAdmin ? false : anotherAdminExists) : anotherAdminExists}
                     />
                 </div>
                  <div className="space-y-4 rounded-lg border p-4">
@@ -434,7 +448,7 @@ function ItemForm({ onSave, onOpenChange, item, users, companies }: ItemFormProp
                             <div key={module.id} className="flex items-center gap-2">
                                 <Checkbox
                                     id={`perm-${module.id}`}
-                                    checked={isAdmin || permissions[module.id]}
+                                    checked={isAdmin || (permissions ? permissions[module.id] : false)}
                                     onCheckedChange={(checked) => handlePermissionChange(module.id, !!checked)}
                                     disabled={isAdmin}
                                 />
@@ -471,6 +485,79 @@ function ItemForm({ onSave, onOpenChange, item, users, companies }: ItemFormProp
     );
 }
 
+// CARD DO USUÁRIO SECUNDÁRIO
+interface MyProfileCardProps {
+    profile: User;
+    onSave: (newPassword: string) => void;
+}
+
+function MyProfileCard({ profile, onSave }: MyProfileCardProps) {
+    const { toast } = useToast();
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newPassword || !confirmPassword) {
+            toast({ variant: 'destructive', title: 'Campos vazios', description: 'Por favor, preencha a nova senha e a confirmação.' });
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            toast({ variant: 'destructive', title: 'Senhas não coincidem', description: 'A nova senha e a confirmação devem ser iguais.' });
+            return;
+        }
+        if (newPassword.length < 6) {
+            toast({ variant: 'destructive', title: 'Senha muito curta', description: 'A senha deve ter pelo menos 6 caracteres.' });
+            return;
+        }
+        onSave(newPassword);
+        setNewPassword('');
+        setConfirmPassword('');
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className='flex items-center gap-2'><UserIcon className='h-6 w-6' /> Meu Perfil</CardTitle>
+                <CardDescription>Visualize seus dados e altere sua senha de acesso.</CardDescription>
+            </CardHeader>
+            <form onSubmit={handleSubmit}>
+                <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label>Nome</Label>
+                            <Input value={profile.name} disabled />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Email</Label>
+                            <Input value={profile.email} disabled />
+                        </div>
+                    </div>
+                    <Separator />
+                    <h3 className="font-medium text-primary pt-2">Alterar Senha</h3>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="new-password">Nova Senha</Label>
+                            <Input id="new-password" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder='••••••'/>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
+                            <Input id="confirm-password" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder='••••••'/>
+                        </div>
+                    </div>
+                </CardContent>
+                <CardFooter>
+                    <Button type="submit">
+                        <Save className="mr-2 h-4 w-4" />
+                        Salvar Nova Senha
+                    </Button>
+                </CardFooter>
+            </form>
+        </Card>
+    );
+}
+
     
 
     
+
