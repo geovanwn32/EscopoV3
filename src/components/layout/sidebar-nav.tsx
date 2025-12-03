@@ -37,7 +37,7 @@ const navItems: NavItem[] = [
   { href: '/pessoal', label: 'Pessoal', icon: Users },
   { href: '/contabil', label: 'Contábil', icon: Book },
   { href: '/financeiro', label: 'Financeiro', icon: Banknote },
-  // { href: '/cadastros', label: 'Cadastros', icon: Archive },
+  { href: '/parceiros', label: 'Cadastros', icon: Archive },
   { href: '/conectividade', label: 'Conectividade', icon: Plug },
   { href: '/utilitarios', label: 'Utilitários', icon: Wrench },
   // { href: '/configuracoes', label: 'Configurações', icon: Settings },
@@ -64,6 +64,10 @@ export function SidebarNav() {
   const isNavItemActive = (href: string) => {
     if (href === '/dashboard') {
         return pathname === href;
+    }
+    if (href === '/parceiros') {
+        const cadastroPaths = ['/parceiros', '/produtos', '/servicos', '/funcionarios', '/socios', '/aliquotas', '/rubricas'];
+        return cadastroPaths.some(p => pathname.startsWith(p));
     }
     return pathname.startsWith(href);
   };

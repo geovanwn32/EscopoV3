@@ -1,3 +1,4 @@
+
 export const NAV_TITLES: Record<string, string> = {
   '/dashboard': 'Dashboard',
   '/selecionar-empresa': 'Selecionar Empresa',
@@ -20,6 +21,7 @@ export const NAV_TITLES: Record<string, string> = {
   '/financeiro/contas-a-receber': 'Contas a Receber',
   '/financeiro/contas-a-pagar': 'Contas a Pagar',
   '/financeiro/fluxo-de-caixa': 'Fluxo de Caixa',
+  '/cadastros': 'Cadastros',
   '/parceiros': 'Parceiros',
   '/funcionarios': 'Funcionários',
   '/socios': 'Sócios',
