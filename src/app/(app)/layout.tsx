@@ -74,11 +74,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <CompanyProvider>
       <SidebarProvider>
-        <div className="flex h-full w-full bg-background animated-gradient">
+        <div className="flex h-full w-full bg-background">
           <AppLayoutContent>{children}</AppLayoutContent>
         </div>
       </SidebarProvider>
     </CompanyProvider>
   );
 }
-
