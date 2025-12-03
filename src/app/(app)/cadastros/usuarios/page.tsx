@@ -330,11 +330,13 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfileI
     const [status, setStatus] = useState<'Ativo' | 'Inativo'>('Ativo');
 
 
-    const anotherAdminExists = useMemo(() => {
-        if (!item) {
-            return users.some(user => user.isAdmin);
+    const adminAlreadyExists = useMemo(() => {
+        // If editing, check if another admin exists.
+        if (item) {
+            return users.some(user => user.isAdmin && user.id !== item.id);
         }
-        return users.some(user => user.isAdmin && user.id !== item.id);
+        // If creating, check if any admin exists.
+        return users.some(user => user.isAdmin);
     }, [users, item]);
 
     useEffect(() => {
@@ -430,7 +432,7 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfileI
                         id="isAdmin"
                         checked={isAdmin}
                         onCheckedChange={setIsAdmin}
-                        disabled={(item ? item.isAdmin && !anotherAdminExists : anotherAdminExists) || isEditingSelf}
+                        disabled={isEditingSelf || adminAlreadyExists}
                     />
                 </div>
                 <div className="space-y-2 flex items-center justify-between rounded-lg border p-3">
@@ -444,7 +446,7 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfileI
                         id="status"
                         checked={status === 'Ativo'}
                         onCheckedChange={(checked) => setStatus(checked ? 'Ativo' : 'Inativo')}
-                        disabled={isEditingSelf}
+                        disabled={isEditingSelf && isAdmin}
                     />
                 </div>
                  <div className="space-y-4 rounded-lg border p-4">
@@ -562,3 +564,5 @@ function MyProfileCard({ profile, onSave }: MyProfileCardProps) {
         </Card>
     );
 }
+
+    
