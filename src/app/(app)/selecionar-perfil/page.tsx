@@ -24,7 +24,7 @@ interface UserProfile {
 
 export default function SelecionarPerfilPage() {
     const router = useRouter();
-    const { useScopedData, currentCompany } = useCompany();
+    const { useScopedData } = useCompany();
     const [users, setUsers] = useScopedData<UserProfile[]>('global-users', []);
     const { toast } = useToast();
 
@@ -38,7 +38,8 @@ export default function SelecionarPerfilPage() {
         if (user.password) {
             setSelectedUser(user);
         } else {
-            sessionStorage.setItem(`user-profile-${currentCompany}`, JSON.stringify(user));
+            // This case might not be hit if password is always required, but it's a safe fallback.
+            sessionStorage.setItem('user-profile', JSON.stringify(user));
             router.push('/selecionar-empresa');
         }
     };
@@ -49,7 +50,7 @@ export default function SelecionarPerfilPage() {
         setTimeout(() => {
             if (password === selectedUser?.password) {
                 toast({ title: "Acesso Autorizado!", description: `Bem-vindo(a) ${selectedUser.name}.` });
-                sessionStorage.setItem(`user-profile-${currentCompany}`, JSON.stringify(selectedUser));
+                sessionStorage.setItem('user-profile', JSON.stringify(selectedUser));
                 router.push('/selecionar-empresa');
             } else {
                 toast({ variant: 'destructive', title: "Senha Incorreta", description: "A senha que você inseriu está incorreta. Tente novamente." });
@@ -122,7 +123,7 @@ export default function SelecionarPerfilPage() {
                 </div>
                 
                 {users.length > 0 ? (
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 justify-center">
                     {users.map((user) => (
                         <Card
                             key={user.id}
