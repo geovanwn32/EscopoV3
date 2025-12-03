@@ -32,6 +32,7 @@ export const NAV_TITLES: Record<string, string> = {
   '/cadastros/cfop': 'CFOP',
   '/cadastros/natureza-operacao': 'Natureza da Operação',
   '/cadastros/tipo-negociacao': 'Tipos de Negociação',
+  '/cadastros/unidade-de-medida': 'Unidades de Medida',
   '/parceiros': 'Parceiros',
   '/funcionarios': 'Funcionários',
   '/socios': 'Sócios',
