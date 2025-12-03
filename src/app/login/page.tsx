@@ -30,7 +30,7 @@ export default function LoginPage() {
         <div className="relative z-20 mt-auto">
           <blockquote className="space-y-2">
             <p className="text-lg">
-              “Este sistema transformou a maneira como gerenciamos nossas finanças e obrigações fiscais. É intuitivo, poderoso e indispensável para o nosso dia a dia.”
+              “Com o EscopoV3, automatizamos a importação de XMLs e a conciliação de extratos com IA, reduzindo nosso tempo de fechamento mensal em 50%. A gestão integrada do financeiro com o fiscal nos deu uma clareza sem precedentes sobre o nosso fluxo de caixa. É a ferramenta definitiva para quem busca precisão e agilidade.”
             </p>
             <footer className="text-sm">Geovani Silva, CEO da Ágio Soluções</footer>
           </blockquote>
