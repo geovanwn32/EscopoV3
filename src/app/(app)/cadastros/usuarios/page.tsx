@@ -1,6 +1,6 @@
 'use client';
 import { useState, useMemo, useEffect } from 'react';
-import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -17,6 +17,7 @@ import { Switch } from '@/components/ui/switch';
 import { AuditLog, logAudit } from '@/lib/audit-log';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useUser } from '@/firebase';
 
 const modules = [
     { id: 'dashboard', label: 'Dashboard' },
@@ -48,10 +49,18 @@ export default function UsuariosPage() {
     const [users, setUsers] = useScopedData<User[]>('cadastros-usuarios', []);
     const [, setAuditLogs] = useScopedData<AuditLog[]>('audit-trail-logs', []);
     
+    const { user: currentUser } = useUser();
+    
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<User | null>(null);
     const [editingItem, setEditingItem] = useState<User | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+
+    const loggedInUserIsAdmin = useMemo(() => {
+        if (!currentUser || !users) return false;
+        const userProfile = users.find(u => u.email === currentUser.email);
+        return userProfile?.isAdmin || false;
+    }, [currentUser, users]);
 
     const handleSave = (itemData: Omit<User, 'id'>) => {
         if (editingItem) {
@@ -160,76 +169,92 @@ export default function UsuariosPage() {
                 </div>
             </div>
 
-            <Card>
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle>Usuários</CardTitle>
-                            <CardDescription>{users.length} usuários encontrados.</CardDescription>
-                        </div>
-                        <div className="flex items-center gap-2">
-                             <div className="relative flex-grow">
-                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input placeholder="Buscar por nome ou e-mail..." className="pl-9 w-full sm:w-64" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+            {!loggedInUserIsAdmin ? (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-destructive">
+                            <ShieldAlert className="h-6 w-6" /> Acesso Negado
+                        </CardTitle>
+                        <CardDescription>
+                            Você não tem permissão para visualizar ou gerenciar os usuários deste sistema. Apenas administradores podem acessar esta seção.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-sm text-muted-foreground">Por favor, contate o administrador da sua empresa se você acredita que deveria ter acesso a esta funcionalidade.</p>
+                    </CardContent>
+                </Card>
+            ) : (
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle>Usuários</CardTitle>
+                                <CardDescription>{users.length} usuários encontrados.</CardDescription>
                             </div>
-                            <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) setEditingItem(null); }}>
-                                <DialogTrigger asChild>
-                                    <Button onClick={handleNewUserClick}><Plus className="mr-2 h-4 w-4" /> Convidar Usuário</Button>
-                                </DialogTrigger>
-                                <ItemForm 
-                                    onSave={handleSave} 
-                                    onOpenChange={setIsDialogOpen}
-                                    item={editingItem}
-                                />
-                            </Dialog>
+                            <div className="flex items-center gap-2">
+                                <div className="relative flex-grow">
+                                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                    <Input placeholder="Buscar por nome ou e-mail..." className="pl-9 w-full sm:w-64" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                                </div>
+                                <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) setEditingItem(null); }}>
+                                    <DialogTrigger asChild>
+                                        <Button onClick={handleNewUserClick}><Plus className="mr-2 h-4 w-4" /> Convidar Usuário</Button>
+                                    </DialogTrigger>
+                                    <ItemForm 
+                                        onSave={handleSave} 
+                                        onOpenChange={setIsDialogOpen}
+                                        item={editingItem}
+                                    />
+                                </Dialog>
+                            </div>
                         </div>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <div className="rounded-md border">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Nome</TableHead>
-                                    <TableHead>Email</TableHead>
-                                    <TableHead>Permissões</TableHead>
-                                    <TableHead className="w-[64px]"></TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredItems.length > 0 ? filteredItems.map(item => (
-                                    <TableRow key={item.id}>
-                                        <TableCell className="font-medium">{item.name}</TableCell>
-                                        <TableCell>{item.email}</TableCell>
-                                        <TableCell>
-                                           {renderPermissions(item)}
-                                        </TableCell>
-                                        <TableCell>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem onClick={() => handleEditClick(item)}><Pencil className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => handleDeleteClick(item)} className="text-destructive focus:text-destructive">
-                                                        <Trash2 className="mr-2 h-4 w-4" />Remover Acesso
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </TableCell>
-                                    </TableRow>
-                                )) : (
+                    </CardHeader>
+                    <CardContent>
+                        <div className="rounded-md border">
+                            <Table>
+                                <TableHeader>
                                     <TableRow>
-                                        <TableCell colSpan={4} className="h-24 text-center">Nenhum usuário encontrado.</TableCell>
+                                        <TableHead>Nome</TableHead>
+                                        <TableHead>Email</TableHead>
+                                        <TableHead>Permissões</TableHead>
+                                        <TableHead className="w-[64px]"></TableHead>
                                     </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
-                </CardContent>
-            </Card>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredItems.length > 0 ? filteredItems.map(item => (
+                                        <TableRow key={item.id}>
+                                            <TableCell className="font-medium">{item.name}</TableCell>
+                                            <TableCell>{item.email}</TableCell>
+                                            <TableCell>
+                                            {renderPermissions(item)}
+                                            </TableCell>
+                                            <TableCell>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem onClick={() => handleEditClick(item)}><Pencil className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleDeleteClick(item)} className="text-destructive focus:text-destructive">
+                                                            <Trash2 className="mr-2 h-4 w-4" />Remover Acesso
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TableCell>
+                                        </TableRow>
+                                    )) : (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="h-24 text-center">Nenhum usuário encontrado.</TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
                 <AlertDialogContent>
