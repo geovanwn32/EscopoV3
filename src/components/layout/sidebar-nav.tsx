@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -14,6 +13,7 @@ import {
   LifeBuoy,
   Building2,
   Wrench,
+  ShieldCheck,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -44,15 +44,12 @@ const allNavItems: NavItem[] = [
   { id: 'utilitarios', href: '/utilitarios', label: 'Utilitários', icon: Wrench },
 ];
 
-const cadastroItems: NavItem[] = [
-    { id: 'parceiros', href: '/parceiros', label: 'Parceiros', icon: Archive },
-    { id: 'produtos', href: '/produtos', label: 'Produtos', icon: Archive },
-    { id: 'servicos', href: '/servicos', label: 'Serviços', icon: Archive },
-    { id: 'funcionarios', href: '/funcionarios', label: 'Funcionários', icon: Archive },
-    { id: 'socios', href: '/socios', label: 'Sócios', icon: Archive },
-    { id: 'aliquotas', href: '/aliquotas', label: 'Alíquotas', icon: Archive },
-    { id: 'rubricas', href: '/rubricas', label: 'Rubricas', icon: Archive },
-];
+const adminNavItem: NavItem = {
+    id: 'admin',
+    href: '/admin',
+    label: 'Controle de Licença',
+    icon: ShieldCheck,
+};
 
 
 export function SidebarNav() {
@@ -75,20 +72,28 @@ export function SidebarNav() {
     }
   }, []);
 
+  const activeCompany = companies.find(c => c.id === currentCompany);
+  
   const visibleNavItems = useMemo(() => {
-    if (!activeProfile) return [];
-    if (activeProfile.isAdmin) {
-      return allNavItems;
+    let items = allNavItems;
+    if (activeProfile?.isAdmin) {
+      // Conditionally add the admin nav item
+      if (activeCompany?.data?.cnpj === '62.667.939/0001-61') {
+          // Use a new array to avoid mutation, and add admin item after dashboard
+          const dashboardIndex = items.findIndex(item => item.id === 'dashboard');
+          const newItems = [...items];
+          newItems.splice(dashboardIndex + 1, 0, adminNavItem);
+          items = newItems;
+      }
+      return items;
     }
-    // Dashboard is always visible
+    // Dashboard is always visible for non-admins
     const filteredItems = allNavItems.filter(item => 
-        item.id === 'dashboard' || activeProfile.permissions[item.id]
+        item.id === 'dashboard' || activeProfile?.permissions[item.id]
     );
     return filteredItems;
-  }, [activeProfile]);
+  }, [activeProfile, activeCompany]);
 
-
-  const activeCompany = companies.find(c => c.id === currentCompany);
 
   const isNavItemActive = (href: string) => {
     if (href === '/dashboard') {
