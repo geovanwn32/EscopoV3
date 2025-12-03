@@ -45,11 +45,11 @@ interface User {
 
 export default function UsuariosPage() {
     const { toast } = useToast();
-    const { useScopedData } = useCompany();
-    const [users, setUsers] = useScopedData<User[]>('cadastros-usuarios', []);
+    const { useScopedData, currentCompany } = useCompany();
+    const [users, setUsers] = useScopedData<User[]>('global-users', []);
     const [, setAuditLogs] = useScopedData<AuditLog[]>('audit-trail-logs', []);
     
-    const { user: currentUser } = useUser();
+    const { user: firebaseUser } = useUser();
     
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<User | null>(null);
@@ -57,10 +57,17 @@ export default function UsuariosPage() {
     const [searchTerm, setSearchTerm] = useState('');
 
     const loggedInUserIsAdmin = useMemo(() => {
-        if (!currentUser || !users) return false;
-        const userProfile = users.find(u => u.email === currentUser.email);
-        return userProfile?.isAdmin || false;
-    }, [currentUser, users]);
+        if (!firebaseUser || !users) return false;
+        // In this global user model, we assume the logged-in Firebase user
+        // maps to a profile. We check that profile's isAdmin flag.
+        // For simplicity, we'll check based on the active user profile stored in session.
+        const activeProfile = sessionStorage.getItem(`user-profile-${currentCompany}`);
+        if (activeProfile) {
+            const profile: User = JSON.parse(activeProfile);
+            return profile.isAdmin;
+        }
+        return false;
+    }, [firebaseUser, users, currentCompany]);
 
     const handleSave = (itemData: Omit<User, 'id'>) => {
         if (editingItem) {

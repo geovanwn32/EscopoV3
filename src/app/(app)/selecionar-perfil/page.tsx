@@ -1,12 +1,12 @@
 
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Shield, KeyRound, Loader2, ArrowLeft } from 'lucide-react';
+import { User, Shield, KeyRound, Loader2, ArrowLeft, PlusCircle } from 'lucide-react';
 import { useCompany } from '@/hooks/use-company';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,18 +24,18 @@ interface UserProfile {
 export default function SelecionarPerfilPage() {
     const router = useRouter();
     const { useScopedData, currentCompany } = useCompany();
-    const [users] = useScopedData<UserProfile[]>('cadastros-usuarios', []);
+    const [users, setUsers] = useScopedData<UserProfile[]>('global-users', []);
     const { toast } = useToast();
 
     const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [isAddUserOpen, setIsAddUserOpen] = useState(false);
 
     const handleProfileSelect = (user: UserProfile) => {
         if (user.password) {
             setSelectedUser(user);
         } else {
-            // If user has no password, log them in directly
             sessionStorage.setItem(`user-profile-${currentCompany}`, JSON.stringify(user));
             router.push('/dashboard');
         }
@@ -63,6 +63,24 @@ export default function SelecionarPerfilPage() {
         setIsLoading(false);
     }
     
+    const handleSaveNewUser = (userData: Omit<UserProfile, 'id' | 'isAdmin' | 'permissions'>) => {
+        const newUser: UserProfile = {
+            id: Date.now(),
+            ...userData,
+            isAdmin: false, // New users are not admins by default
+            permissions: {},
+        };
+        setUsers(prev => [...prev, newUser]);
+        setIsAddUserOpen(false);
+        toast({ title: "Perfil Adicionado", description: "O novo perfil foi criado. Agora você pode fazer login com ele." });
+    };
+    
+    useEffect(() => {
+        if (!currentCompany) {
+            router.push('/selecionar-empresa');
+        }
+    }, [currentCompany, router]);
+
     return (
         <div className="flex min-h-screen w-full items-center justify-center p-4 lg:p-8 animated-gradient">
             <div className="relative w-full max-w-4xl">
@@ -79,45 +97,40 @@ export default function SelecionarPerfilPage() {
                     </p>
                 </div>
                 
-                {users.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                        {users.map((user) => (
-                            <Card
-                                key={user.id}
-                                onClick={() => handleProfileSelect(user)}
-                                className="cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1 focus-within:shadow-lg"
-                            >
-                                <CardContent className="flex flex-col items-center justify-center p-6 text-center space-y-4">
-                                    <Avatar className="h-20 w-20 border-2">
-                                        <AvatarFallback className="bg-muted">
-                                            {user.isAdmin ? (
-                                                <Shield className="h-10 w-10 text-primary" />
-                                            ) : (
-                                                <User className="h-10 w-10 text-muted-foreground" />
-                                            )}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div className="space-y-1">
-                                        <h2 className="text-lg font-semibold">{user.name}</h2>
-                                        <p className="text-sm text-muted-foreground">{user.isAdmin ? "Administrador" : "Usuário"}</p>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                ) : (
-                    <Card className="w-full max-w-lg mx-auto text-center">
-                        <CardHeader>
-                            <CardTitle>Nenhum Perfil Encontrado</CardTitle>
-                            <CardDescription>
-                                Nenhum perfil de usuário foi cadastrado para esta empresa. Contate um administrador para criar seu acesso.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                             <p className="text-sm text-muted-foreground">Se você é o administrador, pode cadastrar usuários em <br /> <span className="font-semibold">Cadastros &gt; Usuários e Perfis</span> após o primeiro acesso.</p>
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                    {users.map((user) => (
+                        <Card
+                            key={user.id}
+                            onClick={() => handleProfileSelect(user)}
+                            className="cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1 focus-within:shadow-lg"
+                        >
+                            <CardContent className="flex flex-col items-center justify-center p-6 text-center space-y-4">
+                                <Avatar className="h-20 w-20 border-2">
+                                    <AvatarFallback className="bg-muted">
+                                        {user.isAdmin ? (
+                                            <Shield className="h-10 w-10 text-primary" />
+                                        ) : (
+                                            <User className="h-10 w-10 text-muted-foreground" />
+                                        )}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className="space-y-1">
+                                    <h2 className="text-lg font-semibold">{user.name}</h2>
+                                    <p className="text-sm text-muted-foreground">{user.isAdmin ? "Administrador" : "Usuário"}</p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                    <Card
+                        onClick={() => setIsAddUserOpen(true)}
+                        className="cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1 focus-within:shadow-lg border-dashed bg-card/50 hover:bg-card flex items-center justify-center"
+                    >
+                        <CardContent className="p-6 text-center text-muted-foreground">
+                             <PlusCircle className="h-10 w-10 mx-auto mb-4"/>
+                            <h2 className="text-lg font-semibold">Adicionar Perfil</h2>
                         </CardContent>
                     </Card>
-                )}
+                </div>
             </div>
 
             <Dialog open={!!selectedUser} onOpenChange={(open) => !open && handleDialogClose()}>
@@ -151,6 +164,63 @@ export default function SelecionarPerfilPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            
+            <AddUserDialog 
+                open={isAddUserOpen} 
+                onOpenChange={setIsAddUserOpen}
+                onSave={handleSaveNewUser}
+            />
         </div>
     );
+}
+
+
+interface AddUserDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onSave: (data: Omit<UserProfile, 'id' | 'isAdmin' | 'permissions'>) => void;
+}
+
+function AddUserDialog({ open, onOpenChange, onSave }: AddUserDialogProps) {
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const { toast } = useToast();
+
+    const handleSubmit = () => {
+        if (!name || !email || !password) {
+            toast({ variant: 'destructive', title: "Campos obrigatórios", description: "Nome, email e senha são obrigatórios." });
+            return;
+        }
+        onSave({ name, email, password });
+    };
+
+    return (
+         <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Adicionar Novo Perfil</DialogTitle>
+                    <DialogDescription>Crie um novo perfil de usuário para acessar o sistema.</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="new-name">Nome</Label>
+                        <Input id="new-name" value={name} onChange={(e) => setName(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="new-email">Email</Label>
+                        <Input id="new-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="new-password">Senha</Label>
+                        <Input id="new-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+                    <Button onClick={handleSubmit}>Salvar</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
 }
