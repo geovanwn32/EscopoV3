@@ -334,6 +334,7 @@ export default function FiscalPage() {
              parsedData = {
                 identificacao: {
                     numero: content.match(/<Numero>(.*?)<\/Numero>/)?.[1] || '',
+                    serie: content.match(/<Serie>(.*?)<\/Serie>/)?.[1] || 'U', // Default to 'U' if not found
                     dataEmissao: formatISODateToInput(content.match(/<DataEmissao>(.*?)<\/DataEmissao>/)?.[1] || content.match(/<dhEmi>(.*?)<\/dhEmi>/)?.[1]),
                 },
                 prestador: {
@@ -1486,3 +1487,4 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave, isReadO
       </DialogContent>
     );
 }
+
