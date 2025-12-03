@@ -1,6 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
-import { MoreHorizontal, Plus, Search, Trash2, Pencil } from 'lucide-react';
+import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -11,11 +11,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useCompany } from '@/hooks/use-company';
+import Link from 'next/link';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 
 interface NaturezaOperacao {
     id: number;
     name: string;
     cfop: string;
+    type: 'Entrada' | 'Saída';
+    movimentaEstoque: 'Sim' | 'Não';
+    geraFinanceiro: 'Sim' | 'Não';
 }
 
 export default function NaturezaOperacaoPage() {
@@ -65,9 +71,17 @@ export default function NaturezaOperacaoPage() {
 
     return (
         <div className="space-y-6">
-            <div className="space-y-1">
-                <h1 className="text-3xl font-bold tracking-tight font-headline">Natureza da Operação</h1>
-                <p className="text-muted-foreground">Gerencie as naturezas de operação utilizadas nas notas fiscais.</p>
+             <div className="flex items-center gap-4">
+                 <Link href="/cadastros">
+                    <Button variant="outline" size="icon" className="h-8 w-8">
+                        <ArrowLeft className="h-4 w-4" />
+                        <span className="sr-only">Voltar</span>
+                    </Button>
+                </Link>
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-bold tracking-tight font-headline">Natureza da Operação</h1>
+                    <p className="text-muted-foreground">Gerencie as naturezas de operação utilizadas nas notas fiscais.</p>
+                </div>
             </div>
 
             <Card>
@@ -101,7 +115,10 @@ export default function NaturezaOperacaoPage() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Nome</TableHead>
-                                    <TableHead className="w-[150px]">CFOP Padrão</TableHead>
+                                    <TableHead>CFOP Padrão</TableHead>
+                                    <TableHead>Tipo</TableHead>
+                                    <TableHead>Mov. Estoque</TableHead>
+                                    <TableHead>Gera Financeiro</TableHead>
                                     <TableHead className="w-[64px]"></TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -110,6 +127,9 @@ export default function NaturezaOperacaoPage() {
                                     <TableRow key={item.id}>
                                         <TableCell className="font-medium">{item.name}</TableCell>
                                         <TableCell className="font-mono">{item.cfop}</TableCell>
+                                        <TableCell><Badge variant={item.type === 'Entrada' ? 'secondary' : 'default'}>{item.type}</Badge></TableCell>
+                                        <TableCell>{item.movimentaEstoque}</TableCell>
+                                        <TableCell>{item.geraFinanceiro}</TableCell>
                                         <TableCell>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
@@ -128,7 +148,7 @@ export default function NaturezaOperacaoPage() {
                                     </TableRow>
                                 )) : (
                                     <TableRow>
-                                        <TableCell colSpan={3} className="h-24 text-center">Nenhum item encontrado.</TableCell>
+                                        <TableCell colSpan={6} className="h-24 text-center">Nenhum item encontrado.</TableCell>
                                     </TableRow>
                                 )}
                             </TableBody>
@@ -161,22 +181,31 @@ interface ItemFormProps {
 
 function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
     const { toast } = useToast();
-    const [name, setName] = useState(item?.name || '');
-    const [cfop, setCfop] = useState(item?.cfop || '');
+    const [name, setName] = useState('');
+    const [cfop, setCfop] = useState('');
+    const [type, setType] = useState<'Entrada' | 'Saída' | undefined>(undefined);
+    const [movimentaEstoque, setMovimentaEstoque] = useState<'Sim' | 'Não' | undefined>(undefined);
+    const [geraFinanceiro, setGeraFinanceiro] = useState<'Sim' | 'Não' | undefined>(undefined);
 
     useState(() => {
         if (item) {
             setName(item.name);
             setCfop(item.cfop);
+            setType(item.type);
+            setMovimentaEstoque(item.movimentaEstoque);
+            setGeraFinanceiro(item.geraFinanceiro);
         } else {
             setName('');
             setCfop('');
+            setType(undefined);
+            setMovimentaEstoque(undefined);
+            setGeraFinanceiro(undefined);
         }
-    });
+    }, [item]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!name || !cfop) {
+        if (!name || !cfop || !type || !movimentaEstoque || !geraFinanceiro) {
             toast({
                 variant: 'destructive',
                 title: 'Campos Obrigatórios',
@@ -184,24 +213,60 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
             });
             return;
         }
-        onSave({ name, cfop });
+        onSave({ name, cfop, type, movimentaEstoque, geraFinanceiro });
     };
     
     return (
-        <DialogContent>
+        <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
                 <DialogTitle>{item ? 'Editar' : 'Nova'} Natureza da Operação</DialogTitle>
-                <DialogDescription>Preencha os dados.</DialogDescription>
+                <DialogDescription>Preencha os dados e o comportamento da natureza da operação.</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                    <Label htmlFor="name">Nome</Label>
-                    <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="name">Nome</Label>
+                        <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="cfop">CFOP Padrão</Label>
+                        <Input id="cfop" value={cfop} onChange={(e) => setCfop(e.target.value)} required />
+                    </div>
                 </div>
-                <div className="space-y-2">
-                    <Label htmlFor="cfop">CFOP Padrão</Label>
-                    <Input id="cfop" value={cfop} onChange={(e) => setCfop(e.target.value)} required />
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="type">Tipo</Label>
+                        <Select value={type} onValueChange={(v) => setType(v as any)} required>
+                            <SelectTrigger id="type"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Entrada">Entrada</SelectItem>
+                                <SelectItem value="Saída">Saída</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="movimentaEstoque">Movimenta Estoque</Label>
+                        <Select value={movimentaEstoque} onValueChange={(v) => setMovimentaEstoque(v as any)} required>
+                            <SelectTrigger id="movimentaEstoque"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Sim">Sim</SelectItem>
+                                <SelectItem value="Não">Não</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="geraFinanceiro">Gera Financeiro</Label>
+                         <Select value={geraFinanceiro} onValueChange={(v) => setGeraFinanceiro(v as any)} required>
+                            <SelectTrigger id="geraFinanceiro"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Sim">Sim</SelectItem>
+                                <SelectItem value="Não">Não</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
+                
                 <DialogFooter>
                     <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
                     <Button type="submit">Salvar</Button>
