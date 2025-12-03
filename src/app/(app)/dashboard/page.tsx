@@ -2,7 +2,7 @@
 
 'use client';
 
-import { Settings, User, Briefcase, FileText, ArrowRight, MoreHorizontal, AlertTriangle, CheckCircle, ArrowRightCircle, ArrowDownRight, ArrowUpRight } from 'lucide-react';
+import { Settings, User, Briefcase, FileText, ArrowRight, MoreHorizontal, AlertTriangle, CheckCircle, ArrowRightCircle, ArrowDownRight, ArrowUpRight, Clock } from 'lucide-react';
 import { useCompany } from '@/hooks/use-company';
 import KpiCard from '@/components/dashboard/kpi-card';
 import ResultsChart from '@/components/dashboard/results-chart';
@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import { addDays, isBefore, isToday } from 'date-fns';
 
 const defaultKpiSettings = [
   { id: 'faturamento', title: 'Faturamento', enabled: true },
@@ -88,8 +89,11 @@ export default function DashboardPage() {
       { id: 'resultado', title: 'Resultado', value: kpiData.resultado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL'}), icon: <ArrowRight />, variant: 'primary' },
   ];
   
-  const overdueNotifications = useMemo(() => {
-    return contasReceber
+  const allNotifications = useMemo(() => {
+    const today = new Date();
+    const nextWeek = addDays(today, 7);
+
+    const overdueReceivables = contasReceber
       .filter(c => c.status === 'Atrasado')
       .map(c => ({
         id: `cr-${c.id}`,
@@ -98,10 +102,36 @@ export default function DashboardPage() {
         description: `${c.description} - ${c.partnerName}`,
         amount: c.amount,
         link: '/financeiro/contas-a-receber',
+        priority: 'urgent' as const,
       }));
-  }, [contasReceber]);
 
-  const allNotifications = [...overdueNotifications];
+    const upcomingPayments = contasPagar
+      .filter(c => {
+        const dueDate = new Date(c.dueDate);
+        return (isToday(dueDate) || isBefore(dueDate, nextWeek)) && c.status === 'Pendente';
+      })
+      .map(c => ({
+        id: `cp-${c.id}`,
+        type: 'upcoming-payment' as const,
+        title: 'Pagamento próximo',
+        description: `${c.description} - ${c.partnerName}`,
+        amount: c.amount,
+        link: '/financeiro/contas-a-pagar',
+        priority: 'warning' as const,
+      }));
+
+    return [...overdueReceivables, ...upcomingPayments];
+  }, [contasReceber, contasPagar]);
+
+
+  const getNotificationIcon = (priority: 'urgent' | 'warning') => {
+    switch (priority) {
+      case 'urgent':
+        return <AlertTriangle className="h-6 w-6 text-destructive" />;
+      case 'warning':
+        return <Clock className="h-6 w-6 text-amber-500" />;
+    }
+  };
 
 
   return (
@@ -190,11 +220,16 @@ export default function DashboardPage() {
                               <div className="space-y-3">
                               {allNotifications.map(notification => (
                                   <div key={notification.id} className="flex items-center gap-4 rounded-lg border p-3">
-                                      <AlertTriangle className="h-6 w-6 text-destructive" />
+                                      {getNotificationIcon(notification.priority)}
                                       <div className="flex-1">
                                           <p className="font-semibold">{notification.title}</p>
                                           <p className="text-sm text-muted-foreground">{notification.description}</p>
-                                          <p className="text-sm font-mono text-destructive">{notification.amount?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                                          <p className={cn(
+                                              "text-sm font-mono",
+                                              notification.priority === 'urgent' ? "text-destructive" : "text-amber-600"
+                                          )}>
+                                            {notification.amount?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                          </p>
                                       </div>
                                       <Button variant="ghost" size="icon" asChild>
                                           <Link href={notification.link}>
@@ -219,3 +254,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
