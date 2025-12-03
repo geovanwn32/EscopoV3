@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useLocalStorage } from '@/hooks/use-company';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, Calendar as CalendarIcon, Shield, User } from 'lucide-react';
+import { Check, X, Calendar as CalendarIcon, Shield, User, RefreshCw, Search } from 'lucide-react';
 import { AuditLog, logAudit } from '@/lib/audit-log';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -17,6 +17,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Input } from '@/components/ui/input';
 
 interface User {
     id: number;
@@ -39,16 +40,21 @@ export default function AdminPage() {
     const [, setAuditLogs] = useLocalStorage<AuditLog[]>('audit-trail-logs', []);
     
     const [userToApprove, setUserToApprove] = useState<User | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
 
     // Filter out the master user from the list displayed
     const displayUsers = useMemo(() => {
-        return users.filter(user => !user.isMaster)
-                    .sort((a, b) => {
-                        if (a.status === 'Pendente' && b.status !== 'Pendente') return -1;
-                        if (a.status !== 'Pendente' && b.status === 'Pendente') return 1;
-                        return new Date(b.creationDate || 0).getTime() - new Date(a.creationDate || 0).getTime();
-                    });
-    }, [users]);
+        return users.filter(user => 
+            !user.isMaster &&
+            (user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+             user.email.toLowerCase().includes(searchTerm.toLowerCase()))
+        )
+        .sort((a, b) => {
+            if (a.status === 'Pendente' && b.status !== 'Pendente') return -1;
+            if (a.status !== 'Pendente' && b.status === 'Pendente') return 1;
+            return new Date(b.creationDate || 0).getTime() - new Date(a.creationDate || 0).getTime();
+        });
+    }, [users, searchTerm]);
     
     const handleApproval = (userId: number, expiryDate: Date) => {
         const user = users.find(u => u.id === userId);
@@ -80,6 +86,10 @@ export default function AdminPage() {
         });
         logAudit(setAuditLogs, 'DELETE', 'Admin', `Recusou o usuário "${user.name}".`);
     }
+    
+    const handleRefresh = () => {
+        window.location.reload();
+    }
 
     const getStatusBadge = (status: User['status']) => {
         switch (status) {
@@ -104,8 +114,22 @@ export default function AdminPage() {
         </div>
         <Card>
             <CardHeader>
-                <CardTitle>Gerenciamento de Usuários</CardTitle>
-                <CardDescription>Abaixo estão todos os usuários do sistema. Aprove os pendentes e gerencie os ativos.</CardDescription>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <CardTitle>Gerenciamento de Usuários</CardTitle>
+                        <CardDescription>Abaixo estão todos os usuários do sistema. Aprove os pendentes e gerencie os ativos.</CardDescription>
+                    </div>
+                     <div className="flex items-center gap-2">
+                        <div className="relative flex-grow">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="Buscar por nome ou e-mail..." className="pl-9" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                        </div>
+                        <Button variant="outline" size="icon" onClick={handleRefresh}>
+                            <RefreshCw className="h-4 w-4" />
+                            <span className="sr-only">Atualizar</span>
+                        </Button>
+                    </div>
+                </div>
             </CardHeader>
             <CardContent>
                  <div className="rounded-md border">
