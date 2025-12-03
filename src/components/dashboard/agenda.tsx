@@ -46,11 +46,11 @@ export default function Agenda() {
             className="rounded-2xl border bg-card"
             locale={ptBR}
             classNames={{
-              day_selected: "bg-accent text-accent-foreground hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-              day_today: "bg-transparent text-primary rounded-full border border-primary",
+              day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+              day_today: "bg-accent text-accent-foreground",
               head_cell: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
               cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-              day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100",
+              day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 text-foreground",
             }}
              components={{
                 IconLeft: () => <ChevronLeft className="h-4 w-4" />,
