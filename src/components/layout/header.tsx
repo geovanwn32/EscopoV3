@@ -123,12 +123,15 @@ function Notifications() {
 function UserMenu() {
   const { user } = useUser();
   const auth = useAuth();
-  const router = useRouter();
+  const { switchCompany } = useCompany();
 
   const handleLogout = async () => {
     await auth.signOut();
-    router.push('/login');
-  }
+    // Clear company selection and force a full page reload to the login screen.
+    // This ensures all application state is cleared.
+    localStorage.removeItem('currentCompany');
+    window.location.href = '/login';
+  };
 
   if (!user) {
     return (
