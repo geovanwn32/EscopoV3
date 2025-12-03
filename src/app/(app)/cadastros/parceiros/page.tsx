@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { MoreHorizontal, Plus, Search, Trash2, Eye, Pencil, Loader2, ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,7 @@ export default function ParceirosPage() {
     const [itemToDelete, setItemToDelete] = useState<Partner | null>(null);
     const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
     const [isReadOnly, setIsReadOnly] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
     
     const handleSavePartner = (partnerData: Omit<Partner, 'id'>) => {
         if (editingPartner) {
@@ -93,6 +94,13 @@ export default function ParceirosPage() {
         }
     }
 
+    const filteredPartners = useMemo(() => {
+        return partners.filter(partner => 
+            partner.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            partner.document.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [partners, searchTerm]);
+
 
     return (
         <div className="space-y-6">
@@ -121,7 +129,12 @@ export default function ParceirosPage() {
                         <div className="flex items-center gap-2">
                              <div className="relative flex-grow">
                                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input placeholder="Buscar por nome ou CNPJ..." className="pl-9 w-full sm:w-64" />
+                                <Input 
+                                    placeholder="Buscar por nome ou CNPJ..." 
+                                    className="pl-9 w-full sm:w-64" 
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
                             </div>
                             <Dialog open={isDialogOpen} onOpenChange={handleDialogChange}>
                                 <DialogTrigger asChild>
@@ -153,8 +166,8 @@ export default function ParceirosPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {partners.length > 0 ? (
-                                    partners.map(partner => (
+                                {filteredPartners.length > 0 ? (
+                                    filteredPartners.map(partner => (
                                         <TableRow key={partner.id}>
                                             <TableCell className="font-medium">{partner.name}</TableCell>
                                             <TableCell>{partner.document}</TableCell>
@@ -499,4 +512,5 @@ function PartnerForm({ onSave, onOpenChange, partner, isReadOnly }: PartnerFormP
 }
 
 
+    
     
