@@ -153,7 +153,7 @@ export default function AdminPage() {
                                         {user.name}
                                     </TableCell>
                                     <TableCell>{user.email}</TableCell>
-                                    <TableCell className="font-mono text-xs text-muted-foreground">{user.uid}</TableCell>
+                                    <TableCell className="font-mono text-xs text-muted-foreground">{user.uid || 'N/A'}</TableCell>
                                     <TableCell>
                                         {user.creationDate ? format(new Date(user.creationDate), 'dd/MM/yyyy HH:mm') : 'N/A'}
                                     </TableCell>
