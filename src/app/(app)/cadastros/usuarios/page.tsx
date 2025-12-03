@@ -18,6 +18,7 @@ import { AuditLog, logAudit } from '@/lib/audit-log';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useUser } from '@/firebase';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const modules = [
     { id: 'dashboard', label: 'Dashboard' },
@@ -44,6 +45,8 @@ interface User {
     allowedCompanyIds: number[];
     password?: string;
     status: 'Ativo' | 'Inativo' | 'Pendente';
+    planoId?: 'Gratuito' | 'Basico' | 'Profissional';
+    statusLicenca?: 'Ativa' | 'Inadimplente' | 'Cancelada' | 'Expirada';
 }
 
 export default function UsuariosPage() {
@@ -354,6 +357,8 @@ const initialFormState: Omit<User, 'id'> = {
     permissions: initialPermissions,
     allowedCompanyIds: [],
     status: 'Ativo',
+    planoId: 'Gratuito',
+    statusLicenca: 'Ativa'
 };
 
 function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfile }: ItemFormProps) {
@@ -379,6 +384,8 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfile 
                 permissions: item.permissions || initialPermissions,
                 allowedCompanyIds: item.allowedCompanyIds || [],
                 status: item.status || 'Ativo',
+                planoId: item.planoId || 'Gratuito',
+                statusLicenca: item.statusLicenca || 'Ativa'
             });
         } else {
             setFormData(initialFormState);
@@ -457,6 +464,32 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfile 
                     <Label htmlFor="password">{item ? 'Nova Senha' : 'Senha'}</Label>
                     <Input id="password" type="password" value={formData.password} onChange={(e) => handleInputChange('password', e.target.value)} placeholder={item ? "Deixe em branco para não alterar" : "Senha de acesso"} required={!item}/>
                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="planoId">Plano Contratado</Label>
+                        <Select value={formData.planoId} onValueChange={(value) => handleInputChange('planoId', value)}>
+                            <SelectTrigger id="planoId"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Gratuito">Gratuito</SelectItem>
+                                <SelectItem value="Basico">Básico</SelectItem>
+                                <SelectItem value="Profissional">Profissional</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="statusLicenca">Status da Licença</Label>
+                            <Select value={formData.statusLicenca} onValueChange={(value) => handleInputChange('statusLicenca', value)}>
+                            <SelectTrigger id="statusLicenca"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Ativa">Ativa</SelectItem>
+                                <SelectItem value="Inadimplente">Inadimplente</SelectItem>
+                                <SelectItem value="Cancelada">Cancelada</SelectItem>
+                                <SelectItem value="Expirada">Expirada</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
                 <Separator />
                 {activeProfile.isAdmin && isEditingSelf && (
                      <div className="space-y-2 flex items-center justify-between rounded-lg border p-3 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-900">
