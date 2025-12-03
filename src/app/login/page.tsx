@@ -21,7 +21,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen w-full items-center justify-center p-4 lg:p-8 animated-gradient">
         <div className="relative w-full h-full">
-            <Button asChild variant="ghost" className="absolute top-4 left-4 z-10">
+            <Button asChild variant="ghost" className="absolute top-4 left-4 z-10 text-card-foreground">
                 <Link href="/">
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Voltar
