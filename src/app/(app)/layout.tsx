@@ -74,7 +74,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <CompanyProvider>
       <SidebarProvider>
-        <div className="flex h-full w-full bg-background">
+        <div className="flex h-full w-full bg-background animated-gradient">
           <AppLayoutContent>{children}</AppLayoutContent>
         </div>
       </SidebarProvider>
