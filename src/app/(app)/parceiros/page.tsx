@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -247,7 +248,15 @@ function PartnerForm({ onSave, onOpenChange, partner, isReadOnly }: PartnerFormP
             setType(partner.type);
             setEmail(partner.email || '');
             setPhone(partner.phone || '');
-            setAddress(partner.address || { zipCode: '', street: '', number: '', complement: '', neighborhood: '', city: '', state: '' });
+            setAddress({
+              zipCode: partner.address?.zipCode || '',
+              street: partner.address?.street || '',
+              number: partner.address?.number || '',
+              complement: partner.address?.complement || '',
+              neighborhood: partner.address?.neighborhood || '',
+              city: partner.address?.city || '',
+              state: partner.address?.state || '',
+            });
             setTaxRegime(partner.taxRegime || '');
         } else {
             // Reset form
@@ -480,4 +489,5 @@ function PartnerForm({ onSave, onOpenChange, partner, isReadOnly }: PartnerFormP
         </DialogContent>
     );
 }
+
 
