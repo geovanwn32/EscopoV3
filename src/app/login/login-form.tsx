@@ -110,21 +110,21 @@ export default function LoginForm() {
           {isSignUp && (
             <div className="space-y-2">
               <Label htmlFor="fullname">Nome Completo:</Label>
-              <Input id="fullname" type="text" {...register("fullname", { required: true })} placeholder="Seu nome completo" className="bg-muted/50 border-0" />
+              <Input id="fullname" type="text" {...register("fullname", { required: true })} placeholder="Seu nome completo" className="bg-muted/50" />
             </div>
           )}
           <div className="space-y-2">
             <Label htmlFor="email">Email:</Label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="email" type="email" {...register("email", { required: true })} placeholder="email@exemplo.com" className="bg-muted/50 border-0 pl-10" />
+              <Input id="email" type="email" {...register("email", { required: true })} placeholder="email@exemplo.com" className="bg-muted/50 pl-10" />
             </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Senha:</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="password" type={showPassword ? "text" : "password"} {...register("password", { required: true, minLength: 6 })} placeholder="Sua senha" className="bg-muted/50 border-0 pl-10 pr-10" />
+              <Input id="password" type={showPassword ? "text" : "password"} {...register("password", { required: true, minLength: 6 })} placeholder="Sua senha" className="bg-muted/50 pl-10 pr-10" />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
