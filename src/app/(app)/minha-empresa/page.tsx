@@ -320,12 +320,11 @@ export default function MinhaEmpresaPage() {
         </div>
 
         <Tabs defaultValue="geral">
-            <TabsList className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+            <TabsList className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
                 <TabsTrigger value="geral">Geral</TabsTrigger>
                 <TabsTrigger value="endereco">Endereço</TabsTrigger>
-                <TabsTrigger value="fiscal">Fiscal</TabsTrigger>
+                <TabsTrigger value="fiscal">Fiscal e Plano</TabsTrigger>
                 <TabsTrigger value="contador">Contador</TabsTrigger>
-                <TabsTrigger value="licenca">Plano e Licença</TabsTrigger>
                 <TabsTrigger value="logo">Logo</TabsTrigger>
             </TabsList>
 
@@ -426,8 +425,8 @@ export default function MinhaEmpresaPage() {
              <TabsContent value="fiscal">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Dados Fiscais</CardTitle>
-                        <CardDescription>Configurações tributárias e fiscais da empresa.</CardDescription>
+                        <CardTitle>Dados Fiscais e de Plano</CardTitle>
+                        <CardDescription>Configurações tributárias, fiscais e de assinatura da empresa.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -484,44 +483,8 @@ export default function MinhaEmpresaPage() {
                                         <SelectItem value="99">99 - Pessoas Jurídicas e Físicas em geral não classificadas nos demais códigos</SelectItem>
                                     </SelectContent>
                                 </Select>
-                            </div>
-                    </CardContent>
-                </Card>
-            </TabsContent>
-
-             <TabsContent value="contador">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Dados do Contador</CardTitle>
-                        <CardDescription>Informações do profissional contábil responsável pela empresa.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="contadorNome">Nome do Contador</Label>
-                                <Input id="contadorNome" value={companyData.contadorNome} onChange={(e) => handleInputChange('contadorNome', e.target.value)} placeholder="Nome completo do contador" />
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="contadorCpf">CPF do Contador</Label>
-                                <Input id="contadorCpf" value={companyData.contadorCpf} onChange={(e) => handleInputChange('contadorCpf', e.target.value)} placeholder="000.000.000-00" />
-                            </div>
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="contadorCrc">CRC do Contador</Label>
-                            <Input id="contadorCrc" value={companyData.contadorCrc} onChange={(e) => handleInputChange('contadorCrc', e.target.value)} placeholder="Ex: MG-999999/O-1" />
-                        </div>
-                    </CardContent>
-                </Card>
-            </TabsContent>
-
-            <TabsContent value="licenca">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Plano e Licença</CardTitle>
-                        <CardDescription>Informações sobre a assinatura e o status da licença da empresa.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
                             <div className="space-y-2">
                                 <Label htmlFor="planoId">Plano Contratado</Label>
                                 <Select value={companyData.planoId} onValueChange={(value) => handleInputChange('planoId', value)}>
@@ -573,6 +536,31 @@ export default function MinhaEmpresaPage() {
                 </Card>
             </TabsContent>
 
+             <TabsContent value="contador">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Dados do Contador</CardTitle>
+                        <CardDescription>Informações do profissional contábil responsável pela empresa.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="contadorNome">Nome do Contador</Label>
+                                <Input id="contadorNome" value={companyData.contadorNome} onChange={(e) => handleInputChange('contadorNome', e.target.value)} placeholder="Nome completo do contador" />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="contadorCpf">CPF do Contador</Label>
+                                <Input id="contadorCpf" value={companyData.contadorCpf} onChange={(e) => handleInputChange('contadorCpf', e.target.value)} placeholder="000.000.000-00" />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="contadorCrc">CRC do Contador</Label>
+                            <Input id="contadorCrc" value={companyData.contadorCrc} onChange={(e) => handleInputChange('contadorCrc', e.target.value)} placeholder="Ex: MG-999999/O-1" />
+                        </div>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+
             <TabsContent value="logo">
                 <Card>
                     <CardHeader>
@@ -605,5 +593,3 @@ export default function MinhaEmpresaPage() {
     </div>
   );
 }
-
-    

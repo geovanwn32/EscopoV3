@@ -18,6 +18,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/firebase';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function SelecionarEmpresaPage() {
   const router = useRouter();
@@ -258,6 +259,8 @@ function CompanyForm({ onSave, onCancel }: CompanyFormProps) {
     razaoSocial: '',
     nomeFantasia: '',
     cnpj: '',
+    planoId: 'Gratuito',
+    statusLicenca: 'Ativa',
   });
 
   const handleInputChange = (field: keyof typeof formData, value: string) => {
@@ -321,6 +324,8 @@ function CompanyForm({ onSave, onCancel }: CompanyFormProps) {
         razaoSocial: formData.razaoSocial,
         nomeFantasia: formData.nomeFantasia,
         cnpj: formData.cnpj,
+        planoId: formData.planoId,
+        statusLicenca: formData.statusLicenca,
       },
     });
   };
@@ -352,6 +357,31 @@ function CompanyForm({ onSave, onCancel }: CompanyFormProps) {
           <Label htmlFor="nomeFantasia">Nome Fantasia</Label>
           <Input id="nomeFantasia" value={formData.nomeFantasia} onChange={e => handleInputChange('nomeFantasia', e.target.value)} />
         </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+                <Label htmlFor="planoId">Plano Contratado</Label>
+                <Select value={formData.planoId} onValueChange={(value) => handleInputChange('planoId', value)}>
+                    <SelectTrigger id="planoId"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="Gratuito">Gratuito</SelectItem>
+                        <SelectItem value="Basico">Básico</SelectItem>
+                        <SelectItem value="Profissional">Profissional</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="statusLicenca">Status da Licença</Label>
+                    <Select value={formData.statusLicenca} onValueChange={(value) => handleInputChange('statusLicenca', value)}>
+                    <SelectTrigger id="statusLicenca"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="Ativa">Ativa</SelectItem>
+                        <SelectItem value="Inadimplente">Inadimplente</SelectItem>
+                        <SelectItem value="Cancelada">Cancelada</SelectItem>
+                        <SelectItem value="Expirada">Expirada</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+        </div>
         
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
@@ -361,4 +391,3 @@ function CompanyForm({ onSave, onCancel }: CompanyFormProps) {
     </DialogContent>
   );
 }
-
