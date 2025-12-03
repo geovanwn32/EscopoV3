@@ -22,7 +22,7 @@ import { useCompany } from '@/hooks/use-company';
 import { cn } from '@/lib/utils';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { NAV_TITLES } from '@/lib/nav-titles';
 import { Conta } from '@/types/financeiro';
 import { useSidebar } from '../ui/sidebar';
@@ -123,17 +123,30 @@ function Notifications() {
 function UserMenu() {
   const { user } = useUser();
   const auth = useAuth();
-  const { switchCompany } = useCompany();
+  const [activeProfile, setActiveProfile] = useState<{name: string, email: string, isAdmin: boolean} | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+        const profileString = sessionStorage.getItem('user-profile');
+        if (profileString) {
+            try {
+                setActiveProfile(JSON.parse(profileString));
+            } catch (e) {
+                console.error("Failed to parse user profile from session storage", e);
+            }
+        }
+    }
+  }, []);
 
   const handleLogout = async () => {
     await auth.signOut();
-    // Clear company selection and force a full page reload to the login screen.
-    // This ensures all application state is cleared.
+    // Clear all session and local storage related to the user/company
     localStorage.removeItem('currentCompany');
-    window.location.href = '/login';
+    sessionStorage.removeItem('user-profile');
+    window.location.href = '/login'; // Force a full reload to the login page
   };
 
-  if (!user) {
+  if (!user || !activeProfile) {
     return (
        <Avatar className="h-10 w-10 border-2 border-transparent">
           <AvatarFallback>
@@ -148,22 +161,24 @@ function UserMenu() {
       <DropdownMenuTrigger asChild>
         <div className="flex items-center gap-3 cursor-pointer">
             <Avatar className="h-10 w-10 border-2 border-transparent hover:border-primary transition-colors">
-              {user.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'Avatar do usuário'} />}
+              {user.photoURL && <AvatarImage src={user.photoURL} alt={activeProfile.name} />}
               <AvatarFallback>
-                {user.displayName ? user.displayName.charAt(0).toUpperCase() : <User />}
+                {activeProfile.name ? activeProfile.name.charAt(0).toUpperCase() : <User />}
               </AvatarFallback>
             </Avatar>
             <div className="hidden md:flex flex-col text-left">
-                <p className="text-sm font-medium leading-none">{user.displayName || 'Usuário'}</p>
-                <p className="text-xs leading-none text-muted-foreground">Admin</p>
+                <p className="text-sm font-medium leading-none">{activeProfile.name}</p>
+                <p className="text-xs leading-none text-muted-foreground">
+                  {activeProfile.isAdmin ? 'Administrador' : 'Usuário'}
+                </p>
             </div>
         </div>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.displayName}</p>
-            <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+            <p className="text-sm font-medium leading-none">{activeProfile.name}</p>
+            <p className="text-xs leading-none text-muted-foreground">{activeProfile.email}</p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
