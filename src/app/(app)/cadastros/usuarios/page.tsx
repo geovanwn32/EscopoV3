@@ -1,6 +1,7 @@
+
 'use client';
 import { useState, useMemo, useEffect } from 'react';
-import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft, ShieldCheck, ShieldAlert, Building } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -40,12 +41,13 @@ interface User {
     email: string;
     isAdmin: boolean;
     permissions: UserPermissions;
+    allowedCompanyIds: number[];
     password?: string;
 }
 
 export default function UsuariosPage() {
     const { toast } = useToast();
-    const { useScopedData, currentCompany } = useCompany();
+    const { useScopedData, companies, currentCompany } = useCompany();
     const [users, setUsers] = useScopedData<User[]>('global-users', []);
     const [, setAuditLogs] = useScopedData<AuditLog[]>('audit-trail-logs', []);
     
@@ -57,14 +59,18 @@ export default function UsuariosPage() {
     const [searchTerm, setSearchTerm] = useState('');
 
     const loggedInUserIsAdmin = useMemo(() => {
-        if (!firebaseUser || !users) return false;
-        const activeProfile = sessionStorage.getItem(`user-profile-${currentCompany}`);
-        if (activeProfile) {
-            const profile: User = JSON.parse(activeProfile);
-            return profile.isAdmin;
+        if (!firebaseUser || !users.length) return false;
+        
+        // On first run, there might not be a profile, but the first firebase user is the implicit admin
+        if(users.length === 0) return true;
+
+        const activeProfileId = sessionStorage.getItem(`user-profile-id`);
+        if (activeProfileId) {
+            const profile = users.find(u => u.id === Number(activeProfileId));
+            return profile?.isAdmin ?? false;
         }
         return false;
-    }, [firebaseUser, users, currentCompany]);
+    }, [firebaseUser, users]);
 
     const handleSave = (itemData: Omit<User, 'id'>) => {
         if (editingItem) {
@@ -110,7 +116,17 @@ export default function UsuariosPage() {
         setEditingItem(null);
     };
 
-    const handleDeleteClick = (item: User) => setItemToDelete(item);
+    const handleDeleteClick = (item: User) => {
+        if (item.isAdmin) {
+            toast({
+                variant: 'destructive',
+                title: 'Ação não permitida',
+                description: 'Não é possível excluir o perfil de administrador principal.',
+            });
+            return;
+        }
+        setItemToDelete(item);
+    };
 
     const handleConfirmDelete = () => {
         if (itemToDelete) {
@@ -209,6 +225,7 @@ export default function UsuariosPage() {
                                         onOpenChange={setIsDialogOpen}
                                         item={editingItem}
                                         users={users}
+                                        companies={companies}
                                     />
                                 </Dialog>
                             </div>
@@ -282,6 +299,7 @@ interface ItemFormProps {
     onOpenChange: (open: boolean) => void;
     item: User | null;
     users: User[];
+    companies: { id: number, name: string }[];
 }
 
 const initialPermissions = modules.reduce((acc, module) => {
@@ -290,16 +308,23 @@ const initialPermissions = modules.reduce((acc, module) => {
 }, {} as UserPermissions);
 
 
-function ItemForm({ onSave, onOpenChange, item, users }: ItemFormProps) {
+function ItemForm({ onSave, onOpenChange, item, users, companies }: ItemFormProps) {
     const { toast } = useToast();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isAdmin, setIsAdmin] = useState(false);
     const [permissions, setPermissions] = useState<UserPermissions>(initialPermissions);
+    const [allowedCompanyIds, setAllowedCompanyIds] = useState<number[]>([]);
+
 
     const anotherAdminExists = useMemo(() => {
-        return users.some(user => user.isAdmin && user.id !== item?.id);
+        // If creating a new user, check if any user is an admin.
+        if (!item) {
+            return users.some(user => user.isAdmin);
+        }
+        // If editing, check if another user (not the one being edited) is an admin.
+        return users.some(user => user.isAdmin && user.id !== item.id);
     }, [users, item]);
 
     useEffect(() => {
@@ -309,18 +334,36 @@ function ItemForm({ onSave, onOpenChange, item, users }: ItemFormProps) {
             setPassword(''); // Do not show existing password
             setIsAdmin(item.isAdmin);
             setPermissions(item.permissions || initialPermissions);
+            setAllowedCompanyIds(item.allowedCompanyIds || []);
         } else {
             setName('');
             setEmail('');
             setPassword('');
             setIsAdmin(false);
             setPermissions(initialPermissions);
+            setAllowedCompanyIds([]);
         }
     }, [item]);
+    
+    useEffect(() => {
+    // If the user is an admin, they should have access to all companies.
+    if (isAdmin) {
+      setAllowedCompanyIds(companies.map(c => c.id));
+    }
+    }, [isAdmin, companies]);
+
 
     const handlePermissionChange = (moduleId: string, checked: boolean) => {
         setPermissions(prev => ({...prev, [moduleId]: checked}));
     }
+    
+    const handleCompanyAccessChange = (companyId: number, checked: boolean) => {
+        if (isAdmin) return; // Admins always have access to all companies
+        setAllowedCompanyIds(prev =>
+            checked ? [...prev, companyId] : prev.filter(id => id !== companyId)
+        );
+    };
+
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -341,7 +384,7 @@ function ItemForm({ onSave, onOpenChange, item, users }: ItemFormProps) {
             });
             return;
         }
-        onSave({ name, email, password, isAdmin, permissions });
+        onSave({ name, email, password, isAdmin, permissions, allowedCompanyIds });
     };
     
     return (
@@ -368,14 +411,14 @@ function ItemForm({ onSave, onOpenChange, item, users }: ItemFormProps) {
                     <div className='space-y-0.5'>
                         <Label htmlFor="isAdmin" className='flex items-center'><ShieldCheck className='mr-2 h-4 w-4 text-primary' />Perfil de Administrador</Label>
                         <p className='text-xs text-muted-foreground'>
-                            Concede acesso total a todos os módulos e configurações.
+                            Concede acesso total a todos os módulos e empresas.
                         </p>
                     </div>
                     <Switch
                         id="isAdmin"
                         checked={isAdmin}
                         onCheckedChange={setIsAdmin}
-                        disabled={anotherAdminExists && !isAdmin}
+                        disabled={!item?.isAdmin && anotherAdminExists}
                     />
                 </div>
                  <div className="space-y-4 rounded-lg border p-4">
@@ -394,6 +437,25 @@ function ItemForm({ onSave, onOpenChange, item, users }: ItemFormProps) {
                         ))}
                     </div>
                 </div>
+                 <div className="space-y-4 rounded-lg border p-4">
+                    <h3 className="font-medium text-sm">Acesso às Empresas</h3>
+                    <div className="grid grid-cols-1 gap-2">
+                        {companies.map(company => (
+                            <div key={company.id} className="flex items-center gap-2">
+                                <Checkbox
+                                    id={`comp-${company.id}`}
+                                    checked={isAdmin || allowedCompanyIds.includes(company.id)}
+                                    onCheckedChange={(checked) => handleCompanyAccessChange(company.id, !!checked)}
+                                    disabled={isAdmin}
+                                />
+                                <Label htmlFor={`comp-${company.id}`} className="font-normal text-sm flex items-center gap-2">
+                                    <Building className='h-4 w-4 text-muted-foreground'/>
+                                    {company.name}
+                                </Label>
+                            </div>
+                        ))}
+                    </div>
+                </div>
                 <DialogFooter>
                     <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
                     <Button type="submit">Salvar</Button>
@@ -402,3 +464,5 @@ function ItemForm({ onSave, onOpenChange, item, users }: ItemFormProps) {
         </DialogContent>
     );
 }
+
+    
