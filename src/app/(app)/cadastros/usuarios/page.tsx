@@ -43,6 +43,7 @@ interface User {
     permissions: UserPermissions;
     allowedCompanyIds: number[];
     password?: string;
+    status: 'Ativo' | 'Inativo';
 }
 
 export default function UsuariosPage() {
@@ -73,48 +74,30 @@ export default function UsuariosPage() {
     }, [firebaseUser]);
 
     const handleSave = (itemData: Omit<User, 'id'>) => {
+        const action = editingItem ? 'UPDATE' : 'CREATE';
+
         if (editingItem) {
             const updatedUser = { ...editingItem, ...itemData };
-            // Do not update password if it's empty during an edit
             if (!itemData.password) {
                 delete updatedUser.password;
             }
-    
-            setUsers(prev => {
-                // If the updated user is now an admin, demote any other admin.
-                if (updatedUser.isAdmin) {
-                    return prev.map(user => 
-                        user.id === editingItem.id 
-                            ? updatedUser 
-                            : { ...user, isAdmin: false }
-                    );
-                }
-                // Otherwise, just update the user.
-                return prev.map(user => 
-                    user.id === editingItem.id ? updatedUser : user
-                );
-            });
-    
+            setUsers(prev => prev.map(user => user.id === editingItem.id ? updatedUser : user));
             toast({ title: "Usuário Atualizado!", description: "Os dados do usuário foram atualizados." });
-            logAudit(setAuditLogs, 'UPDATE', 'Usuários', `Atualizou o usuário "${itemData.name}".`);
         } else {
             const newItem: User = { ...itemData, id: Date.now() };
-            
-            setUsers(prev => {
-                // If the new user is an admin, demote all other users.
-                if (newItem.isAdmin) {
-                    const demotedUsers = prev.map(user => ({ ...user, isAdmin: false }));
-                    return [...demotedUsers, newItem];
-                }
-                return [...prev, newItem];
-            });
-    
+            setUsers(prev => [...prev, newItem]);
             toast({ title: "Usuário Adicionado!", description: "Um novo usuário foi convidado para a empresa." });
-            logAudit(setAuditLogs, 'CREATE', 'Usuários', `Convidou o usuário "${itemData.name}" (${itemData.email}).`);
         }
+
+        const logDetails = action === 'CREATE'
+            ? `Criou o usuário "${itemData.name}" (${itemData.email}).`
+            : `Atualizou o usuário "${itemData.name}".`;
+        logAudit(setAuditLogs, action, 'Usuários', logDetails);
+
         setIsDialogOpen(false);
         setEditingItem(null);
     };
+
 
     const handleDeleteClick = (item: User) => {
         if (item.isAdmin) {
@@ -143,7 +126,7 @@ export default function UsuariosPage() {
     };
 
     const handleNewUserClick = () => {
-        setEditingItem(null); // Explicitly set editingItem to null for new user
+        setEditingItem(null);
         setIsDialogOpen(true);
     }
     
@@ -153,7 +136,6 @@ export default function UsuariosPage() {
         const updatedProfile = { ...activeProfile, password: newPassword };
         setUsers(prev => prev.map(u => u.id === activeProfile.id ? updatedProfile : u));
 
-        // Also update the session storage to reflect the change immediately for the current session
         sessionStorage.setItem('user-profile', JSON.stringify(updatedProfile));
 
         toast({ title: "Senha Atualizada!", description: "Sua senha de acesso foi alterada com sucesso." });
@@ -189,7 +171,6 @@ export default function UsuariosPage() {
     }
 
     if (!activeProfile) {
-        // Fallback for when profile is not loaded yet
         return (
             <div className="space-y-6">
                 <div className="space-y-1">
@@ -247,6 +228,7 @@ export default function UsuariosPage() {
                                         item={editingItem}
                                         users={users}
                                         companies={companies}
+                                        activeProfileId={activeProfile.id}
                                     />
                                 </Dialog>
                             </div>
@@ -260,6 +242,7 @@ export default function UsuariosPage() {
                                         <TableHead>Nome</TableHead>
                                         <TableHead>Email</TableHead>
                                         <TableHead>Permissões</TableHead>
+                                        <TableHead>Status</TableHead>
                                         <TableHead className="w-[64px]"></TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -270,6 +253,9 @@ export default function UsuariosPage() {
                                             <TableCell>{item.email}</TableCell>
                                             <TableCell>
                                             {renderPermissions(item)}
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant={item.status === 'Ativo' ? 'default' : 'secondary'}>{item.status}</Badge>
                                             </TableCell>
                                             <TableCell>
                                                 <DropdownMenu>
@@ -289,7 +275,7 @@ export default function UsuariosPage() {
                                         </TableRow>
                                     )) : (
                                         <TableRow>
-                                            <TableCell colSpan={4} className="h-24 text-center">Nenhum usuário encontrado.</TableCell>
+                                            <TableCell colSpan={5} className="h-24 text-center">Nenhum usuário encontrado.</TableCell>
                                         </TableRow>
                                     )}
                                 </TableBody>
@@ -324,6 +310,7 @@ interface ItemFormProps {
     item: User | null;
     users: User[];
     companies: { id: number, name: string }[];
+    activeProfileId: number;
 }
 
 const initialPermissions = modules.reduce((acc, module) => {
@@ -332,7 +319,7 @@ const initialPermissions = modules.reduce((acc, module) => {
 }, {} as UserPermissions);
 
 
-function ItemForm({ onSave, onOpenChange, item, users, companies }: ItemFormProps) {
+function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfileId }: ItemFormProps) {
     const { toast } = useToast();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -340,6 +327,7 @@ function ItemForm({ onSave, onOpenChange, item, users, companies }: ItemFormProp
     const [isAdmin, setIsAdmin] = useState(false);
     const [permissions, setPermissions] = useState<UserPermissions>(initialPermissions);
     const [allowedCompanyIds, setAllowedCompanyIds] = useState<number[]>([]);
+    const [status, setStatus] = useState<'Ativo' | 'Inativo'>('Ativo');
 
 
     const anotherAdminExists = useMemo(() => {
@@ -353,10 +341,11 @@ function ItemForm({ onSave, onOpenChange, item, users, companies }: ItemFormProp
         if (item) {
             setName(item.name);
             setEmail(item.email);
-            setPassword(''); // Do not show existing password
+            setPassword(''); 
             setIsAdmin(item.isAdmin);
             setPermissions(item.permissions || initialPermissions);
             setAllowedCompanyIds(item.allowedCompanyIds || []);
+            setStatus(item.status || 'Ativo');
         } else {
             setName('');
             setEmail('');
@@ -364,6 +353,7 @@ function ItemForm({ onSave, onOpenChange, item, users, companies }: ItemFormProp
             setIsAdmin(false);
             setPermissions(initialPermissions);
             setAllowedCompanyIds([]);
+            setStatus('Ativo');
         }
     }, [item]);
     
@@ -404,9 +394,11 @@ function ItemForm({ onSave, onOpenChange, item, users, companies }: ItemFormProp
             });
             return;
         }
-        onSave({ name, email, password, isAdmin, permissions, allowedCompanyIds });
+        onSave({ name, email, password, isAdmin, permissions, allowedCompanyIds, status });
     };
     
+    const isEditingSelf = item?.id === activeProfileId;
+
     return (
         <DialogContent className="sm:max-w-lg">
             <DialogHeader>
@@ -438,7 +430,21 @@ function ItemForm({ onSave, onOpenChange, item, users, companies }: ItemFormProp
                         id="isAdmin"
                         checked={isAdmin}
                         onCheckedChange={setIsAdmin}
-                        disabled={item ? (item.isAdmin ? false : anotherAdminExists) : anotherAdminExists}
+                        disabled={(item ? item.isAdmin && !anotherAdminExists : anotherAdminExists) || isEditingSelf}
+                    />
+                </div>
+                <div className="space-y-2 flex items-center justify-between rounded-lg border p-3">
+                    <div className='space-y-0.5'>
+                        <Label htmlFor="status" className='flex items-center'>Status do Usuário</Label>
+                        <p className='text-xs text-muted-foreground'>
+                           Usuários inativos não podem acessar o sistema.
+                        </p>
+                    </div>
+                    <Switch
+                        id="status"
+                        checked={status === 'Ativo'}
+                        onCheckedChange={(checked) => setStatus(checked ? 'Ativo' : 'Inativo')}
+                        disabled={isEditingSelf}
                     />
                 </div>
                  <div className="space-y-4 rounded-lg border p-4">
@@ -556,13 +562,3 @@ function MyProfileCard({ profile, onSave }: MyProfileCardProps) {
         </Card>
     );
 }
-
-    
-
-    
-
-
-
-    
-
-    

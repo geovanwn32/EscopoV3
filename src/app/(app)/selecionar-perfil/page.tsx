@@ -20,6 +20,7 @@ interface UserProfile {
     email: string;
     isAdmin: boolean;
     password?: string;
+    status: 'Ativo' | 'Inativo';
 }
 
 export default function SelecionarPerfilPage() {
@@ -35,10 +36,17 @@ export default function SelecionarPerfilPage() {
     const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
 
     const handleProfileSelect = (user: UserProfile) => {
+        if (user.status === 'Inativo') {
+            toast({
+                variant: 'destructive',
+                title: 'Acesso Negado',
+                description: 'Este perfil de usuário está inativo. Contate um administrador.'
+            });
+            return;
+        }
         if (user.password) {
             setSelectedUser(user);
         } else {
-            // This case might not be hit if password is always required, but it's a safe fallback.
             sessionStorage.setItem('user-profile', JSON.stringify(user));
             router.push('/selecionar-empresa');
         }
@@ -66,12 +74,13 @@ export default function SelecionarPerfilPage() {
         setIsLoading(false);
     }
     
-    const handleSaveNewUser = (userData: Omit<UserProfile, 'id' | 'isAdmin' | 'permissions'>) => {
+    const handleSaveNewUser = (userData: Omit<UserProfile, 'id' | 'isAdmin' | 'permissions' | 'status'>) => {
         const newUser: UserProfile = {
             id: Date.now(),
             ...userData,
-            isAdmin: users.length === 0, // First user is always an admin
+            isAdmin: users.length === 0, 
             permissions: {},
+            status: 'Ativo',
         };
         setUsers(prev => [...prev, newUser]);
         setIsAddUserOpen(false);
@@ -103,7 +112,6 @@ export default function SelecionarPerfilPage() {
     };
     
     useEffect(() => {
-        // The layout will handle redirection if the firebase user is not present.
     }, [router]);
 
     return (
@@ -236,7 +244,7 @@ export default function SelecionarPerfilPage() {
 interface AddUserDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSave: (data: Omit<UserProfile, 'id' | 'isAdmin' | 'permissions'>) => void;
+    onSave: (data: Omit<UserProfile, 'id' | 'isAdmin' | 'permissions' | 'status'>) => void;
     isFirstUser: boolean;
 }
 
@@ -252,7 +260,6 @@ function AddUserDialog({ open, onOpenChange, onSave, isFirstUser }: AddUserDialo
             return;
         }
         onSave({ name, email, password });
-        // Clear fields after saving
         setName('');
         setEmail('');
         setPassword('');
