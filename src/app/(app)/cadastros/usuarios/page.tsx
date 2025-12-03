@@ -60,14 +60,38 @@ export default function UsuariosPage() {
             if (!itemData.password) {
                 delete updatedUser.password;
             }
-            setUsers(prev => prev.map(i => i.id === editingItem.id ? updatedUser : i));
+    
+            setUsers(prev => {
+                // If the updated user is now an admin, demote any other admin.
+                if (updatedUser.isAdmin) {
+                    return prev.map(user => 
+                        user.id === editingItem.id 
+                            ? updatedUser 
+                            : { ...user, isAdmin: false }
+                    );
+                }
+                // Otherwise, just update the user.
+                return prev.map(user => 
+                    user.id === editingItem.id ? updatedUser : user
+                );
+            });
+    
             toast({ title: "Usuário Atualizado!", description: "Os dados do usuário foram atualizados." });
             logAudit(setAuditLogs, 'UPDATE', 'Usuários', `Atualizou o usuário "${itemData.name}".`);
         } else {
             const newItem: User = { ...itemData, id: Date.now() };
-            setUsers(prev => [...prev, newItem]);
+            
+            setUsers(prev => {
+                // If the new user is an admin, demote all other users.
+                if (newItem.isAdmin) {
+                    const demotedUsers = prev.map(user => ({ ...user, isAdmin: false }));
+                    return [...demotedUsers, newItem];
+                }
+                return [...prev, newItem];
+            });
+    
             toast({ title: "Usuário Adicionado!", description: "Um novo usuário foi convidado para a empresa." });
-             logAudit(setAuditLogs, 'CREATE', 'Usuários', `Convidou o usuário "${itemData.name}" (${itemData.email}).`);
+            logAudit(setAuditLogs, 'CREATE', 'Usuários', `Convidou o usuário "${itemData.name}" (${itemData.email}).`);
         }
         setIsDialogOpen(false);
         setEditingItem(null);
@@ -88,6 +112,11 @@ export default function UsuariosPage() {
         setEditingItem(item);
         setIsDialogOpen(true);
     };
+
+    const handleNewUserClick = () => {
+        setEditingItem(null); // Explicitly set editingItem to null for new user
+        setIsDialogOpen(true);
+    }
 
     const filteredItems = useMemo(() => {
         return users.filter(item =>
@@ -145,7 +174,7 @@ export default function UsuariosPage() {
                             </div>
                             <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) setEditingItem(null); }}>
                                 <DialogTrigger asChild>
-                                    <Button><Plus className="mr-2 h-4 w-4" /> Convidar Usuário</Button>
+                                    <Button onClick={handleNewUserClick}><Plus className="mr-2 h-4 w-4" /> Convidar Usuário</Button>
                                 </DialogTrigger>
                                 <ItemForm 
                                     onSave={handleSave} 
