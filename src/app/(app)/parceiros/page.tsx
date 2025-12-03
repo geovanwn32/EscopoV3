@@ -137,6 +137,7 @@ export default function ParceirosPage() {
                                     <TableHead>Nome / Razão Social</TableHead>
                                     <TableHead>CNPJ / CPF</TableHead>
                                     <TableHead>Tipo</TableHead>
+                                    <TableHead>Endereço</TableHead>
                                     <TableHead className="w-[64px]"></TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -149,6 +150,7 @@ export default function ParceirosPage() {
                                             <TableCell>
                                                 <Badge variant="secondary">{partner.type}</Badge>
                                             </TableCell>
+                                            <TableCell>{partner.address}</TableCell>
                                             <TableCell>
                                                  <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
@@ -174,7 +176,7 @@ export default function ParceirosPage() {
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={4} className="h-24 text-center">
+                                        <TableCell colSpan={5} className="h-24 text-center">
                                             Nenhum parceiro cadastrado.
                                         </TableCell>
                                     </TableRow>
@@ -216,16 +218,20 @@ function PartnerForm({ onSave, onOpenChange, partner, isReadOnly }: PartnerFormP
     const [name, setName] = useState('');
     const [document, setDocument] = useState('');
     const [type, setType] = useState<'Cliente' | 'Fornecedor' | 'Transportadora'>();
+    const [address, setAddress] = useState('');
+
 
      useEffect(() => {
         if (partner) {
             setName(partner.name);
             setDocument(partner.document);
             setType(partner.type);
+            setAddress(partner.address || '');
         } else {
             setName('');
             setDocument('');
             setType(undefined);
+            setAddress('');
         }
     }, [partner]);
 
@@ -245,7 +251,7 @@ function PartnerForm({ onSave, onOpenChange, partner, isReadOnly }: PartnerFormP
             return;
         }
         
-        onSave({ name, document, type });
+        onSave({ name, document, type, address });
     };
     
     const dialogTitle = isReadOnly ? "Visualizar Parceiro" : partner ? "Editar Parceiro" : "Novo Parceiro";
@@ -268,6 +274,10 @@ function PartnerForm({ onSave, onOpenChange, partner, isReadOnly }: PartnerFormP
                 <div className="space-y-2">
                     <Label htmlFor="document">CNPJ / CPF</Label>
                     <Input id="document" value={document} onChange={(e) => setDocument(e.target.value)} required readOnly={isReadOnly} />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="address">Endereço</Label>
+                    <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} readOnly={isReadOnly} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="type">Tipo</Label>

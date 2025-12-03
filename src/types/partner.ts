@@ -3,4 +3,7 @@ export interface Partner {
     name: string;
     document: string;
     type: 'Cliente' | 'Fornecedor' | 'Transportadora';
+    address?: string;
 }
+
+    
