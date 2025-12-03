@@ -32,7 +32,7 @@ export default function LoginPage() {
             <p className="text-lg">
               “Este sistema transformou a maneira como gerenciamos nossas finanças e obrigações fiscais. É intuitivo, poderoso e indispensável para o nosso dia a dia.”
             </p>
-            <footer className="text-sm">Geovani Silva, CEO da Agio Soluções</footer>
+            <footer className="text-sm">Geovani Silva, CEO da Ágio Soluções</footer>
           </blockquote>
         </div>
       </div>
