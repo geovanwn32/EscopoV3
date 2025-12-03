@@ -1,6 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
-import { MoreHorizontal, Plus, Search, Trash2, Pencil } from 'lucide-react';
+import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useCompany } from '@/hooks/use-company';
+import Link from 'next/link';
 
 interface UnidadeDeMedida {
     id: number;
@@ -65,9 +66,17 @@ export default function UnidadeDeMedidaPage() {
 
     return (
         <div className="space-y-6">
-            <div className="space-y-1">
-                <h1 className="text-3xl font-bold tracking-tight font-headline">Unidades de Medida</h1>
-                <p className="text-muted-foreground">Gerencie as unidades de medida utilizadas nos produtos.</p>
+            <div className="flex items-center gap-4">
+                 <Link href="/cadastros">
+                    <Button variant="outline" size="icon" className="h-8 w-8">
+                        <ArrowLeft className="h-4 w-4" />
+                        <span className="sr-only">Voltar</span>
+                    </Button>
+                </Link>
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-bold tracking-tight font-headline">Unidades de Medida</h1>
+                    <p className="text-muted-foreground">Gerencie as unidades de medida utilizadas nos produtos.</p>
+                </div>
             </div>
 
             <Card>
