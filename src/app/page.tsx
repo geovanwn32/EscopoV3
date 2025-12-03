@@ -213,7 +213,7 @@ function ContactSection() {
                     <h2 className="text-3xl font-bold tracking-tight">Entre em Contato</h2>
                     <p className="mt-4 text-muted-foreground max-w-xl mx-auto">Tem alguma dúvida ou gostaria de uma demonstração? Nossa equipe está pronta para ajudar.</p>
                 </div>
-                <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 items-start">
+                <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 items-start max-w-4xl mx-auto">
                     <div className="space-y-8">
                         <div className="flex gap-4 items-start">
                             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
