@@ -351,6 +351,11 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfile 
     const [status, setStatus] = useState<'Ativo' | 'Inativo'>('Ativo');
 
 
+    const otherAdminExists = useMemo(() => {
+        // When editing, check for another admin. When creating, check for any admin.
+        return users.some(user => user.isAdmin && user.id !== item?.id);
+    }, [users, item]);
+
     const otherMasterExists = useMemo(() => {
         // When editing, check for another master. When creating, check for any master.
         return users.some(user => user.isMaster && user.id !== item?.id);
@@ -440,7 +445,7 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfile 
                     <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={item ? "Deixe em branco para não alterar" : "Senha de acesso"} required={!item}/>
                 </div>
                 <Separator />
-                {activeProfile.isMaster && isEditingSelf && (
+                {activeProfile.isAdmin && isEditingSelf && (
                      <div className="space-y-2 flex items-center justify-between rounded-lg border p-3 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-900">
                         <div className='space-y-0.5'>
                             <Label htmlFor="isMaster" className='flex items-center text-amber-900 dark:text-amber-300'><Crown className='mr-2 h-4 w-4' />Perfil Master</Label>
@@ -467,7 +472,7 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfile 
                         id="isAdmin"
                         checked={isAdmin}
                         onCheckedChange={setIsAdmin}
-                        disabled={isEditingSelf || isMaster}
+                        disabled={(isEditingSelf && item?.isAdmin) || (!item && otherAdminExists) || isMaster}
                     />
                 </div>
                 <div className="space-y-2 flex items-center justify-between rounded-lg border p-3">
@@ -601,3 +606,4 @@ function MyProfileCard({ profile, onSave }: MyProfileCardProps) {
 }
 
     
+
