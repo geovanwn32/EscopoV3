@@ -1,6 +1,6 @@
 
 'use client';
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 import {
   Card,
@@ -17,6 +17,7 @@ import {
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../ui/select';
 
 type ChartData = { month: string; revenue: number; expenses: number };
+type Period = "6" | "8" | "12";
 
 const chartConfig = {
     revenue: {
@@ -31,9 +32,11 @@ const chartConfig = {
 
 interface ResultsChartProps {
     data: ChartData[];
+    period: Period;
+    onPeriodChange: (period: Period) => void;
 }
 
-export default function ResultsChart({ data }: ResultsChartProps) {
+export default function ResultsChart({ data, period, onPeriodChange }: ResultsChartProps) {
   return (
     <Card>
       <CardHeader className='flex-row items-center justify-between'>
@@ -41,13 +44,13 @@ export default function ResultsChart({ data }: ResultsChartProps) {
             <CardTitle>Resultados</CardTitle>
             <CardDescription>Receitas e despesas dos últimos meses</CardDescription>
         </div>
-        <Select>
+        <Select value={period} onValueChange={onPeriodChange}>
             <SelectTrigger className='w-[180px]'>
                 <SelectValue placeholder="Últimos 8 meses" />
             </SelectTrigger>
             <SelectContent>
-                <SelectItem value="8">Últimos 8 meses</SelectItem>
                 <SelectItem value="6">Últimos 6 meses</SelectItem>
+                <SelectItem value="8">Últimos 8 meses</SelectItem>
                 <SelectItem value="12">Últimos 12 meses</SelectItem>
             </SelectContent>
         </Select>
@@ -55,7 +58,7 @@ export default function ResultsChart({ data }: ResultsChartProps) {
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[250px] w-full">
             {data.length > 0 ? (
-                <AreaChart
+                <BarChart
                     data={data}
                     margin={{
                         top: 10,
@@ -89,33 +92,9 @@ export default function ResultsChart({ data }: ResultsChartProps) {
                         )}
                     />}
                 />
-                <defs>
-                    <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="var(--color-revenue)" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="var(--color-revenue)" stopOpacity={0.1}/>
-                    </linearGradient>
-                    <linearGradient id="fillExpenses" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="var(--color-expenses)" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="var(--color-expenses)" stopOpacity={0.1}/>
-                    </linearGradient>
-                </defs>
-                <Area
-                  dataKey="revenue"
-                  type="natural"
-                  fill="url(#fillRevenue)"
-                  stroke="var(--color-revenue)"
-                  stackId="a"
-                  strokeWidth={2}
-                />
-                 <Area
-                  dataKey="expenses"
-                  type="natural"
-                  fill="url(#fillExpenses)"
-                  stroke="var(--color-expenses)"
-                  stackId="b"
-                  strokeWidth={2}
-                />
-              </AreaChart>
+                <Bar dataKey="revenue" fill="var(--color-revenue)" radius={4} />
+                <Bar dataKey="expenses" fill="var(--color-expenses)" radius={4} />
+              </BarChart>
             ) : (
                 <div className="flex h-full w-full items-center justify-center">
                     <p className="text-muted-foreground">Nenhum dado disponível para exibir.</p>

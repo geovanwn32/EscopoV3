@@ -6,7 +6,7 @@ import { Settings, User, Briefcase, FileText, ArrowRight, MoreHorizontal, AlertT
 import { useCompany } from '@/hooks/use-company';
 import KpiCard from '@/components/dashboard/kpi-card';
 import ResultsChart from '@/components/dashboard/results-chart';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Conta } from '@/types/financeiro';
 import { NotaFiscal } from '@/types/fiscal';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,6 +31,8 @@ export default function DashboardPage() {
   const [contasPagar] = useScopedData<Conta[]>('financeiro-contas-a-pagar', []);
   const [notasSaida] = useScopedData<NotaFiscal[]>('fiscal-notasSaida', []);
   const [notasServico] = useScopedData<NotaFiscal[]>('fiscal-notasServico', []);
+  const [period, setPeriod] = useState<"6" | "8" | "12">("8");
+
 
   const kpiData = useMemo(() => {
     const faturamento = contasReceber
@@ -47,7 +49,8 @@ export default function DashboardPage() {
   }, [contasReceber, contasPagar, notasSaida, notasServico]);
 
    const chartData = useMemo(() => {
-    const months = Array.from({ length: 8 }, (_, i) => {
+    const numMonths = parseInt(period);
+    const months = Array.from({ length: numMonths }, (_, i) => {
         const d = new Date();
         d.setMonth(d.getMonth() - i);
         return { month: d.toLocaleString('default', { month: 'short' }), year: d.getFullYear(), revenue: 0, expenses: 0 };
@@ -76,7 +79,7 @@ export default function DashboardPage() {
     });
 
     return months.map(({ month, revenue, expenses }) => ({ month, revenue, expenses }));
-}, [contasReceber, contasPagar]);
+}, [contasReceber, contasPagar, period]);
   
   const allKpis = [
       { id: 'faturamento', title: 'Faturamento', value: kpiData.faturamento.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL'}), icon: <User/>, variant: 'default' },
@@ -164,7 +167,7 @@ export default function DashboardPage() {
               </Card>
           </div>
           <div className="lg:col-span-2">
-              <ResultsChart data={chartData} />
+              <ResultsChart data={chartData} period={period} onPeriodChange={setPeriod} />
           </div>
       </div>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-1">
