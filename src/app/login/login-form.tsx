@@ -88,6 +88,22 @@ function InnerLoginForm() {
         let existingProfile = users.find(u => u.email === email);
         
         if (existingProfile) {
+            // Patch existing profile if UID or creation date is missing
+            let needsUpdate = false;
+            if (!existingProfile.uid) {
+                existingProfile.uid = uid;
+                needsUpdate = true;
+            }
+            if (!existingProfile.creationDate) {
+                existingProfile.creationDate = creationTime;
+                needsUpdate = true;
+            }
+
+            if (needsUpdate) {
+                setUsers(prev => prev.map(u => u.id === existingProfile!.id ? existingProfile! : u));
+            }
+
+
             // License Expiry Check
             if (existingProfile.dataExpiracaoLicenca && new Date() > new Date(existingProfile.dataExpiracaoLicenca)) {
                 if (existingProfile.status === 'Ativo') {
@@ -338,5 +354,3 @@ export default function LoginForm() {
       <InnerLoginForm />
   )
 }
-
-    
