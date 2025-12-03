@@ -2,7 +2,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Shield, KeyRound, Loader2, ArrowLeft, PlusCircle } from 'lucide-react';
+import { User, Shield, KeyRound, Loader2, ArrowLeft, PlusCircle, Trash2 } from 'lucide-react';
 import { useCompany } from '@/hooks/use-company';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 interface UserProfile {
     id: number;
@@ -31,6 +32,7 @@ export default function SelecionarPerfilPage() {
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+    const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
 
     const handleProfileSelect = (user: UserProfile) => {
         if (user.password) {
@@ -73,6 +75,22 @@ export default function SelecionarPerfilPage() {
         setUsers(prev => [...prev, newUser]);
         setIsAddUserOpen(false);
         toast({ title: "Perfil Adicionado", description: "O novo perfil foi criado. Agora você pode fazer login com ele." });
+    };
+
+    const handleDeleteClick = (user: UserProfile) => {
+        setUserToDelete(user);
+    };
+
+    const handleConfirmDelete = () => {
+        if (userToDelete) {
+            setUsers(prevUsers => prevUsers.filter(user => user.id !== userToDelete.id));
+            toast({
+                variant: 'destructive',
+                title: 'Perfil Excluído',
+                description: `O perfil de ${userToDelete.name} foi removido.`,
+            });
+            setUserToDelete(null);
+        }
     };
     
     useEffect(() => {
@@ -119,10 +137,14 @@ export default function SelecionarPerfilPage() {
                                     <p className="text-sm text-muted-foreground">{user.isAdmin ? "Administrador" : "Usuário"}</p>
                                 </div>
                             </CardContent>
-                            <CardFooter className="p-2 border-t">
+                            <CardFooter className="p-2 border-t flex items-center gap-1">
                                 <Button className="w-full" onClick={() => handleProfileSelect(user)}>
                                     <KeyRound className="mr-2 h-4 w-4" />
                                     Acessar
+                                </Button>
+                                <Button variant="ghost" size="icon" className="text-destructive/70 hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDeleteClick(user)}>
+                                    <Trash2 className="h-4 w-4"/>
+                                    <span className="sr-only">Excluir</span>
                                 </Button>
                             </CardFooter>
                         </Card>
@@ -189,6 +211,21 @@ export default function SelecionarPerfilPage() {
                 onOpenChange={setIsAddUserOpen}
                 onSave={handleSaveNewUser}
             />
+
+            <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Esta ação não pode ser desfeita. O perfil de <span className="font-bold">{userToDelete?.name}</span> será removido permanentemente.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleConfirmDelete}>Excluir</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
