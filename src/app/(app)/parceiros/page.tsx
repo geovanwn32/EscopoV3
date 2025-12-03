@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MoreHorizontal, Plus, Search, Trash2, Eye, Pencil } from 'lucide-react';
+import { MoreHorizontal, Plus, Search, Trash2, Eye, Pencil, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -217,8 +217,9 @@ function PartnerForm({ onSave, onOpenChange, partner, isReadOnly }: PartnerFormP
     const { toast } = useToast();
     const [name, setName] = useState('');
     const [document, setDocument] = useState('');
-    const [type, setType] = useState<'Cliente' | 'Fornecedor' | 'Transportadora'>();
+    const [type, setType] = useState<'Cliente' | 'Fornecedor' | 'Transportadora' | undefined>(undefined);
     const [address, setAddress] = useState('');
+    const [isQueryingCnpj, setIsQueryingCnpj] = useState(false);
 
 
      useEffect(() => {
@@ -234,6 +235,39 @@ function PartnerForm({ onSave, onOpenChange, partner, isReadOnly }: PartnerFormP
             setAddress('');
         }
     }, [partner]);
+
+    const handleCnpjQuery = async () => {
+        const cnpj = document.replace(/\D/g, '');
+        if (!cnpj || cnpj.length !== 14) {
+            toast({ variant: 'destructive', title: 'CNPJ inválido', description: 'Por favor, insira um CNPJ válido para consulta.' });
+            return;
+        }
+
+        setIsQueryingCnpj(true);
+        try {
+            const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'CNPJ não encontrado ou API indisponível.' }));
+                throw new Error(errorData.message || `Erro: ${response.statusText}`);
+            }
+            const data = await response.json();
+            
+            setName(data.razao_social || '');
+            setAddress(`${data.logradouro || ''}, ${data.numero || ''} - ${data.bairro || ''}, ${data.municipio || ''} - ${data.uf || ''}`);
+
+            toast({ title: 'CNPJ Consultado!', description: 'Os dados do parceiro foram preenchidos.' });
+
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Erro na Consulta de CNPJ',
+                description: error.message || 'Não foi possível buscar os dados do CNPJ.'
+            });
+        } finally {
+            setIsQueryingCnpj(false);
+        }
+    }
+
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -268,12 +302,20 @@ function PartnerForm({ onSave, onOpenChange, partner, isReadOnly }: PartnerFormP
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
+                    <Label htmlFor="document">CNPJ / CPF</Label>
+                    <div className="flex items-center gap-2">
+                        <Input id="document" value={document} onChange={(e) => setDocument(e.target.value)} required readOnly={isReadOnly} />
+                         {!isReadOnly && (
+                            <Button variant="outline" type="button" onClick={handleCnpjQuery} disabled={isQueryingCnpj}>
+                                {isQueryingCnpj ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                                <span className="sr-only">Consultar CNPJ</span>
+                            </Button>
+                        )}
+                    </div>
+                </div>
+                 <div className="space-y-2">
                     <Label htmlFor="name">Nome / Razão Social</Label>
                     <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required readOnly={isReadOnly} />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="document">CNPJ / CPF</Label>
-                    <Input id="document" value={document} onChange={(e) => setDocument(e.target.value)} required readOnly={isReadOnly} />
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="address">Endereço</Label>
