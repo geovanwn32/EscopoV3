@@ -346,6 +346,14 @@
         "cargo": {
           "type": "string",
           "description": "Cargo do funcionário."
+        },
+        "departamento": {
+          "type": "string",
+          "description": "Departamento do funcionário."
+        },
+        "salario": {
+          "type": "number",
+          "description": "Salário do funcionário."
         }
       },
       "required": [
@@ -354,7 +362,8 @@
         "nome",
         "cpf",
         "dataAdmissao",
-        "cargo"
+        "cargo",
+        "salario"
       ]
     },
     "ProdutoServico": {
