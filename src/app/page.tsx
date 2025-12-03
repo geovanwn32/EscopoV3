@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Building2, Mail, Phone, Users, ShieldCheck, BarChart, Rocket, Menu, X, ArrowRight } from 'lucide-react';
@@ -153,37 +154,35 @@ function PlansSection() {
                     <h2 className="text-3xl font-bold tracking-tight">Planos flexíveis para cada necessidade</h2>
                     <p className="mt-4 text-muted-foreground max-w-xl mx-auto">Escolha o plano que melhor se adapta ao tamanho e complexidade da sua operação. Cancele quando quiser.</p>
                 </div>
-                <div className="mt-12 flex justify-center">
-                    <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:max-w-5xl">
-                        {plans.map(plan => (
-                            <Card key={plan.name} className={cn("flex flex-col", plan.popular && "border-primary ring-2 ring-primary")}>
-                                {plan.popular && <div className="bg-primary text-primary-foreground text-center text-sm font-bold py-1 rounded-t-lg">Mais Popular</div>}
-                                <CardHeader>
-                                    <CardTitle>{plan.name}</CardTitle>
-                                    <CardDescription>{plan.description}</CardDescription>
-                                </CardHeader>
-                                <CardContent className="flex-1">
-                                    <div className="mb-6">
-                                        <span className="text-4xl font-extrabold">R$ {plan.price}</span>
-                                        <span className="text-muted-foreground">/mês</span>
-                                    </div>
-                                    <ul className="space-y-3">
-                                        {plan.features.map(feature => (
-                                            <li key={feature} className="flex items-center gap-2">
-                                                <ShieldCheck className="h-5 w-5 text-primary" />
-                                                <span className="text-muted-foreground">{feature}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </CardContent>
-                                <CardFooter>
-                                    <Button className="w-full" variant={plan.popular ? 'default' : 'outline'}>
-                                        Começar com o {plan.name.split(' ')[0]}
-                                    </Button>
-                                </CardFooter>
-                            </Card>
-                        ))}
-                    </div>
+                <div className="mt-12 grid grid-cols-1 gap-8 lg:grid-cols-3 lg:max-w-5xl mx-auto">
+                    {plans.map(plan => (
+                        <Card key={plan.name} className={cn("flex flex-col", plan.popular && "border-primary ring-2 ring-primary")}>
+                            {plan.popular && <div className="bg-primary text-primary-foreground text-center text-sm font-bold py-1 rounded-t-lg">Mais Popular</div>}
+                            <CardHeader>
+                                <CardTitle>{plan.name}</CardTitle>
+                                <CardDescription>{plan.description}</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex-1">
+                                <div className="mb-6">
+                                    <span className="text-4xl font-extrabold">R$ {plan.price}</span>
+                                    <span className="text-muted-foreground">/mês</span>
+                                </div>
+                                <ul className="space-y-3">
+                                    {plan.features.map(feature => (
+                                        <li key={feature} className="flex items-center gap-2">
+                                            <ShieldCheck className="h-5 w-5 text-primary" />
+                                            <span className="text-muted-foreground">{feature}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </CardContent>
+                            <CardFooter>
+                                <Button className="w-full" variant={plan.popular ? 'default' : 'outline'}>
+                                    Começar com o {plan.name.split(' ')[0]}
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    ))}
                 </div>
             </div>
         </section>
