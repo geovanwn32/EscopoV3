@@ -1,5 +1,3 @@
-
-
 'use client';
 import { useState, useMemo, useEffect } from 'react';
 import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft, ShieldCheck, ShieldAlert, Building, KeyRound, User as UserIcon, Save, Crown } from 'lucide-react';
@@ -45,7 +43,7 @@ interface User {
     permissions: UserPermissions;
     allowedCompanyIds: number[];
     password?: string;
-    status: 'Ativo' | 'Inativo';
+    status: 'Ativo' | 'Inativo' | 'Pendente';
 }
 
 export default function UsuariosPage() {
@@ -210,6 +208,15 @@ export default function UsuariosPage() {
         );
     }
 
+    const getStatusBadgeVariant = (status: User['status']) => {
+        switch (status) {
+            case 'Ativo': return 'default';
+            case 'Inativo': return 'destructive';
+            case 'Pendente': return 'secondary';
+            default: return 'outline';
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-4">
@@ -275,7 +282,7 @@ export default function UsuariosPage() {
                                             {renderPermissions(item)}
                                             </TableCell>
                                             <TableCell>
-                                                <Badge variant={item.status === 'Ativo' ? 'default' : 'secondary'}>{item.status}</Badge>
+                                                <Badge variant={getStatusBadgeVariant(item.status)}>{item.status}</Badge>
                                             </TableCell>
                                             <TableCell>
                                                 <DropdownMenu>
@@ -612,11 +619,3 @@ function MyProfileCard({ profile, onSave }: MyProfileCardProps) {
         </Card>
     );
 }
-
-    
-
-
-
-    
-
-    
