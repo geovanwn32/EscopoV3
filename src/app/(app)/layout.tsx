@@ -25,7 +25,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isLoaded) {
-      const activeProfile = currentCompany ? sessionStorage.getItem(`user-profile-${currentCompany}`) : null;
+      const activeProfile = sessionStorage.getItem('user-profile');
 
       // New Flow: Profile -> Company
       // 1. If no profile, go to profile selection.
