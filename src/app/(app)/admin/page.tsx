@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useLocalStorage } from '@/hooks/use-company';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, Calendar as CalendarIcon, Shield, User, RefreshCw, Search } from 'lucide-react';
+import { Check, X, Calendar as CalendarIcon, Shield, User, RefreshCw, Search, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { AuditLog, logAudit } from '@/lib/audit-log';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -18,6 +18,9 @@ import { cn } from '@/lib/utils';
 import { format, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+
 
 interface User {
     id: number;
@@ -40,6 +43,7 @@ export default function AdminPage() {
     const [, setAuditLogs] = useLocalStorage<AuditLog[]>('audit-trail-logs', []);
     
     const [userToApprove, setUserToApprove] = useState<User | null>(null);
+    const [userToDelete, setUserToDelete] = useState<User | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
     // Filter out the master user from the list displayed
@@ -67,10 +71,10 @@ export default function AdminPage() {
         ));
         
         toast({
-            title: "Usuário Aprovado!",
+            title: user.status === 'Pendente' ? "Usuário Aprovado!" : "Licença Atualizada!",
             description: `${user.name} agora tem acesso ao sistema até ${format(expiryDate, 'dd/MM/yyyy')}.`
         });
-        logAudit(setAuditLogs, 'UPDATE', 'Admin', `Aprovou o usuário "${user.name}" com licença até ${format(expiryDate, 'dd/MM/yyyy')}.`);
+        logAudit(setAuditLogs, 'UPDATE', 'Admin', `${user.status === 'Pendente' ? 'Aprovou' : 'Atualizou a licença do'} usuário "${user.name}" até ${format(expiryDate, 'dd/MM/yyyy')}.`);
         setUserToApprove(null);
     };
 
@@ -85,6 +89,19 @@ export default function AdminPage() {
             description: `A solicitação de acesso de ${user.name} foi recusada.`
         });
         logAudit(setAuditLogs, 'DELETE', 'Admin', `Recusou o usuário "${user.name}".`);
+    }
+
+    const handleDeleteUser = () => {
+        if (!userToDelete) return;
+
+        setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
+        toast({
+            variant: 'destructive',
+            title: "Usuário Excluído",
+            description: `O usuário ${userToDelete.name} foi excluído permanentemente.`
+        });
+        logAudit(setAuditLogs, 'DELETE', 'Admin', `Excluiu o usuário "${userToDelete.name}".`);
+        setUserToDelete(null);
     }
     
     const handleRefresh = () => {
@@ -174,7 +191,25 @@ export default function AdminPage() {
                                                 </Button>
                                             </div>
                                         ) : (
-                                            <span className='text-xs text-muted-foreground'>-</span>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                        <span className="sr-only">Ações</span>
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem onClick={() => toast({title: "Em desenvolvimento", description: "Função de edição de usuário em breve."})}>
+                                                        <Pencil className="mr-2 h-4 w-4" /> Editar
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => setUserToApprove(user)}>
+                                                        <CalendarIcon className="mr-2 h-4 w-4" /> Gerenciar Licença
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setUserToDelete(user)}>
+                                                        <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         )}
                                     </TableCell>
                                 </TableRow>
@@ -196,6 +231,22 @@ export default function AdminPage() {
             onOpenChange={() => setUserToApprove(null)}
             onApprove={handleApproval}
         />
+
+        <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Esta ação não pode ser desfeita. O usuário <span className="font-bold">{userToDelete?.name}</span> será permanentemente excluído.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteUser}>Confirmar Exclusão</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
       </div>
     );
 }
@@ -223,12 +274,14 @@ function ApprovalDialog({ user, onOpenChange, onApprove }: ApprovalDialogProps) 
         const expiryDate = calculateExpiryDate();
         onApprove(user.id, expiryDate);
     }
+    
+    const isEditing = user && user.status !== 'Pendente';
 
     return (
         <Dialog open={!!user} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Aprovar Usuário e Definir Licença</DialogTitle>
+                    <DialogTitle>{isEditing ? "Gerenciar Licença" : "Aprovar Usuário e Definir Licença"}</DialogTitle>
                     <DialogDescription>
                         Defina o período de validade da licença para <span className="font-bold">{user?.name}</span>.
                     </DialogDescription>
@@ -278,11 +331,9 @@ function ApprovalDialog({ user, onOpenChange, onApprove }: ApprovalDialogProps) 
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={onOpenChange}>Cancelar</Button>
-                    <Button onClick={handleConfirm}>Confirmar Aprovação</Button>
+                    <Button onClick={handleConfirm}>{isEditing ? "Atualizar Licença" : "Confirmar Aprovação"}</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
     )
 }
-
-    
