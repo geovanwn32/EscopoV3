@@ -61,20 +61,21 @@ export default function UsuariosPage() {
     const loggedInUserIsAdmin = useMemo(() => {
         if (!firebaseUser) return false;
         
-        // On first run, there might not be a profile, but the first firebase user is the implicit admin
-        if(users.length === 0) return true;
-
         const activeProfileString = sessionStorage.getItem('user-profile');
         if (activeProfileString) {
             try {
                 const profile = JSON.parse(activeProfileString);
-                return profile?.isAdmin ?? false;
+                // On first run, a user might not be in the `users` list yet, so trust the sessionStorage profile
+                if(profile.isAdmin) return true;
             } catch (e) {
                 console.error("Failed to parse user profile from session storage", e);
-                return false;
             }
         }
-        return false;
+        
+        // As a fallback, check the persisted users list
+        const userInList = users.find(u => u.email === firebaseUser.email);
+        return userInList?.isAdmin ?? false;
+
     }, [firebaseUser, users]);
 
     const handleSave = (itemData: Omit<User, 'id'>) => {
@@ -423,7 +424,7 @@ function ItemForm({ onSave, onOpenChange, item, users, companies }: ItemFormProp
                         id="isAdmin"
                         checked={isAdmin}
                         onCheckedChange={setIsAdmin}
-                        disabled={item ? false : anotherAdminExists}
+                        disabled={!item?.isAdmin && anotherAdminExists}
                     />
                 </div>
                  <div className="space-y-4 rounded-lg border p-4">
@@ -469,5 +470,7 @@ function ItemForm({ onSave, onOpenChange, item, users, companies }: ItemFormProp
         </DialogContent>
     );
 }
+
+    
 
     
