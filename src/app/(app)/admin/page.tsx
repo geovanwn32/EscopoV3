@@ -5,10 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { useCompany, useLocalStorage } from '@/hooks/use-company';
+import { useLocalStorage } from '@/hooks/use-company';
 import { Badge } from '@/components/ui/badge';
-import { Check, X } from 'lucide-react';
+import { Check, X, Calendar as CalendarIcon } from 'lucide-react';
 import { AuditLog, logAudit } from '@/lib/audit-log';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
+import { format, addDays } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface User {
     id: number;
@@ -20,41 +28,50 @@ interface User {
     allowedCompanyIds: number[];
     password?: string;
     status: 'Ativo' | 'Inativo' | 'Pendente';
+    dataExpiracaoLicenca?: string; // ISO string
 }
 
 export default function AdminPage() {
     const { toast } = useToast();
     const [users, setUsers] = useLocalStorage<User[]>('global-users', []);
     const [, setAuditLogs] = useLocalStorage<AuditLog[]>('audit-trail-logs', []);
-
+    
+    const [userToApprove, setUserToApprove] = useState<User | null>(null);
 
     const pendingUsers = useMemo(() => {
         return users.filter(user => user.status === 'Pendente');
     }, [users]);
     
-    const handleApproval = (userId: number, approve: boolean) => {
+    const handleApproval = (userId: number, expiryDate: Date) => {
         const user = users.find(u => u.id === userId);
         if (!user) return;
 
-        if (approve) {
-            setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: 'Ativo' } : u));
-            toast({
-                title: "Usuário Aprovado!",
-                description: `${user.name} agora tem acesso ao sistema.`
-            });
-            logAudit(setAuditLogs, 'UPDATE', 'Admin', `Aprovou o usuário "${user.name}".`);
-
-        } else {
-            // Rejeitar significa excluir o usuário pendente
-            setUsers(prev => prev.filter(u => u.id !== userId));
-            toast({
-                variant: 'destructive',
-                title: "Usuário Recusado",
-                description: `A solicitação de acesso de ${user.name} foi recusada.`
-            });
-             logAudit(setAuditLogs, 'DELETE', 'Admin', `Recusou o usuário "${user.name}".`);
-        }
+        setUsers(prev => prev.map(u => 
+            u.id === userId 
+            ? { ...u, status: 'Ativo', dataExpiracaoLicenca: expiryDate.toISOString() } 
+            : u
+        ));
+        
+        toast({
+            title: "Usuário Aprovado!",
+            description: `${user.name} agora tem acesso ao sistema até ${format(expiryDate, 'dd/MM/yyyy')}.`
+        });
+        logAudit(setAuditLogs, 'UPDATE', 'Admin', `Aprovou o usuário "${user.name}" com licença até ${format(expiryDate, 'dd/MM/yyyy')}.`);
+        setUserToApprove(null);
     };
+
+    const handleRejection = (userId: number) => {
+        const user = users.find(u => u.id === userId);
+        if (!user) return;
+        
+        setUsers(prev => prev.filter(u => u.id !== userId));
+        toast({
+            variant: 'destructive',
+            title: "Usuário Recusado",
+            description: `A solicitação de acesso de ${user.name} foi recusada.`
+        });
+        logAudit(setAuditLogs, 'DELETE', 'Admin', `Recusou o usuário "${user.name}".`);
+    }
 
     return (
       <div className="space-y-6">
@@ -89,11 +106,11 @@ export default function AdminPage() {
                                         <Badge variant="secondary">{user.status}</Badge>
                                     </TableCell>
                                     <TableCell className="text-center space-x-2">
-                                        <Button size="sm" variant="outline" className="text-red-500 border-red-500/50 hover:bg-red-500/10 hover:text-red-600" onClick={() => handleApproval(user.id, false)}>
+                                        <Button size="sm" variant="outline" className="text-red-500 border-red-500/50 hover:bg-red-500/10 hover:text-red-600" onClick={() => handleRejection(user.id)}>
                                             <X className="mr-2 h-4 w-4"/>
                                             Recusar
                                         </Button>
-                                         <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600" onClick={() => handleApproval(user.id, true)}>
+                                         <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600" onClick={() => setUserToApprove(user)}>
                                             <Check className="mr-2 h-4 w-4"/>
                                             Aprovar
                                         </Button>
@@ -111,6 +128,97 @@ export default function AdminPage() {
                 </div>
             </CardContent>
         </Card>
+
+        <ApprovalDialog 
+            user={userToApprove}
+            onOpenChange={() => setUserToApprove(null)}
+            onApprove={handleApproval}
+        />
       </div>
     );
-  }
+}
+
+interface ApprovalDialogProps {
+    user: User | null;
+    onOpenChange: () => void;
+    onApprove: (userId: number, expiryDate: Date) => void;
+}
+
+function ApprovalDialog({ user, onOpenChange, onApprove }: ApprovalDialogProps) {
+    const [period, setPeriod] = useState<string>('30');
+    const [customDate, setCustomDate] = useState<Date | undefined>();
+
+    const calculateExpiryDate = (): Date => {
+        if (period === 'custom' && customDate) {
+            return customDate;
+        }
+        const days = parseInt(period, 10);
+        return addDays(new Date(), days);
+    }
+    
+    const handleConfirm = () => {
+        if (!user) return;
+        const expiryDate = calculateExpiryDate();
+        onApprove(user.id, expiryDate);
+    }
+
+    return (
+        <Dialog open={!!user} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Aprovar Usuário e Definir Licença</DialogTitle>
+                    <DialogDescription>
+                        Defina o período de validade da licença para <span className="font-bold">{user?.name}</span>.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="license-period">Período da Licença</Label>
+                        <Select value={period} onValueChange={setPeriod}>
+                            <SelectTrigger id="license-period">
+                                <SelectValue placeholder="Selecione o período..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="30">30 dias</SelectItem>
+                                <SelectItem value="60">60 dias</SelectItem>
+                                <SelectItem value="90">90 dias</SelectItem>
+                                <SelectItem value="365">1 ano</SelectItem>
+                                <SelectItem value="custom">Data Personalizada</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    {period === 'custom' && (
+                        <div className="space-y-2">
+                             <Label htmlFor="custom-date">Data de Expiração</Label>
+                             <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        id="custom-date"
+                                        variant={"outline"}
+                                        className={cn("w-full justify-start text-left font-normal", !customDate && "text-muted-foreground")}
+                                    >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {customDate ? format(customDate, 'PPP', { locale: ptBR }) : <span>Escolha uma data</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                        mode="single"
+                                        selected={customDate}
+                                        onSelect={setCustomDate}
+                                        initialFocus
+                                        disabled={(date) => date < new Date()}
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+                    )}
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={onOpenChange}>Cancelar</Button>
+                    <Button onClick={handleConfirm}>Confirmar Aprovação</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}

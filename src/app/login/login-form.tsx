@@ -26,6 +26,7 @@ interface UserProfile {
     permissions: Record<string, boolean>;
     allowedCompanyIds: number[];
     status: 'Ativo' | 'Inativo' | 'Pendente';
+    dataExpiracaoLicenca?: string; // ISO string
 }
 
 
@@ -81,9 +82,22 @@ function InnerLoginForm() {
     // User is authenticated
     if (user) {
         const { email, displayName } = user;
-        const existingProfile = users.find(u => u.email === email);
+        let existingProfile = users.find(u => u.email === email);
         
         if (existingProfile) {
+            // License Expiry Check
+            if (existingProfile.dataExpiracaoLicenca && new Date() > new Date(existingProfile.dataExpiracaoLicenca)) {
+                if (existingProfile.status === 'Ativo') {
+                    // Revoke access by setting status to Inativo
+                    existingProfile.status = 'Inativo';
+                    setUsers(prev => prev.map(u => u.id === existingProfile!.id ? existingProfile! : u));
+                    toast({ variant: 'destructive', title: 'Licença Expirada', description: 'Sua licença de acesso expirou. Contate o suporte.' });
+                    auth.signOut();
+                    setIsAuthLoading(false);
+                    return;
+                }
+            }
+
             // User profile exists, check its status
             if (existingProfile.status === 'Pendente') {
                 router.push('/pending');
