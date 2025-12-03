@@ -2,18 +2,20 @@
 
 'use client';
 
-import { Settings, User, Briefcase, FileText, ArrowRight, MoreHorizontal, AlertTriangle, CheckCircle, ArrowRightCircle } from 'lucide-react';
+import { Settings, User, Briefcase, FileText, ArrowRight, MoreHorizontal, AlertTriangle, CheckCircle, ArrowRightCircle, ArrowDownRight, ArrowUpRight } from 'lucide-react';
 import { useCompany } from '@/hooks/use-company';
 import KpiCard from '@/components/dashboard/kpi-card';
 import ResultsChart from '@/components/dashboard/results-chart';
 import { useMemo } from 'react';
 import { Conta } from '@/types/financeiro';
 import { NotaFiscal } from '@/types/fiscal';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { DonutChart } from '@/components/ui/donut-chart';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 
 const defaultKpiSettings = [
   { id: 'faturamento', title: 'Faturamento', enabled: true },
@@ -108,20 +110,57 @@ export default function DashboardPage() {
       </div>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="lg:col-span-1">
-              <Card>
+              <Card className="flex flex-col h-full">
                   <CardHeader>
-                      <CardTitle>Visão Geral</CardTitle>
+                      <CardTitle>Visão Geral Financeira</CardTitle>
+                      <CardDescription>Resumo do período</CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="flex-grow flex flex-col justify-center">
                           <DonutChart
                           data={[
                               { name: 'Receitas', value: kpiData.faturamento, color: 'hsl(var(--chart-2))' },
                               { name: 'Despesas', value: kpiData.despesas, color: 'hsl(var(--chart-1))' },
                           ]}
                           valueFormatter={(v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                          className="h-48"
+                          className="h-40"
                       />
                   </CardContent>
+                  <CardFooter className="flex-col items-start gap-4 text-sm pt-4">
+                        <div className="flex w-full flex-col gap-2">
+                            <div className="flex items-center justify-between">
+                                <span className="flex items-center text-muted-foreground">
+                                    <div className="h-2.5 w-2.5 rounded-full mr-2" style={{ backgroundColor: 'hsl(var(--chart-2))' }} />
+                                    Receitas
+                                </span>
+                                <span className="font-medium">{kpiData.faturamento.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="flex items-center text-muted-foreground">
+                                    <div className="h-2.5 w-2.5 rounded-full mr-2" style={{ backgroundColor: 'hsl(var(--chart-1))' }} />
+                                    Despesas
+                                </span>
+                                <span className="font-medium">{kpiData.despesas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                            </div>
+                            <Separator />
+                             <div className="flex items-center justify-between font-bold">
+                                <span>Resultado do Período</span>
+                                <span className={cn(kpiData.resultado >= 0 ? "text-emerald-500" : "text-red-500")}>
+                                  {kpiData.resultado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                </span>
+                            </div>
+                        </div>
+                        <div className="w-full space-y-2 pt-2">
+                            <h4 className='text-sm font-semibold'>Acesso Rápido</h4>
+                             <div className="grid grid-cols-2 gap-2">
+                                <Button variant="outline" asChild>
+                                  <Link href="/financeiro/contas-a-receber"><ArrowUpRight className="mr-2 h-4 w-4 text-emerald-500"/> Contas a Receber</Link>
+                                </Button>
+                                <Button variant="outline" asChild>
+                                  <Link href="/financeiro/contas-a-pagar"><ArrowDownRight className="mr-2 h-4 w-4 text-red-500"/> Contas a Pagar</Link>
+                                </Button>
+                            </div>
+                        </div>
+                    </CardFooter>
               </Card>
           </div>
           <div className="lg:col-span-2">
