@@ -1,5 +1,3 @@
-
-
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -70,7 +68,7 @@ export default function SelecionarPerfilPage() {
         const newUser: UserProfile = {
             id: Date.now(),
             ...userData,
-            isAdmin: false, // New users are not admins by default
+            isAdmin: users.length === 0, // First user is always an admin
             permissions: {},
         };
         setUsers(prev => [...prev, newUser]);
@@ -79,6 +77,14 @@ export default function SelecionarPerfilPage() {
     };
 
     const handleDeleteClick = (user: UserProfile) => {
+        if (user.isAdmin && users.filter(u => u.isAdmin).length <= 1) {
+            toast({
+                variant: 'destructive',
+                title: 'Ação não permitida',
+                description: 'Não é possível excluir o único perfil de administrador.',
+            });
+            return;
+        }
         setUserToDelete(user);
     };
 
@@ -95,8 +101,7 @@ export default function SelecionarPerfilPage() {
     };
     
     useEffect(() => {
-        // Since this is one of the first pages, we don't check for company here.
-        // The layout will redirect if Firebase auth user is not present.
+        // The layout will handle redirection if the firebase user is not present.
     }, [router]);
 
     return (
@@ -162,13 +167,16 @@ export default function SelecionarPerfilPage() {
                 ) : (
                      <Card className="w-full max-w-lg mx-auto text-center">
                         <CardHeader>
-                            <CardTitle>Nenhum Perfil Encontrado</CardTitle>
+                            <CardTitle>Nenhum Perfil Cadastrado</CardTitle>
                             <CardDescription>
-                                Nenhum perfil de usuário foi cadastrado. Contate um administrador para criar seu acesso.
+                                Vamos criar o primeiro perfil de administrador para você começar a usar o sistema.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-xs text-muted-foreground">Se você é o administrador, pode cadastrar usuários em <Link href="/cadastros/usuarios" className='font-semibold text-primary hover:underline'>Cadastros &gt; Usuários e Perfis</Link> após o primeiro acesso.</p>
+                             <Button onClick={() => setIsAddUserOpen(true)}>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Cadastrar Primeiro Perfil
+                            </Button>
                         </CardContent>
                     </Card>
                 )}
@@ -210,6 +218,7 @@ export default function SelecionarPerfilPage() {
                 open={isAddUserOpen} 
                 onOpenChange={setIsAddUserOpen}
                 onSave={handleSaveNewUser}
+                isFirstUser={users.length === 0}
             />
 
             <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
@@ -235,9 +244,10 @@ interface AddUserDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSave: (data: Omit<UserProfile, 'id' | 'isAdmin' | 'permissions'>) => void;
+    isFirstUser: boolean;
 }
 
-function AddUserDialog({ open, onOpenChange, onSave }: AddUserDialogProps) {
+function AddUserDialog({ open, onOpenChange, onSave, isFirstUser }: AddUserDialogProps) {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -249,14 +259,20 @@ function AddUserDialog({ open, onOpenChange, onSave }: AddUserDialogProps) {
             return;
         }
         onSave({ name, email, password });
+        // Clear fields after saving
+        setName('');
+        setEmail('');
+        setPassword('');
     };
 
     return (
          <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Adicionar Novo Perfil</DialogTitle>
-                    <DialogDescription>Crie um novo perfil de usuário para acessar o sistema.</DialogDescription>
+                    <DialogTitle>{isFirstUser ? 'Criar Perfil de Administrador' : 'Adicionar Novo Perfil'}</DialogTitle>
+                    <DialogDescription>
+                        {isFirstUser ? 'Este será o perfil principal com acesso total ao sistema.' : 'Crie um novo perfil de usuário para acessar o sistema.'}
+                    </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     <div className="space-y-2">

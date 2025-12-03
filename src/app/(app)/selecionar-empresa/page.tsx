@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -77,14 +75,12 @@ export default function SelecionarEmpresaPage() {
     <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <div className="flex min-h-screen w-full items-center justify-center p-4 lg:p-8 animated-gradient">
             <div className="relative w-full max-w-5xl">
-                {currentCompany && (
-                  <Button asChild variant="ghost" className="absolute -top-14 left-0 z-10 text-card-foreground">
-                      <Link href="/dashboard">
-                          <ArrowLeft className="mr-2 h-4 w-4" />
-                          Voltar
-                      </Link>
-                  </Button>
-                )}
+                <Button asChild variant="ghost" className="absolute -top-14 left-0 z-10 text-card-foreground">
+                    <Link href="/selecionar-perfil">
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Trocar Perfil
+                    </Link>
+                </Button>
                 <div className="text-center mb-8 text-card-foreground">
                     <h1 className="text-3xl font-bold tracking-tight font-headline">Selecionar Empresa</h1>
                     <p className="text-muted-foreground">
