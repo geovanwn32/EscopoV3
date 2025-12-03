@@ -143,6 +143,7 @@ export default function MinhaEmpresaPage() {
       return;
     }
     
+    // Validation for required fields
     if (!companyData.razaoSocial) {
       toast({
         variant: 'destructive',
@@ -152,6 +153,27 @@ export default function MinhaEmpresaPage() {
       setIsSaving(false);
       return;
     }
+    
+    if (!companyData.cnpj) {
+      toast({
+        variant: 'destructive',
+        title: 'Campo Obrigatório',
+        description: 'Por favor, preencha o CNPJ da empresa.',
+      });
+      setIsSaving(false);
+      return;
+    }
+    
+    if (!companyData.regimeTributario) {
+      toast({
+        variant: 'destructive',
+        title: 'Campo Obrigatório',
+        description: 'Por favor, selecione o Regime Tributário.',
+      });
+      setIsSaving(false);
+      return;
+    }
+
 
     const updatedCompany = {
       id: currentCompany,
@@ -305,7 +327,7 @@ export default function MinhaEmpresaPage() {
                         <div className="space-y-2">
                             <Label htmlFor="cnpj">CNPJ</Label>
                             <div className="flex gap-2">
-                                <Input id="cnpj" value={companyData.cnpj} onChange={(e) => handleInputChange('cnpj', e.target.value)} placeholder="00.000.000/0001-00" maxLength={18} />
+                                <Input id="cnpj" value={companyData.cnpj} onChange={(e) => handleInputChange('cnpj', e.target.value)} placeholder="00.000.000/0001-00" maxLength={18} required />
                                 <Button variant="outline" onClick={handleCnpjQuery} disabled={isQueryingCnpj}>
                                     {isQueryingCnpj ? <Loader2 className="animate-spin h-4 w-4" /> : <Search className="h-4 w-4" />}
                                     <span className="ml-2 hidden sm:inline">Consultar</span>
