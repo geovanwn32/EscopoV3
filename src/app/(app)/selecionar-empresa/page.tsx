@@ -27,8 +27,8 @@ export default function SelecionarEmpresaPage() {
   const { toast } = useToast();
 
   const handleSelectCompany = (companyId: number) => {
-    switchCompany(companyId);
-    router.push('/dashboard');
+    switchCompany(companyId, false); // Don't navigate yet
+    router.push('/selecionar-perfil'); // Navigate to profile selection
   };
 
   const handleAddNewCompany = () => {

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useRef } from 'react';
@@ -24,20 +25,25 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isLoaded) {
-      if (!currentCompany) {
-        if (pathname !== '/selecionar-empresa') {
-          router.push('/selecionar-empresa');
-        }
-      } else {
-        if (!loginLoggedRef.current) {
-          logAudit(setAuditLogs, 'LOGIN', 'Autenticação', 'Login bem-sucedido no sistema.');
-          loginLoggedRef.current = true;
-        }
+      // If no company is selected, redirect to company selection, except for that page itself.
+      if (!currentCompany && pathname !== '/selecionar-empresa') {
+        router.push('/selecionar-empresa');
+      } 
+      // If a company is selected but no profile is active, redirect to profile selection.
+      // This assumes you have a way to track the active profile, e.g., in sessionStorage
+      else if (currentCompany && !sessionStorage.getItem(`user-profile-${currentCompany}`) && pathname !== '/selecionar-perfil' && pathname !== '/selecionar-empresa') {
+         router.push('/selecionar-perfil');
+      }
+      // Log the login audit once per session when the company is confirmed.
+      else if (currentCompany && !loginLoggedRef.current) {
+        logAudit(setAuditLogs, 'LOGIN', 'Autenticação', 'Login bem-sucedido no sistema.');
+        loginLoggedRef.current = true;
       }
     }
   }, [isLoaded, currentCompany, pathname, router, setAuditLogs]);
 
-  if (pathname === '/selecionar-empresa') {
+  // Allow access to selection pages
+  if (pathname === '/selecionar-empresa' || pathname === '/selecionar-perfil') {
     return <>{children}</>;
   }
   
