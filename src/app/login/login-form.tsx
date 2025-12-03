@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
-import { Mail, Lock, Eye, EyeOff, Phone, Loader2 } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Phone, Loader2, User as UserIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,9 +11,23 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useRouter } from 'next/navigation';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth, useUser } from '@/firebase';
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, User as FirebaseUser } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { initiateEmailSignUp, initiateEmailSignIn } from '@/firebase/non-blocking-login';
+import { useLocalStorage } from '@/hooks/use-company';
+
+interface UserProfile {
+    id: number;
+    name: string;
+    email: string;
+    isAdmin: boolean;
+    isMaster?: boolean;
+    password?: string;
+    permissions: Record<string, boolean>;
+    allowedCompanyIds: number[];
+    status: 'Ativo' | 'Inativo' | 'Pendente';
+}
+
 
 // Tipagem para os dados do formulário
 type FormInputs = {
@@ -33,36 +48,111 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
     )
 }
 
-export default function LoginForm() {
+function InnerLoginForm() {
   const router = useRouter();
   const auth = useAuth();
   const { user, isUserLoading, userError } = useUser();
   const { toast } = useToast();
+  
+  const [users, setUsers] = useLocalStorage<UserProfile[]>('global-users', []);
 
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
+  
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormInputs>();
 
-  const { register, handleSubmit, formState: { errors } } = useForm<FormInputs>();
+  const defaultAdminUser: Omit<UserProfile, 'id'> = {
+    name: 'Geovani Nunes',
+    email: 'geovanisilvadeoliveira447@gmail.com',
+    isAdmin: true,
+    isMaster: true,
+    permissions: {},
+    allowedCompanyIds: [],
+    status: 'Ativo',
+  };
 
   useEffect(() => {
-    if (!isUserLoading && user) {
-      setIsAuthLoading(false);
-      router.push('/selecionar-perfil');
+    // This effect handles the post-authentication logic
+    if (isUserLoading) {
+      return; // Do nothing while Firebase is checking auth state
     }
-    if (!isUserLoading && userError) {
-      setIsAuthLoading(false);
-      toast({
-        variant: 'destructive',
-        title: isSignUp ? "Erro ao Criar Conta" : "Erro de Login",
-        description: (userError as any).code === 'auth/email-already-in-use' 
-            ? 'Este e-mail já está em uso.'
-            : (userError as any).code === 'auth/wrong-password' || (userError as any).code === 'auth/user-not-found' || (userError as any).code === 'auth/invalid-credential'
-            ? 'E-mail ou senha inválidos.'
-            : 'Ocorreu um erro. Por favor, tente novamente.',
-      });
+    
+    // User is authenticated
+    if (user) {
+        const { email, displayName } = user;
+        const existingProfile = users.find(u => u.email === email);
+        
+        if (existingProfile) {
+            // User profile exists, check its status
+            if (existingProfile.status === 'Pendente') {
+                router.push('/pending');
+                return;
+            }
+             if (existingProfile.status === 'Inativo') {
+                toast({ variant: 'destructive', title: 'Acesso Bloqueado', description: 'Seu perfil está inativo. Contate o administrador.' });
+                auth.signOut(); // Log out the user
+                setIsAuthLoading(false);
+                return;
+            }
+            // User is active, proceed to company selection
+            sessionStorage.setItem('user-profile', JSON.stringify(existingProfile));
+            router.push('/selecionar-perfil');
+        } else {
+            // New user, create a profile
+            const isFirstUser = users.length === 0;
+            const isAdminEmail = email === 'geovanisilvadeoliveira447@gmail.com';
+
+            const newUserProfile: UserProfile = {
+                id: Date.now(),
+                name: displayName || email || 'Novo Usuário',
+                email: email!,
+                isAdmin: isFirstUser || isAdminEmail,
+                isMaster: isFirstUser || isAdminEmail,
+                status: (isFirstUser || isAdminEmail) ? 'Ativo' : 'Pendente',
+                permissions: {},
+                allowedCompanyIds: [],
+            };
+            
+            setUsers(prev => [...prev, newUserProfile]);
+
+            if (newUserProfile.status === 'Pendente') {
+                router.push('/pending');
+            } else {
+                 sessionStorage.setItem('user-profile', JSON.stringify(newUserProfile));
+                 router.push('/selecionar-perfil');
+            }
+        }
+        setIsAuthLoading(false);
+        return; // End processing
     }
-  }, [user, isUserLoading, userError, router, toast, isSignUp]);
+
+    // No user is authenticated, and there was an error during the process
+    if (userError) {
+      setIsAuthLoading(false);
+      const errorCode = (userError as any).code;
+
+      if (isSignUp && errorCode === 'auth/email-already-in-use') {
+        // If sign-up fails because email exists, try to sign them in instead.
+        const formData = (window as any).__LAST_SIGNUP_FORM_DATA;
+        if (formData) {
+            toast({ title: 'E-mail já cadastrado', description: 'Tentando fazer login para você.' });
+            initiateEmailSignIn(auth, formData.email, formData.password);
+        }
+      } else {
+        toast({
+          variant: 'destructive',
+          title: isSignUp ? "Erro ao Criar Conta" : "Erro de Login",
+          description: errorCode === 'auth/wrong-password' || errorCode === 'auth/user-not-found' || errorCode === 'auth/invalid-credential'
+              ? 'E-mail ou senha inválidos.'
+              : 'Ocorreu um erro. Por favor, tente novamente.',
+        });
+      }
+      reset(); // Clear form fields
+    }
+}, [user, isUserLoading, userError, router, toast, isSignUp, users, setUsers, auth, reset]);
+
+
 
   const handleGoogleSignIn = async () => {
     setIsAuthLoading(true);
@@ -84,6 +174,8 @@ export default function LoginForm() {
   const onSubmit: SubmitHandler<FormInputs> = (data) => {
     setIsAuthLoading(true);
     if (isSignUp) {
+        // Store form data globally in case we need to retry as a sign-in
+        (window as any).__LAST_SIGNUP_FORM_DATA = data; 
       initiateEmailSignUp(auth, data.email, data.password);
     } else {
       initiateEmailSignIn(auth, data.email, data.password);
@@ -108,7 +200,10 @@ export default function LoginForm() {
           {isSignUp && (
             <div className="space-y-2">
               <Label htmlFor="fullname">Nome Completo:</Label>
-              <Input id="fullname" type="text" {...register("fullname", { required: true })} placeholder="Seu nome completo" className="bg-muted/50" />
+              <div className="relative">
+                <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input id="fullname" type="text" {...register("fullname", { required: true })} placeholder="Seu nome completo" className="bg-muted/50 pl-10" />
+              </div>
             </div>
           )}
           <div className="space-y-2">
@@ -216,4 +311,11 @@ export default function LoginForm() {
       </div>
     </div>
   );
+}
+
+
+export default function LoginForm() {
+  return (
+      <InnerLoginForm />
+  )
 }

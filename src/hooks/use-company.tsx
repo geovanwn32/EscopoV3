@@ -32,29 +32,54 @@ const CompanyContext = createContext<CompanyContextType | undefined>(undefined);
 const LS_COMPANIES_KEY = 'companies';
 const LS_CURRENT_COMPANY_KEY = 'currentCompany';
 
+export function useLocalStorage<T>(key: string, defaultValue: T): [T, (value: T | ((prev: T) => T)) => void] {
+    const defaultValueRef = useRef(defaultValue);
+
+    const [data, setData] = useState<T>(() => {
+        if (typeof window === 'undefined') return defaultValueRef.current;
+        try {
+            const item = localStorage.getItem(key);
+            return item ? JSON.parse(item) : defaultValueRef.current;
+        } catch (error) {
+            console.error(`Error reading ${key} from localStorage`, error);
+            return defaultValueRef.current;
+        }
+    });
+
+    const setStoredData = useCallback((value: T | ((prev: T) => T)) => {
+        if (typeof window !== 'undefined') {
+            setData(prevData => {
+                const newValue = value instanceof Function ? value(prevData) : value;
+                try {
+                    localStorage.setItem(key, JSON.stringify(newValue));
+                } catch (error) {
+                    console.error(`Error writing ${key} to localStorage`, error);
+                }
+                return newValue;
+            });
+        }
+    }, [key]);
+
+    return [data, setStoredData];
+};
+
+
 export const CompanyProvider = ({ children }: { children: ReactNode }) => {
     const router = useRouter();
-    const [companies, setCompanies] = useState<Company[]>([]);
+    const [companies, setCompanies] = useLocalStorage<Company[]>(LS_COMPANIES_KEY, []);
     const [currentCompany, setCurrentCompany] = useState<number | null>(null);
     const [isLoaded, setIsLoaded] = useState(false);
 
     useEffect(() => {
         try {
-            const storedCompanies = localStorage.getItem(LS_COMPANIES_KEY);
             const storedCurrentCompany = localStorage.getItem(LS_CURRENT_COMPANY_KEY);
-
-            const initialCompanies = storedCompanies ? JSON.parse(storedCompanies) : [];
-            setCompanies(initialCompanies);
-
             let companyId = storedCurrentCompany ? JSON.parse(storedCurrentCompany) : null;
             
-            if (companyId && !initialCompanies.some((c: Company) => c.id === companyId)) {
-                companyId = initialCompanies.length > 0 ? initialCompanies[0].id : null;
+            if (companyId && !companies.some((c: Company) => c.id === companyId)) {
+                companyId = companies.length > 0 ? companies[0].id : null;
             }
-
-            // If still no company ID after checks, and there are companies, set to the first one.
-            if (!companyId && initialCompanies.length > 0) {
-                 companyId = initialCompanies[0].id;
+            if (!companyId && companies.length > 0) {
+                 companyId = companies[0].id;
             }
             
             setCurrentCompany(companyId);
@@ -66,20 +91,11 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
 
         } catch (error) {
             console.error("Failed to load company data from localStorage", error);
-            setCompanies([]);
             setCurrentCompany(null);
         }
         setIsLoaded(true);
-    }, []);
+    }, [companies]);
 
-    useEffect(() => {
-        if (!isLoaded) return;
-        try {
-            localStorage.setItem(LS_COMPANIES_KEY, JSON.stringify(companies));
-        } catch (error) {
-            console.error("Failed to save companies to localStorage", error);
-        }
-    }, [companies, isLoaded]);
 
     const switchCompany = useCallback((companyId: number, navigate = true) => {
         setCurrentCompany(companyId);
@@ -104,21 +120,18 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
         };
         setCompanies(prev => {
             const updatedCompanies = [...prev, newCompany];
-            // If this is the first company, also set it as current
             if (prev.length === 0) {
                 setCurrentCompany(newCompanyId);
                 localStorage.setItem(LS_CURRENT_COMPANY_KEY, JSON.stringify(newCompanyId));
             }
             return updatedCompanies;
         });
-        // Switch to the new company, but don't navigate immediately
-        // The calling component will handle navigation
         switchCompany(newCompanyId, false);
-    }, [switchCompany]);
+    }, [setCompanies, switchCompany]);
 
     const updateCompany = useCallback((companyId: number, companyData: Company) => {
         setCompanies(prev => prev.map(c => c.id === companyId ? companyData : c));
-    }, []);
+    }, [setCompanies]);
 
     const deleteCompany = useCallback((companyId: number) => {
         let nextCompanyId: number | null = null;
@@ -138,14 +151,12 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
             return remainingCompanies;
         });
         
-        // Delete scoped data from localStorage
         Object.keys(localStorage).forEach(key => {
             if (key.startsWith(`company-${companyId}-`)) {
                 localStorage.removeItem(key);
             }
         });
 
-        // Update current company and localStorage after state update
         if (currentCompany === companyId) {
             setCurrentCompany(nextCompanyId);
             if (nextCompanyId) {
@@ -155,11 +166,10 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
             }
         }
 
-        // Perform navigation if necessary
         if (needsRedirect) {
             router.push('/selecionar-empresa');
         }
-    }, [currentCompany, router]);
+    }, [currentCompany, router, setCompanies]);
 
 
     const useScopedData = <T,>(key: string, defaultValue: T): [T, (value: T | ((prev: T) => T)) => void] => {
