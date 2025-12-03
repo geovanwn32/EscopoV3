@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
 export default function SelecionarEmpresaPage() {
   const router = useRouter();
@@ -99,11 +100,36 @@ export default function SelecionarEmpresaPage() {
                     {companies.map((company) => (
                     <Card
                         key={company.id}
-                        className="flex flex-col justify-between transition-shadow hover:shadow-lg focus-within:shadow-lg"
+                        className="relative flex flex-col justify-between transition-shadow hover:shadow-lg focus-within:shadow-lg"
                     >
+                         <div className="absolute top-2 right-2 z-10">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                        <MoreVertical className="h-4 w-4" />
+                                        <span className="sr-only">Ações</span>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleSelectCompany(company.id)}>
+                                        <Eye className="mr-2 h-4 w-4" />
+                                        Selecionar
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleEditCompany(company)}>
+                                        <Pencil className="mr-2 h-4 w-4" />
+                                        Editar
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleDeleteCompany(company.id)} className="text-destructive focus:text-destructive">
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Excluir
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+
                         <div 
-                        onClick={() => handleSelectCompany(company.id)}
-                        className='cursor-pointer flex-grow p-6 flex flex-col items-center justify-center text-center space-y-4'
+                            onClick={() => handleSelectCompany(company.id)}
+                            className='cursor-pointer flex-grow p-6 flex flex-col items-center justify-center text-center space-y-4'
                         >
                             <Avatar className="h-16 w-16">
                                 {company.data?.logo ? 
@@ -118,30 +144,11 @@ export default function SelecionarEmpresaPage() {
                                 {company.data?.cnpj && <p className="text-sm text-muted-foreground">{company.data.cnpj}</p>}
                             </div>
                         </div>
-                        <CardFooter className='p-2 border-t'>
+                        <CardFooter className='p-2 border-t invisible'>
                             <div className='flex justify-end w-full'>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                                            <MoreVertical className="h-4 w-4" />
-                                            <span className="sr-only">Ações</span>
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        <DropdownMenuItem onClick={() => handleSelectCompany(company.id)}>
-                                            <Eye className="mr-2 h-4 w-4" />
-                                            Selecionar
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleEditCompany(company)}>
-                                            <Pencil className="mr-2 h-4 w-4" />
-                                            Editar
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleDeleteCompany(company.id)} className="text-destructive focus:text-destructive">
-                                            <Trash2 className="mr-2 h-4 w-4" />
-                                            Excluir
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                               <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <MoreVertical className="h-4 w-4" />
+                                </Button>
                             </div>
                         </CardFooter>
                     </Card>
