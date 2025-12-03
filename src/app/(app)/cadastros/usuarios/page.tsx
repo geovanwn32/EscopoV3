@@ -403,7 +403,7 @@ function ItemForm({ onSave, onOpenChange, item, users, companies }: ItemFormProp
                     <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="password">Senha</Label>
+                    <Label htmlFor="password">{item ? 'Nova Senha' : 'Senha'}</Label>
                     <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={item ? "Deixe em branco para não alterar" : "Senha de acesso"} required={!item}/>
                 </div>
                 <Separator />
@@ -464,5 +464,3 @@ function ItemForm({ onSave, onOpenChange, item, users, companies }: ItemFormProp
         </DialogContent>
     );
 }
-
-    
