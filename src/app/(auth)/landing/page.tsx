@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -31,8 +32,8 @@ const plans = [
         price: '39',
         description: 'Para autônomos e MEIs que precisam do essencial.',
         features: [
-            'Módulo Financeiro (Contas a Pagar/Receber)',
-            'Lançamentos Fiscais Manuais',
+            'Lançamentos Fiscais',
+            'Relatórios',
             'Cadastros de Clientes e Produtos',
             'Suporte via e-mail',
         ],
