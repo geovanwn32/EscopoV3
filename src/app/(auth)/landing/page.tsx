@@ -95,12 +95,12 @@ export default function LandingPage() {
         {/* Hero Section */}
         <section className="py-20 text-center sm:py-32">
             <h1 className="text-4xl font-bold tracking-tight md:text-6xl">
-                Bem-vindo ao Sistema de
+                Automatize sua Rotina Contábil com 
                 <br />
-                <span className='text-primary'>Gestão Contábil.</span>
+                <span className='text-primary'>Inteligência Artificial.</span>
             </h1>
             <p className="mt-6 max-w-2xl mx-auto text-lg text-muted-foreground">
-                Aqui você pode registrar operações, emitir documentos fiscais eletrônicos e acompanhar o status das suas notas em tempo real. Certifique-se de manter seus dados cadastrais atualizados e suas configurações fiscais corretamente definidas para garantir uma emissão segura e sem rejeições.
+                Do financeiro ao fiscal, automatize tarefas, ganhe precisão com nossa IA e tenha uma visão completa do seu negócio. Simplifique a complexidade, otimize seu tempo.
             </p>
              <div className="mt-8">
                 <Button size="lg" asChild className='bg-accent text-accent-foreground hover:bg-accent/90'>
