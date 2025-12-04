@@ -124,24 +124,32 @@ export default function AdminPage() {
 
      const handleSaveUserEdit = (itemData: Omit<User, 'id'>) => {
         if (!userToEdit) return;
+
         const originalUser = users.find(u => u.id === userToEdit.id);
+        const isApprovalFlow = originalUser?.status === 'Pendente';
+        
         const updatedUser = { ...userToEdit, ...itemData };
         if (!itemData.password) {
             delete updatedUser.password;
         }
         
         setUsers(prev => prev.map(user => user.id === userToEdit.id ? updatedUser : user));
-        toast({ title: "Usuário Atualizado!", description: "Os dados do usuário foram atualizados." });
+        
+        setUserToEdit(null); // Close the edit dialog
 
-        let logDetails = `Atualizou o usuário "${itemData.name}".`;
+        if (isApprovalFlow) {
+            // If it was an approval, now open the license dialog
+            setUserToManage(updatedUser);
+            toast({ title: "Revisão Concluída", description: "Agora, defina a licença para aprovar o usuário." });
+        } else {
+            toast({ title: "Usuário Atualizado!", description: "Os dados do usuário foram atualizados." });
+            let logDetails = `Atualizou o usuário "${itemData.name}".`;
 
-        if (originalUser && !originalUser.isMaster && updatedUser.isMaster) {
-            logAudit(setAuditLogs, 'UPDATE', 'Usuários', `O usuário "${itemData.name}" tornou-se Master.`);
+            if (originalUser && !originalUser.isMaster && updatedUser.isMaster) {
+                logAudit(setAuditLogs, 'UPDATE', 'Usuários', `O usuário "${itemData.name}" tornou-se Master.`);
+            }
+            logAudit(setAuditLogs, 'UPDATE', 'Admin', logDetails);
         }
-
-        logAudit(setAuditLogs, 'UPDATE', 'Admin', logDetails);
-
-        setUserToEdit(null);
     };
 
     const handleRejection = (userId: number) => {
@@ -249,7 +257,7 @@ export default function AdminPage() {
                                                     <X className="mr-2 h-4 w-4"/>
                                                     Recusar
                                                 </Button>
-                                                <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600" onClick={() => setUserToManage(user)}>
+                                                <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600" onClick={() => setUserToEdit(user)}>
                                                     <Check className="mr-2 h-4 w-4"/>
                                                     Aprovar
                                                 </Button>
@@ -491,13 +499,14 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
     };
     
     const isEditingSelf = item?.id === activeProfile.id;
+    const isApprovalFlow = item?.status === 'Pendente';
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>{item ? 'Editar' : 'Convidar'} Usuário</DialogTitle>
-                    <DialogDescription>Preencha os dados e defina o perfil de acesso do usuário.</DialogDescription>
+                    <DialogTitle>{isApprovalFlow ? 'Revisar e Aprovar Usuário' : (item ? 'Editar' : 'Convidar') + ' Usuário'}</DialogTitle>
+                    <DialogDescription>{isApprovalFlow ? 'Revise os dados do usuário antes de definir a licença.' : 'Preencha os dados e defina o perfil de acesso do usuário.'}</DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
@@ -591,13 +600,15 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
                     
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-                        <Button type="submit">Salvar</Button>
+                        <Button type="submit">{isApprovalFlow ? 'Continuar para Licença' : 'Salvar'}</Button>
                     </DialogFooter>
                 </form>
             </DialogContent>
         </Dialog>
     );
 }
+    
+
     
 
     
