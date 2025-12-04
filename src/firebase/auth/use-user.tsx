@@ -11,20 +11,24 @@ export interface UserHookResult {
 }
 
 /**
- * Hook specifically for accessing the authenticated user's state.
- * This provides the User object, loading status, and any auth errors.
- * @returns {UserHookResult} Object with user, isUserLoading, userError.
+ * Hook para acessar especificamente o estado do usuário autenticado.
+ * Fornece o objeto User, o status de carregamento e quaisquer erros de autenticação.
+ * @returns {UserHookResult} Objeto com usuário, isUserLoading, userError.
  */
 export const useUser = (): UserHookResult => {
   const auth = useAuth();
   const [state, setState] = useState<UserHookResult>({
-    user: null,
-    isUserLoading: true,
+    user: auth.currentUser, // Inicia com o usuário atual, se houver
+    isUserLoading: auth.currentUser === null, // Carregando apenas se não houver usuário síncrono
     userError: null,
   });
 
   useEffect(() => {
-    setState({ user: null, isUserLoading: true, userError: null }); // Reset on auth instance change
+    // Apenas redefine o estado se a instância de autenticação realmente mudar
+    // e o usuário atual síncrono for diferente.
+    if (auth.currentUser !== state.user) {
+        setState({ user: auth.currentUser, isUserLoading: auth.currentUser === null, userError: null });
+    }
 
     const unsubscribe = onAuthStateChanged(
       auth,
@@ -38,7 +42,7 @@ export const useUser = (): UserHookResult => {
     );
 
     return () => unsubscribe();
-  }, [auth]);
+  }, [auth]); // Depende apenas da instância de autenticação
 
   return state;
 };

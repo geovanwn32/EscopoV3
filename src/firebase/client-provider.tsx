@@ -4,18 +4,17 @@ import React, { useMemo, type ReactNode } from 'react';
 import { FirebaseProvider } from '@/firebase/provider';
 import { useUser, type UserHookResult } from '@/firebase/auth/use-user';
 import { initializeFirebase } from '@/firebase';
-import { Auth, User } from 'firebase/auth';
 
-// Create a context for the user state
+// Cria um contexto para o estado do usuário
 const UserContext = React.createContext<UserHookResult | undefined>(undefined);
 
 /**
- * A provider that specifically handles the user authentication state.
- * It uses the useUser hook internally and provides the result to its children.
- * This component must be a child of FirebaseProvider.
+ * Um provedor que lida especificamente com o estado de autenticação do usuário.
+ * Ele usa o hook useUser internamente e fornece o resultado para seus filhos.
+ * Este componente deve ser um filho do FirebaseProvider.
  */
 function UserProvider({ children }: { children: ReactNode }) {
-  const userState = useUser(); // This now correctly uses the auth instance from the parent FirebaseProvider
+  const userState = useUser(); // Isso agora usa corretamente a instância de autenticação do FirebaseProvider pai
   return (
     <UserContext.Provider value={userState}>
       {children}
@@ -24,13 +23,13 @@ function UserProvider({ children }: { children: ReactNode }) {
 }
 
 /**
- * A hook to consume the user context.
- * Throws an error if used outside of UserProvider.
+ * Um hook para consumir o contexto do usuário.
+ * Lança um erro se usado fora do UserProvider.
  */
 export const useUserContext = (): UserHookResult => {
   const context = React.useContext(UserContext);
   if (context === undefined) {
-    throw new Error('useUserContext must be used within a UserProvider, which is part of FirebaseClientProvider.');
+    throw new Error('useUserContext deve ser usado dentro de um UserProvider, que faz parte do FirebaseClientProvider.');
   }
   return context;
 };
@@ -40,13 +39,13 @@ interface FirebaseClientProviderProps {
 }
 
 /**
- * The main client-side provider.
- * It initializes Firebase services and wraps children with both the
- * FirebaseProvider (for services) and UserProvider (for auth state).
+ * O principal provedor do lado do cliente.
+ * Ele inicializa os serviços do Firebase e envolve os filhos com o
+ * FirebaseProvider (para serviços) e o UserProvider (para o estado de autenticação).
  */
 export function FirebaseClientProvider({ children }: FirebaseClientProviderProps) {
   const firebaseServices = useMemo(() => {
-    // Initialize Firebase on the client side, once per component mount.
+    // Inicializa o Firebase no lado do cliente, uma vez por montagem de componente.
     return initializeFirebase();
   }, []);
 
