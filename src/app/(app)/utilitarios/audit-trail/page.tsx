@@ -6,10 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Search, Tag, Type } from 'lucide-react';
+import { Search, Tag, Type, ArrowLeft } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { AuditLog } from '@/lib/audit-log';
 import { useLocalStorage } from '@/hooks/use-company';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 type AuditLogAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'IMPORT' | 'LOGOUT';
 
@@ -58,11 +60,19 @@ export default function AuditTrailPage() {
 
     return (
         <div className="space-y-6">
-            <div className="space-y-1">
-                <h1 className="text-3xl font-bold tracking-tight font-headline">Trilha de Auditoria</h1>
-                <p className="text-muted-foreground">
-                    Acompanhe as mudanças, ações de usuários e modificações de dados no sistema.
-                </p>
+            <div className="flex items-center gap-4">
+                <Link href="/utilitarios">
+                    <Button variant="outline" size="icon" className="h-8 w-8">
+                        <ArrowLeft className="h-4 w-4" />
+                        <span className="sr-only">Voltar</span>
+                    </Button>
+                </Link>
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-bold tracking-tight font-headline">Trilha de Auditoria</h1>
+                    <p className="text-muted-foreground">
+                        Acompanhe as mudanças, ações de usuários e modificações de dados no sistema.
+                    </p>
+                </div>
             </div>
 
             <Card>
