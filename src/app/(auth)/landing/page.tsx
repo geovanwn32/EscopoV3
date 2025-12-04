@@ -1,26 +1,27 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { Building2, Check, FileText, LineChart, Users, Mail, Phone } from 'lucide-react';
+import { Building2, Check, FileText, LineChart, Users, Mail, Phone, Cpu, Bot, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 
 const features = [
     {
         icon: <FileText className="h-8 w-8 text-primary" />,
-        title: 'Emissão Simplificada',
-        description: 'Emita NF-e e NFC-e com poucos cliques, através de uma interface intuitiva e com validação em tempo real.',
+        title: 'Gestão Fiscal Completa',
+        description: 'Emita NF-e, NFS-e, importe XMLs em lote e mantenha total conformidade com as obrigações fiscais.',
     },
     {
-        icon: <Users className="h-8 w-8 text-primary" />,
-        title: 'Gestão de Cadastros',
-        description: 'Mantenha seus clientes, produtos e transportadoras organizados em um só lugar, facilitando o preenchimento das notas.',
+        icon: <Cpu className="h-8 w-8 text-primary" />,
+        title: 'Assistente de IA',
+        description: 'Deixe a IA sugerir descrições para transações e associar contas em extratos bancários, economizando seu tempo.',
     },
     {
         icon: <LineChart className="h-8 w-8 text-primary" />,
-        title: 'Relatórios Inteligentes',
-        description: 'Acompanhe suas vendas, impostos e o status de suas notas fiscais com relatórios completos e fáceis de gerar.',
+        title: 'Financeiro Integrado',
+        description: 'Controle contas a pagar e receber, analise o fluxo de caixa e visualize a saúde financeira do seu negócio.',
     },
 ]
 
@@ -28,10 +29,11 @@ const plans = [
     {
         name: 'Básico',
         price: '39',
-        description: 'Para autônomos e MEIs.',
+        description: 'Para autônomos e MEIs que precisam do essencial.',
         features: [
-            '50 emissões/mês (NF-e/NFC-e)',
-            'Cadastro de clientes e produtos',
+            'Módulo Financeiro (Contas a Pagar/Receber)',
+            'Emissão Manual de Notas (NF-e, NFS-e)',
+            'Cadastros de Clientes e Produtos',
             'Suporte via e-mail',
         ],
         cta: 'Assinar Agora',
@@ -40,10 +42,12 @@ const plans = [
     {
         name: 'Profissional',
         price: '79',
-        description: 'Ideal para pequenas empresas.',
+        description: 'Para pequenas e médias empresas que buscam eficiência.',
         features: [
-            'Emissões Ilimitadas',
             'Tudo do plano Básico',
+            'Importação de XMLs em lote',
+            'Conciliação de Extrato com IA',
+            'Gerador de Descrição de Transação com IA',
             'Relatórios avançados',
             'Suporte prioritário via WhatsApp',
         ],
@@ -53,11 +57,12 @@ const plans = [
     {
         name: 'Empresarial',
         price: '149',
-        description: 'Para negócios em escala.',
+        description: 'Para negócios que necessitam de controle e escala.',
         features: [
             'Tudo do plano Profissional',
-            'Múltiplos usuários',
-            'Integrações via API',
+            'Múltiplos Usuários e Perfis de Acesso',
+            'Trilha de Auditoria Completa',
+            'Integrações via API (em breve)',
             'Gerente de contas dedicado',
         ],
         cta: 'Entrar em Contato',
@@ -79,8 +84,8 @@ export default function LandingPage() {
             <Button variant="ghost" asChild>
                 <Link href="/login">Entrar</Link>
             </Button>
-            <Button className='bg-accent text-accent-foreground hover:bg-accent/90'>
-                Comece Agora
+            <Button asChild className='bg-accent text-accent-foreground hover:bg-accent/90'>
+                <Link href="/login">Comece Agora</Link>
             </Button>
           </nav>
         </div>
@@ -98,8 +103,8 @@ export default function LandingPage() {
                 Aqui você pode registrar operações, emitir documentos fiscais eletrônicos e acompanhar o status das suas notas em tempo real. Certifique-se de manter seus dados cadastrais atualizados e suas configurações fiscais corretamente definidas para garantir uma emissão segura e sem rejeições.
             </p>
              <div className="mt-8">
-                <Button size="lg" className='bg-accent text-accent-foreground hover:bg-accent/90'>
-                    Comece Agora
+                <Button size="lg" asChild className='bg-accent text-accent-foreground hover:bg-accent/90'>
+                    <Link href="/login">Comece Agora</Link>
                 </Button>
             </div>
         </section>
@@ -133,7 +138,7 @@ export default function LandingPage() {
                 <h2 className="text-3xl font-bold tracking-tight">Nossos Planos</h2>
                 <p className="mt-2 text-lg text-muted-foreground">Escolha o plano que melhor se adapta às necessidades do seu negócio.</p>
             </div>
-            <div className="mt-12 grid gap-8 md:grid-cols-3 items-center">
+            <div className="mt-12 grid gap-8 md:grid-cols-3 items-start">
                 {plans.map(plan => (
                     <Card key={plan.name} className={cn(
                         'flex flex-col',
@@ -161,8 +166,8 @@ export default function LandingPage() {
                             </ul>
                         </CardContent>
                         <CardFooter>
-                            <Button className={cn('w-full', plan.isFeatured && 'bg-primary text-primary-foreground hover:bg-primary/90')} variant={plan.isFeatured ? 'default' : 'outline'}>
-                                {plan.cta}
+                            <Button asChild className={cn('w-full', plan.isFeatured && 'bg-accent text-accent-foreground hover:bg-accent/90')} variant={plan.isFeatured ? 'default' : 'outline'}>
+                                <Link href="/login">{plan.cta}</Link>
                             </Button>
                         </CardFooter>
                     </Card>
@@ -177,8 +182,8 @@ export default function LandingPage() {
                 <p className="mt-2 text-lg text-muted-foreground">Escolha a melhor forma de falar com nossa equipe.</p>
             </div>
             <div className="mt-12 grid gap-8 sm:grid-cols-2 max-w-2xl mx-auto">
-                <a href="https://wa.me/5562998554529" target="_blank" rel="noopener noreferrer">
-                    <Card className="p-6 flex items-center gap-4 bg-muted/30 hover:shadow-md transition-shadow cursor-pointer">
+                <a href="https://wa.me/5562998554529" target="_blank" rel="noopener noreferrer" className='transition-transform hover:-translate-y-1'>
+                    <Card className="p-6 flex items-center gap-4 bg-muted/30 hover:shadow-md cursor-pointer">
                         <Phone className="h-8 w-8 text-primary" />
                         <div>
                             <h3 className="font-semibold">WhatsApp</h3>
@@ -186,8 +191,8 @@ export default function LandingPage() {
                         </div>
                     </Card>
                 </a>
-                <a href="mailto:geovanisilvadeoliveira447@gmail.com">
-                    <Card className="p-6 flex items-center gap-4 bg-muted/30 hover:shadow-md transition-shadow cursor-pointer">
+                <a href="mailto:geovanisilvadeoliveira447@gmail.com" className='transition-transform hover:-translate-y-1'>
+                    <Card className="p-6 flex items-center gap-4 bg-muted/30 hover:shadow-md cursor-pointer">
                         <Mail className="h-8 w-8 text-primary" />
                         <div>
                             <h3 className="font-semibold">Email</h3>
