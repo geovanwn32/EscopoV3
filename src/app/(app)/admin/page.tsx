@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { format, addDays } from 'date-fns';
+import { format, addDays, addMonths, addYears } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -448,7 +448,14 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
                                     {formData.dataExpiracaoLicenca ? format(new Date(formData.dataExpiracaoLicenca), "PPP", { locale: ptBR }) : <span>Escolha a data de expiração</span>}
                                 </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
+                            <PopoverContent className="w-auto p-0 flex flex-col space-y-2">
+                                <div className="p-2 border-b">
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <Button size="sm" variant="ghost" onClick={() => handleInputChange('dataExpiracaoLicenca', addMonths(new Date(), 1).toISOString())}>1 Mês</Button>
+                                        <Button size="sm" variant="ghost" onClick={() => handleInputChange('dataExpiracaoLicenca', addMonths(new Date(), 6).toISOString())}>6 Meses</Button>
+                                        <Button size="sm" variant="ghost" onClick={() => handleInputChange('dataExpiracaoLicenca', addYears(new Date(), 1).toISOString())}>1 Ano</Button>
+                                    </div>
+                                </div>
                                 <Calendar 
                                     mode="single" 
                                     selected={formData.dataExpiracaoLicenca ? new Date(formData.dataExpiracaoLicenca) : undefined} 
