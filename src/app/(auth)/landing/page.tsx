@@ -158,8 +158,8 @@ export default function LandingPage() {
                         <CardContent className="flex-1">
                             <ul className="space-y-3">
                                 {plan.features.map(feature => (
-                                    <li key={feature} className="flex items-center gap-2">
-                                        <Check className="h-5 w-5 text-emerald-500" />
+                                    <li key={feature} className="flex items-start gap-2">
+                                        <Check className="h-5 w-5 mt-1 text-emerald-500" />
                                         <span className="text-muted-foreground">{feature}</span>
                                     </li>
                                 ))}
