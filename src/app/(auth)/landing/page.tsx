@@ -137,12 +137,12 @@ export default function LandingPage() {
                 {plans.map(plan => (
                     <Card key={plan.name} className={cn(
                         'flex flex-col',
-                        plan.isFeatured ? 'border-accent ring-2 ring-accent scale-105 bg-card' : 'bg-card/50'
+                        plan.isFeatured ? 'border-primary ring-2 ring-primary scale-105 bg-card' : 'bg-muted/30'
                     )}>
                         <CardHeader>
                             <CardTitle className="flex justify-between items-baseline">
                                 <span>{plan.name}</span>
-                                {plan.isFeatured && <span className="text-xs font-semibold text-accent">Ideal</span>}
+                                {plan.isFeatured && <span className="text-xs font-semibold text-primary">Ideal</span>}
                             </CardTitle>
                             <CardDescription>{plan.description}</CardDescription>
                             <div className="pt-4">
@@ -161,7 +161,7 @@ export default function LandingPage() {
                             </ul>
                         </CardContent>
                         <CardFooter>
-                            <Button className={cn('w-full', plan.isFeatured && 'bg-accent text-accent-foreground hover:bg-accent/90')} variant={plan.isFeatured ? 'default' : 'outline'}>
+                            <Button className={cn('w-full', plan.isFeatured && 'bg-primary text-primary-foreground hover:bg-primary/90')} variant={plan.isFeatured ? 'default' : 'outline'}>
                                 {plan.cta}
                             </Button>
                         </CardFooter>
@@ -178,7 +178,7 @@ export default function LandingPage() {
             </div>
             <div className="mt-12 grid gap-8 sm:grid-cols-2 max-w-2xl mx-auto">
                 <a href="https://wa.me/5562998554529" target="_blank" rel="noopener noreferrer">
-                    <Card className="p-6 flex items-center gap-4 bg-card/50 hover:shadow-md transition-shadow">
+                    <Card className="p-6 flex items-center gap-4 bg-muted/30 hover:shadow-md transition-shadow cursor-pointer">
                         <Phone className="h-8 w-8 text-primary" />
                         <div>
                             <h3 className="font-semibold">WhatsApp</h3>
@@ -187,7 +187,7 @@ export default function LandingPage() {
                     </Card>
                 </a>
                 <a href="mailto:geovanisilvadeoliveira447@gmail.com">
-                    <Card className="p-6 flex items-center gap-4 bg-card/50 hover:shadow-md transition-shadow">
+                    <Card className="p-6 flex items-center gap-4 bg-muted/30 hover:shadow-md transition-shadow cursor-pointer">
                         <Mail className="h-8 w-8 text-primary" />
                         <div>
                             <h3 className="font-semibold">Email</h3>
