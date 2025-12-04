@@ -32,7 +32,7 @@ const plans = [
         description: 'Para autônomos e MEIs que precisam do essencial.',
         features: [
             'Módulo Financeiro (Contas a Pagar/Receber)',
-            'Emissão Manual de Notas (NF-e, NFS-e)',
+            'Lançamentos Fiscais Manuais',
             'Cadastros de Clientes e Produtos',
             'Suporte via e-mail',
         ],
