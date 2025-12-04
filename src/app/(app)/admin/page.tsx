@@ -44,7 +44,7 @@ interface UserPermissions {
 
 interface User {
     id: number;
-    uid: string;
+    uid?: string;
     name: string;
     email: string;
     isAdmin: boolean;
@@ -300,7 +300,7 @@ export default function AdminPage() {
 
         {activeProfile && <UserEditDialog 
             open={!!userToEdit}
-            onOpenChange={() => setUserToEdit(null)}
+            onOpenChange={(open) => {if(!open) setUserToEdit(null)}}
             item={userToEdit}
             onSave={handleSaveUserEdit}
             users={users}
@@ -587,7 +587,7 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
                             id="status"
                             checked={formData.status === 'Ativo'}
                             onCheckedChange={(checked) => handleInputChange('status', checked ? 'Ativo' : 'Inativo')}
-                            disabled={isEditingSelf && (formData.isAdmin || formData.isMaster)}
+                            disabled={isEditingSelf && (formData.isAdmin || !!formData.isMaster)}
                         />
                     </div>
                     
