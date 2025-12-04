@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -59,7 +58,7 @@ export default function SelecionarEmpresaPage() {
 
   const handleSelectCompany = (companyId: number) => {
     switchCompany(companyId, false); // Switch but don't navigate
-    router.push('/dashboard'); // Navigate to dashboard after selection
+    router.push('/bem-vindo'); // Navigate to welcome/checkout page
   };
 
   const handleAddNewCompany = () => {

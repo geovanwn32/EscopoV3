@@ -1,14 +1,13 @@
-
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { Mail, Lock, Eye, EyeOff, Phone, Loader2, User as UserIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth, useUser } from '@/firebase';
 import { GoogleAuthProvider, signInWithPopup, User as FirebaseUser } from 'firebase/auth';
@@ -54,6 +53,7 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 
 function InnerLoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const auth = useAuth();
   const { user, isUserLoading, userError } = useUser();
   const { toast } = useToast();
@@ -76,6 +76,13 @@ function InnerLoginForm() {
     allowedCompanyIds: [],
     status: 'Ativo',
   };
+  
+    useEffect(() => {
+        const selectedPlan = searchParams.get('plano');
+        if (selectedPlan) {
+            sessionStorage.setItem('selectedPlan', selectedPlan);
+        }
+    }, [searchParams]);
 
   useEffect(() => {
     // This effect handles the post-authentication logic
@@ -305,6 +312,8 @@ function InnerLoginForm() {
 
 export default function LoginForm() {
   return (
+    <Suspense fallback={<Loader2 className="h-8 w-8 animate-spin" />}>
       <InnerLoginForm />
+    </Suspense>
   )
 }

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -27,6 +26,7 @@ const features = [
 
 const plans = [
     {
+        id: 'basico',
         name: 'Básico',
         price: '39',
         description: 'Para autônomos e MEIs que precisam do essencial.',
@@ -40,6 +40,7 @@ const plans = [
         isFeatured: false,
     },
     {
+        id: 'profissional',
         name: 'Profissional',
         price: '79',
         description: 'Para pequenas e médias empresas que buscam eficiência.',
@@ -55,6 +56,7 @@ const plans = [
         isFeatured: true,
     },
     {
+        id: 'empresarial',
         name: 'Empresarial',
         price: '149',
         description: 'Para negócios que necessitam de controle e escala.',
@@ -167,7 +169,7 @@ export default function LandingPage() {
                         </CardContent>
                         <CardFooter>
                             <Button asChild className={cn('w-full', plan.isFeatured && 'bg-accent text-accent-foreground hover:bg-accent/90')} variant={plan.isFeatured ? 'default' : 'outline'}>
-                                <Link href="/login">{plan.cta}</Link>
+                                <Link href={`/login?plano=${plan.id}`}>{plan.cta}</Link>
                             </Button>
                         </CardFooter>
                     </Card>
