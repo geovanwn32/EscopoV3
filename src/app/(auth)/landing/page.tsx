@@ -137,7 +137,7 @@ export default function LandingPage() {
                 {plans.map(plan => (
                     <Card key={plan.name} className={cn(
                         'flex flex-col',
-                        plan.isFeatured ? 'border-accent ring-2 ring-accent scale-105 bg-card' : 'bg-card/50 dark:bg-card/80'
+                        plan.isFeatured ? 'border-accent ring-2 ring-accent scale-105 bg-card' : 'bg-card/50'
                     )}>
                         <CardHeader>
                             <CardTitle className="flex justify-between items-baseline">
@@ -177,20 +177,24 @@ export default function LandingPage() {
                 <p className="mt-2 text-lg text-muted-foreground">Escolha a melhor forma de falar com nossa equipe.</p>
             </div>
             <div className="mt-12 grid gap-8 sm:grid-cols-2 max-w-2xl mx-auto">
-                <Card className="p-6 flex items-center gap-4 bg-card/50 dark:bg-card/80">
-                    <Phone className="h-8 w-8 text-primary" />
-                    <div>
-                        <h3 className="font-semibold">WhatsApp</h3>
-                        <p className="text-sm text-muted-foreground">Converse em tempo real</p>
-                    </div>
-                </Card>
-                <Card className="p-6 flex items-center gap-4 bg-card/50 dark:bg-card/80">
-                    <Mail className="h-8 w-8 text-primary" />
-                    <div>
-                        <h3 className="font-semibold">Email</h3>
-                        <p className="text-sm text-muted-foreground">Receba uma resposta detalhada</p>
-                    </div>
-                </Card>
+                <a href="https://wa.me/5562998554529" target="_blank" rel="noopener noreferrer">
+                    <Card className="p-6 flex items-center gap-4 bg-card/50 hover:shadow-md transition-shadow">
+                        <Phone className="h-8 w-8 text-primary" />
+                        <div>
+                            <h3 className="font-semibold">WhatsApp</h3>
+                            <p className="text-sm text-muted-foreground">Converse em tempo real</p>
+                        </div>
+                    </Card>
+                </a>
+                <a href="mailto:geovanisilvadeoliveira447@gmail.com">
+                    <Card className="p-6 flex items-center gap-4 bg-card/50 hover:shadow-md transition-shadow">
+                        <Mail className="h-8 w-8 text-primary" />
+                        <div>
+                            <h3 className="font-semibold">Email</h3>
+                            <p className="text-sm text-muted-foreground">Receba uma resposta detalhada</p>
+                        </div>
+                    </Card>
+                </a>
             </div>
         </section>
       </main>
