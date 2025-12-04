@@ -46,7 +46,7 @@ interface User {
     allowedCompanyIds: number[];
     password?: string;
     status: 'Ativo' | 'Inativo' | 'Pendente';
-    planoId?: 'Gratuito' | 'Basico' | 'Profissional';
+    planoId?: 'Gratuito' | 'Basico' | 'Profissional' | 'Empresarial';
     statusLicenca?: 'Ativa' | 'Inadimplente' | 'Cancelada' | 'Expirada';
 }
 
@@ -176,20 +176,10 @@ export default function UsuariosPage() {
         if (user.isAdmin) {
             return <Badge>Administrador</Badge>;
         }
-        const grantedModules = Object.entries(user.permissions || {})
-            .filter(([, hasAccess]) => hasAccess)
-            .map(([key]) => modules.find(m => m.id === key)?.label)
-            .filter(Boolean);
-
-        if (grantedModules.length === 0) {
-            return <Badge variant="secondary">Nenhuma Permissão</Badge>
+        if (user.planoId) {
+             return <Badge variant="secondary">{user.planoId}</Badge>
         }
-
-        if (grantedModules.length > 2) {
-             return <Badge variant="secondary">{grantedModules.slice(0, 2).join(', ')} + {grantedModules.length - 2}</Badge>
-        }
-
-        return <Badge variant="secondary">{grantedModules.join(', ')}</Badge>
+        return <Badge variant="outline">Sem Plano</Badge>
     }
 
     if (!activeProfile) {
@@ -271,7 +261,7 @@ export default function UsuariosPage() {
                                     <TableRow>
                                         <TableHead>Nome</TableHead>
                                         <TableHead>Email</TableHead>
-                                        <TableHead>Permissões</TableHead>
+                                        <TableHead>Plano/Perfil</TableHead>
                                         <TableHead>Status</TableHead>
                                         <TableHead className="w-[64px]"></TableHead>
                                     </TableRow>
@@ -394,13 +384,6 @@ function ItemForm({ onSave, onOpenChange, item, users, activeProfile }: ItemForm
     const handleInputChange = (field: keyof typeof formData, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
-
-    const handlePermissionChange = (moduleId: string, checked: boolean) => {
-        setFormData(prev => ({
-            ...prev,
-            permissions: { ...prev.permissions, [moduleId]: checked }
-        }));
-    }
     
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -453,6 +436,7 @@ function ItemForm({ onSave, onOpenChange, item, users, activeProfile }: ItemForm
                                 <SelectItem value="Gratuito">Gratuito</SelectItem>
                                 <SelectItem value="Basico">Básico</SelectItem>
                                 <SelectItem value="Profissional">Profissional</SelectItem>
+                                <SelectItem value="Empresarial">Empresarial</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -517,23 +501,7 @@ function ItemForm({ onSave, onOpenChange, item, users, activeProfile }: ItemForm
                         disabled={isEditingSelf && (formData.isAdmin || formData.isMaster)}
                     />
                 </div>
-                 <div className="space-y-4 rounded-lg border p-4">
-                    <h3 className="font-medium text-sm">Permissões de Módulo</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                        {modules.map(module => (
-                            <div key={module.id} className="flex items-center gap-2">
-                                <Checkbox
-                                    id={`perm-${module.id}`}
-                                    checked={formData.isAdmin || formData.isMaster || (formData.permissions ? formData.permissions[module.id] : false)}
-                                    onCheckedChange={(checked) => handlePermissionChange(module.id, !!checked)}
-                                    disabled={formData.isAdmin || formData.isMaster}
-                                />
-                                <Label htmlFor={`perm-${module.id}`} className="font-normal text-sm">{module.label}</Label>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
+                
                 <DialogFooter>
                     <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
                     <Button type="submit">Salvar</Button>

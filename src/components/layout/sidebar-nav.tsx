@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -51,13 +52,20 @@ const adminNavItem: NavItem = {
     icon: ShieldCheck,
 };
 
+const planPermissions = {
+    'Gratuito': ['dashboard', 'cadastros'],
+    'Basico': ['dashboard', 'fiscal', 'financeiro', 'cadastros', 'conectividade'],
+    'Profissional': ['dashboard', 'fiscal', 'pessoal', 'contabil', 'financeiro', 'cadastros', 'conectividade', 'utilitarios'],
+    'Empresarial': ['dashboard', 'fiscal', 'pessoal', 'contabil', 'financeiro', 'cadastros', 'conectividade', 'utilitarios', 'admin']
+};
+
 
 export function SidebarNav() {
   const pathname = usePathname();
   const { open } = useSidebar();
   const { companies, currentCompany } = useCompany();
   
-  const [activeProfile, setActiveProfile] = useState<{isAdmin: boolean, permissions: Record<string, boolean>} | null>(null);
+  const [activeProfile, setActiveProfile] = useState<{isAdmin: boolean, planoId?: keyof typeof planPermissions} | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -75,23 +83,23 @@ export function SidebarNav() {
   const activeCompany = companies.find(c => c.id === currentCompany);
   
   const visibleNavItems = useMemo(() => {
-    let items = allNavItems;
     if (activeProfile?.isAdmin) {
-      // Conditionally add the admin nav item
       if (activeCompany?.data?.cnpj === '62.667.939/0001-61') {
-          // Use a new array to avoid mutation, and add admin item after dashboard
-          const dashboardIndex = items.findIndex(item => item.id === 'dashboard');
-          const newItems = [...items];
-          newItems.splice(dashboardIndex + 1, 0, adminNavItem);
-          items = newItems;
+          const newItems = [...allNavItems];
+          const dashboardIndex = newItems.findIndex(item => item.id === 'dashboard');
+          if (dashboardIndex !== -1) {
+              newItems.splice(dashboardIndex + 1, 0, adminNavItem);
+          }
+          return newItems;
       }
-      return items;
+      return allNavItems;
     }
-    // Dashboard is always visible for non-admins
-    const filteredItems = allNavItems.filter(item => 
-        item.id === 'dashboard' || activeProfile?.permissions[item.id]
-    );
-    return filteredItems;
+
+    const userPlan = activeProfile?.planoId || 'Gratuito';
+    const permissions = planPermissions[userPlan] || [];
+
+    return allNavItems.filter(item => permissions.includes(item.id));
+    
   }, [activeProfile, activeCompany]);
 
 
@@ -177,3 +185,4 @@ export function SidebarNav() {
     </div>
   );
 }
+

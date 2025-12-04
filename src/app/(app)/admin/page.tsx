@@ -55,7 +55,7 @@ interface User {
     status: 'Ativo' | 'Inativo' | 'Pendente';
     creationDate?: string; // ISO string
     dataExpiracaoLicenca?: string; // ISO string
-    planoId?: 'Gratuito' | 'Basico' | 'Profissional';
+    planoId?: 'Gratuito' | 'Basico' | 'Profissional' | 'Empresarial';
     statusLicenca?: 'Ativa' | 'Inadimplente' | 'Cancelada' | 'Expirada';
 }
 
@@ -478,13 +478,6 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
-    const handlePermissionChange = (moduleId: string, checked: boolean) => {
-        setFormData(prev => ({
-            ...prev,
-            permissions: { ...prev.permissions, [moduleId]: checked }
-        }));
-    }
-
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.name || !formData.email) {
@@ -531,6 +524,7 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
                                     <SelectItem value="Gratuito">Gratuito</SelectItem>
                                     <SelectItem value="Basico">Básico</SelectItem>
                                     <SelectItem value="Profissional">Profissional</SelectItem>
+                                    <SelectItem value="Empresarial">Empresarial</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -595,22 +589,6 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
                             onCheckedChange={(checked) => handleInputChange('status', checked ? 'Ativo' : 'Inativo')}
                             disabled={isEditingSelf && (formData.isAdmin || formData.isMaster)}
                         />
-                    </div>
-                    <div className="space-y-4 rounded-lg border p-4">
-                        <h3 className="font-medium text-sm">Permissões de Módulo</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            {modules.map(module => (
-                                <div key={module.id} className="flex items-center gap-2">
-                                    <Checkbox
-                                        id={`perm-${module.id}`}
-                                        checked={formData.isAdmin || formData.isMaster || (formData.permissions ? formData.permissions[module.id] : false)}
-                                        onCheckedChange={(checked) => handlePermissionChange(module.id, !!checked)}
-                                        disabled={formData.isAdmin || formData.isMaster}
-                                    />
-                                    <Label htmlFor={`perm-${module.id}`} className="font-normal text-sm">{module.label}</Label>
-                                </div>
-                            ))}
-                        </div>
                     </div>
                     
                     <DialogFooter>
