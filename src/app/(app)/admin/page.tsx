@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useCompany, useLocalStorage } from '@/hooks/use-company';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, Calendar as CalendarIcon, Shield, User as UserIcon, RefreshCw, Search, MoreHorizontal, Pencil, Trash2, Crown, Building } from 'lucide-react';
+import { Check, X, Calendar as CalendarIcon, Shield, User as UserIcon, RefreshCw, Search, MoreHorizontal, Pencil, Trash2, Crown, Building, Briefcase } from 'lucide-react';
 import { AuditLog, logAudit } from '@/lib/audit-log';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -221,8 +221,7 @@ export default function AdminPage() {
                             <TableRow>
                                 <TableHead>Nome</TableHead>
                                 <TableHead>Email</TableHead>
-                                <TableHead>UID Firebase</TableHead>
-                                <TableHead>Data Criação</TableHead>
+                                <TableHead>Plano Solicitado</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Licença Expira em</TableHead>
                                 <TableHead className="w-[180px] text-center">Ações</TableHead>
@@ -236,9 +235,8 @@ export default function AdminPage() {
                                         {user.name}
                                     </TableCell>
                                     <TableCell>{user.email}</TableCell>
-                                    <TableCell className="font-mono text-xs text-muted-foreground">{user.uid || 'N/A'}</TableCell>
-                                    <TableCell>
-                                        {user.creationDate ? format(new Date(user.creationDate), 'dd/MM/yyyy HH:mm') : 'N/A'}
+                                     <TableCell>
+                                        {user.planoId ? <Badge variant="outline" className='flex items-center gap-1.5'><Briefcase className='h-3 w-3'/> {user.planoId}</Badge> : 'N/A'}
                                     </TableCell>
                                     <TableCell>{getStatusBadge(user.status)}</TableCell>
                                     <TableCell>
@@ -600,6 +598,8 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
         </Dialog>
     );
 }
+    
+
     
 
     

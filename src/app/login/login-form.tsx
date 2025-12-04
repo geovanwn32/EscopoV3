@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
-import { Mail, Lock, Eye, EyeOff, Phone, Loader2, User as UserIcon } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Phone, Loader2, User as UserIcon, Briefcase } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +14,7 @@ import { GoogleAuthProvider, signInWithPopup, User as FirebaseUser } from 'fireb
 import { useToast } from '@/hooks/use-toast';
 import { initiateEmailSignUp, initiateEmailSignIn } from '@/firebase/non-blocking-login';
 import { useLocalStorage } from '@/hooks/use-company';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface UserProfile {
     id: number;
@@ -28,6 +29,7 @@ interface UserProfile {
     status: 'Ativo' | 'Inativo' | 'Pendente';
     creationDate?: string; // ISO string
     dataExpiracaoLicenca?: string; // ISO string
+    planoId?: 'Gratuito' | 'Basico' | 'Profissional' | 'Empresarial';
 }
 
 
@@ -38,6 +40,7 @@ type FormInputs = {
   password: string;
   confirmPassword?: string;
   remember?: boolean;
+  planoId?: 'Gratuito' | 'Basico' | 'Profissional' | 'Empresarial';
 };
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -64,7 +67,7 @@ function InnerLoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   
-  const { register, handleSubmit, reset, formState: { errors }, watch } = useForm<FormInputs>();
+  const { register, handleSubmit, reset, formState: { errors }, watch, setValue } = useForm<FormInputs>();
   const passwordValue = watch("password");
 
   const defaultAdminUser: Omit<UserProfile, 'id' | 'uid' | 'creationDate'> = {
@@ -77,12 +80,17 @@ function InnerLoginForm() {
     status: 'Ativo',
   };
   
-    useEffect(() => {
-        const selectedPlan = searchParams.get('plano');
-        if (selectedPlan) {
-            sessionStorage.setItem('selectedPlan', selectedPlan);
+  useEffect(() => {
+    const selectedPlan = searchParams.get('plano') as FormInputs['planoId'];
+    if (selectedPlan) {
+        sessionStorage.setItem('selectedPlan', selectedPlan);
+        if (isSignUp) {
+            setValue('planoId', selectedPlan);
         }
-    }, [searchParams]);
+    } else if (isSignUp) {
+        setValue('planoId', 'Basico'); // Default to basic if no plan is in URL
+    }
+}, [searchParams, isSignUp, setValue]);
 
   useEffect(() => {
     // This effect handles the post-authentication logic
@@ -144,18 +152,23 @@ function InnerLoginForm() {
             // New user, create a profile
             const isFirstUser = users.length === 0;
             const isAdminEmail = email === 'geovanisilvadeoliveira447@gmail.com';
+            
+            // For new users, get plan from form data if available
+            const formData = (window as any).__LAST_SIGNUP_FORM_DATA;
+            const planId = formData?.planoId || sessionStorage.getItem('selectedPlan') || 'Basico';
 
             const newUserProfile: UserProfile = {
                 id: Date.now(),
                 uid: uid,
                 creationDate: creationTime,
-                name: displayName || email || 'Novo Usuário',
+                name: displayName || formData?.fullname || email || 'Novo Usuário',
                 email: email!,
                 isAdmin: isFirstUser || isAdminEmail,
                 isMaster: isFirstUser || isAdminEmail,
                 status: (isFirstUser || isAdminEmail) ? 'Ativo' : 'Pendente',
                 permissions: {},
                 allowedCompanyIds: [],
+                planoId: planId,
             };
             
             setUsers(prev => [...prev, newUserProfile]);
@@ -244,11 +257,27 @@ function InnerLoginForm() {
         </div>
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
           {isSignUp && (
-            <div className="grid gap-2">
-              <Label htmlFor="fullname">Nome Completo</Label>
-              <Input id="fullname" type="text" {...register("fullname", { required: "O nome é obrigatório" })} placeholder="Seu nome completo" />
-                {errors.fullname && <p className="text-xs text-destructive mt-1">{errors.fullname.message}</p>}
-            </div>
+            <>
+                <div className="grid gap-2">
+                <Label htmlFor="fullname">Nome Completo</Label>
+                <Input id="fullname" type="text" {...register("fullname", { required: "O nome é obrigatório" })} placeholder="Seu nome completo" />
+                    {errors.fullname && <p className="text-xs text-destructive mt-1">{errors.fullname.message}</p>}
+                </div>
+                 <div className="grid gap-2">
+                    <Label htmlFor="planoId">Plano Desejado</Label>
+                     <Select {...register("planoId")} onValueChange={(value) => setValue('planoId', value as any)} defaultValue={searchParams.get('plano') || 'Basico'}>
+                        <SelectTrigger id="planoId">
+                            <Briefcase className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <SelectValue placeholder="Selecione um plano" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="Basico">Plano Básico</SelectItem>
+                            <SelectItem value="Profissional">Plano Profissional</SelectItem>
+                            <SelectItem value="Empresarial">Plano Empresarial</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </>
           )}
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
@@ -317,3 +346,5 @@ export default function LoginForm() {
     </Suspense>
   )
 }
+
+    
