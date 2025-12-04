@@ -8,9 +8,9 @@ import { Button } from '@/components/ui/button';
 import { useEffect, useState, Suspense } from 'react';
 
 const plansDetails = {
-    basico: { name: 'Básico' },
-    profissional: { name: 'Profissional' },
-    empresarial: { name: 'Empresarial' },
+    basico: { name: 'Básico', price: '39,00' },
+    profissional: { name: 'Profissional', price: '79,00' },
+    empresarial: { name: 'Empresarial', price: '149,00' },
 };
 type PlanID = keyof typeof plansDetails;
 
@@ -21,7 +21,7 @@ function PendingPageComponent() {
     const { user, isUserLoading } = useUser();
     const searchParams = useSearchParams();
 
-    const [selectedPlan, setSelectedPlan] = useState<{ id: PlanID; name: string } | null>(null);
+    const [selectedPlan, setSelectedPlan] = useState<{ id: PlanID; name: string; price: string; } | null>(null);
 
     useEffect(() => {
         // If for some reason the user lands here but is not logged in,
@@ -32,7 +32,7 @@ function PendingPageComponent() {
 
         const planId = sessionStorage.getItem('selectedPlan') as PlanID;
         if (planId && plansDetails[planId]) {
-            setSelectedPlan({ id: planId, name: plansDetails[planId].name });
+            setSelectedPlan({ id: planId, name: plansDetails[planId].name, price: plansDetails[planId].price });
         }
         
     }, [user, isUserLoading, router]);
@@ -47,25 +47,29 @@ function PendingPageComponent() {
     const adminPhoneNumber = "5562998554529";
     const adminEmail = "geovanisilvadeoliveira447@gmail.com";
 
-    const whatsappMessage = encodeURIComponent(
-        `Olá! Gostaria de solicitar a aprovação do meu acesso ao EscopoV3.\n\n` +
-        `Usuário: ${user?.displayName || user?.email}\n` +
-        `E-mail: ${user?.email}\n` +
-        `${selectedPlan ? `Plano Solicitado: *${selectedPlan.name}*` : ''}\n\n` +
-        `Obrigado!`
-    );
+    const generateMessageBody = () => {
+        const userName = user?.displayName || user?.email || "[Informe o nome completo]";
+        const userEmail = user?.email || "[Informe o e-mail completo]";
+        const planName = selectedPlan?.name || "[Informe o plano desejado]";
+        const planPrice = selectedPlan?.price ? `R$ ${selectedPlan.price}` : "[Informe o valor do plano]";
 
+        return `Prezado,
+
+Gostaria de solicitar a aprovação do meu acesso ao EscopoV3. Seguem os dados necessários para a solicitação:
+
+Nome Completo: ${userName}
+E-mail: ${userEmail}
+Plano Desejado: ${planName}
+Valor do Plano: ${planPrice}
+
+Fico à disposição para quaisquer informações adicionais e agradeço antecipadamente pela atenção.
+
+Atenciosamente,`;
+    };
+    
+    const whatsappMessage = encodeURIComponent(generateMessageBody());
     const emailSubject = encodeURIComponent(`Solicitação de Aprovação - EscopoV3 - ${user?.email}`);
-    const emailBody = encodeURIComponent(
-        `Olá,\n\n` +
-        `Estou solicitando a aprovação do meu acesso ao sistema EscopoV3.\n\n` +
-        `Detalhes do Usuário:\n` +
-        `Nome: ${user?.displayName || user?.email}\n` +
-        `E-mail: ${user?.email}\n` +
-        `${selectedPlan ? `Plano Solicitado: ${selectedPlan.name}\n` : ''}\n` +
-        `Aguardando liberação.\n\n` +
-        `Obrigado!`
-    );
+    const emailBody = encodeURIComponent(generateMessageBody());
 
     const whatsappUrl = `https://wa.me/${adminPhoneNumber}?text=${whatsappMessage}`;
     const emailUrl = `mailto:${adminEmail}?subject=${emailSubject}&body=${emailBody}`;
