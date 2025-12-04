@@ -42,7 +42,7 @@ export default function AdminPage() {
     const [users, setUsers] = useLocalStorage<User[]>('global-users', []);
     const [auditLogs, setAuditLogs] = useLocalStorage<AuditLog[]>('audit-trail-logs', []);
     
-    const [userToApprove, setUserToApprove] = useState<User | null>(null);
+    const [userToManage, setUserToManage] = useState<User | null>(null);
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -60,9 +60,11 @@ export default function AdminPage() {
         });
     }, [users, searchTerm]);
     
-    const handleApproval = (userId: number, expiryDate: Date) => {
+    const handleLicenseUpdate = (userId: number, expiryDate: Date) => {
         const user = users.find(u => u.id === userId);
         if (!user) return;
+
+        const isApproval = user.status === 'Pendente';
 
         setUsers(prev => prev.map(u => 
             u.id === userId 
@@ -71,11 +73,16 @@ export default function AdminPage() {
         ));
         
         toast({
-            title: user.status === 'Pendente' ? "Usuário Aprovado!" : "Licença Atualizada!",
+            title: isApproval ? "Usuário Aprovado!" : "Licença Atualizada!",
             description: `${user.name} agora tem acesso ao sistema até ${format(expiryDate, 'dd/MM/yyyy')}.`
         });
-        logAudit(setAuditLogs, 'UPDATE', 'Admin', `${user.status === 'Pendente' ? 'Aprovou' : 'Atualizou a licença do'} usuário "${user.name}" até ${format(expiryDate, 'dd/MM/yyyy')}.`);
-        setUserToApprove(null);
+
+        const logDetails = isApproval
+            ? `Aprovou o usuário "${user.name}" com licença até ${format(expiryDate, 'dd/MM/yyyy')}.`
+            : `Atualizou a licença do usuário "${user.name}" para ${format(expiryDate, 'dd/MM/yyyy')}.`;
+        
+        logAudit(setAuditLogs, 'UPDATE', 'Admin', logDetails);
+        setUserToManage(null);
     };
 
     const handleRejection = (userId: number) => {
@@ -185,7 +192,7 @@ export default function AdminPage() {
                                                     <X className="mr-2 h-4 w-4"/>
                                                     Recusar
                                                 </Button>
-                                                <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600" onClick={() => setUserToApprove(user)}>
+                                                <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600" onClick={() => setUserToManage(user)}>
                                                     <Check className="mr-2 h-4 w-4"/>
                                                     Aprovar
                                                 </Button>
@@ -202,7 +209,7 @@ export default function AdminPage() {
                                                     <DropdownMenuItem onClick={() => toast({title: "Em desenvolvimento", description: "Função de edição de usuário em breve."})}>
                                                         <Pencil className="mr-2 h-4 w-4" /> Editar
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => setUserToApprove(user)}>
+                                                    <DropdownMenuItem onClick={() => setUserToManage(user)}>
                                                         <CalendarIcon className="mr-2 h-4 w-4" /> Gerenciar Licença
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setUserToDelete(user)}>
@@ -226,10 +233,10 @@ export default function AdminPage() {
             </CardContent>
         </Card>
 
-        <ApprovalDialog 
-            user={userToApprove}
-            onOpenChange={() => setUserToApprove(null)}
-            onApprove={handleApproval}
+        <LicenseManagementDialog 
+            user={userToManage}
+            onOpenChange={() => setUserToManage(null)}
+            onConfirm={handleLicenseUpdate}
         />
 
         <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
@@ -251,13 +258,13 @@ export default function AdminPage() {
     );
 }
 
-interface ApprovalDialogProps {
+interface LicenseManagementDialogProps {
     user: User | null;
     onOpenChange: () => void;
-    onApprove: (userId: number, expiryDate: Date) => void;
+    onConfirm: (userId: number, expiryDate: Date) => void;
 }
 
-function ApprovalDialog({ user, onOpenChange, onApprove }: ApprovalDialogProps) {
+function LicenseManagementDialog({ user, onOpenChange, onConfirm }: LicenseManagementDialogProps) {
     const [period, setPeriod] = useState<string>('30');
     const [customDate, setCustomDate] = useState<Date | undefined>();
 
@@ -272,16 +279,16 @@ function ApprovalDialog({ user, onOpenChange, onApprove }: ApprovalDialogProps) 
     const handleConfirm = () => {
         if (!user) return;
         const expiryDate = calculateExpiryDate();
-        onApprove(user.id, expiryDate);
+        onConfirm(user.id, expiryDate);
     }
     
-    const isEditing = user && user.status !== 'Pendente';
+    const isApprovalFlow = user && user.status === 'Pendente';
 
     return (
         <Dialog open={!!user} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>{isEditing ? "Gerenciar Licença" : "Aprovar Usuário e Definir Licença"}</DialogTitle>
+                    <DialogTitle>{isApprovalFlow ? "Aprovar Usuário e Definir Licença" : "Gerenciar Licença"}</DialogTitle>
                     <DialogDescription>
                         Defina o período de validade da licença para <span className="font-bold">{user?.name}</span>.
                     </DialogDescription>
@@ -331,7 +338,7 @@ function ApprovalDialog({ user, onOpenChange, onApprove }: ApprovalDialogProps) 
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={onOpenChange}>Cancelar</Button>
-                    <Button onClick={handleConfirm}>{isEditing ? "Atualizar Licença" : "Confirmar Aprovação"}</Button>
+                    <Button onClick={handleConfirm}>{isApprovalFlow ? "Confirmar Aprovação" : "Atualizar Licença"}</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
