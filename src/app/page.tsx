@@ -9,8 +9,8 @@ export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect to login page, this page should not be shown.
-    router.replace('/login');
+    // Redirect to the new landing page
+    router.replace('/landing');
   }, [router]);
 
   return (
@@ -19,4 +19,3 @@ export default function HomePage() {
      </div>
   );
 }
-

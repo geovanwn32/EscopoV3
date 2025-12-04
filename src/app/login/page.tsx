@@ -35,7 +35,7 @@ export default function LoginPage() {
           </blockquote>
         </div>
       </div>
-       <div className="flex items-center justify-center py-12 px-4 sm:px-0 login-gradient">
+       <div className="flex items-center justify-center py-12 px-4 sm:px-0 animated-gradient">
           <LoginForm />
       </div>
     </div>
