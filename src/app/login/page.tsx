@@ -1,9 +1,11 @@
 
 'use client';
-import { Building2 } from 'lucide-react';
+import { Building2, ArrowLeft } from 'lucide-react';
 import LoginForm from './login-form';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 
 export default function LoginPage() {
@@ -35,7 +37,13 @@ export default function LoginPage() {
           </blockquote>
         </div>
       </div>
-       <div className="flex items-center justify-center py-12 px-4 sm:px-0 animated-gradient">
+       <div className="relative flex items-center justify-center py-12 px-4 sm:px-0 animated-gradient">
+            <Button asChild variant="ghost" className="absolute top-6 left-6 text-muted-foreground hover:text-foreground">
+                <Link href="/landing">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Voltar
+                </Link>
+            </Button>
           <LoginForm />
       </div>
     </div>
