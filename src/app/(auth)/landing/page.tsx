@@ -4,24 +4,24 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { Building2, Check, FileText, LineChart, Users, Mail, Phone, Cpu, Bot, ShieldCheck } from 'lucide-react';
+import { Building2, Check, FileText, LineChart, Users, Mail, Phone, Cpu, Bot, ShieldCheck, Briefcase } from 'lucide-react';
 import Link from 'next/link';
 
 const features = [
     {
         icon: <FileText className="h-8 w-8 text-primary" />,
-        title: 'Gestão Fiscal Completa',
-        description: 'Emita NF-e, NFS-e, importe XMLs em lote e mantenha total conformidade com as obrigações fiscais.',
+        title: 'Fiscal e Contábil Integrado',
+        description: 'Emita NF-e/NFS-e, importe XMLs e veja tudo se integrar ao seu plano de contas e relatórios, simplificando a conformidade.',
+    },
+    {
+        icon: <Users className="h-8 w-8 text-primary" />,
+        title: 'Departamento Pessoal',
+        description: 'Calcule folha de pagamento, férias, 13º e rescisões com precisão e agilidade, garantindo a conformidade trabalhista.',
     },
     {
         icon: <Cpu className="h-8 w-8 text-primary" />,
-        title: 'Assistente de IA',
-        description: 'Deixe a IA sugerir descrições para transações e associar contas em extratos bancários, economizando seu tempo.',
-    },
-    {
-        icon: <LineChart className="h-8 w-8 text-primary" />,
-        title: 'Financeiro Integrado',
-        description: 'Controle contas a pagar e receber, analise o fluxo de caixa e visualize a saúde financeira do seu negócio.',
+        title: 'Financeiro Inteligente com IA',
+        description: 'Controle o fluxo de caixa, concilie extratos e deixe a IA categorizar suas despesas e receitas automaticamente.',
     },
 ]
 
