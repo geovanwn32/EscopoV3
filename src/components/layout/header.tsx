@@ -1,4 +1,5 @@
 
+
 'use client';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -123,7 +124,7 @@ function Notifications() {
 function UserMenu() {
   const { user } = useUser();
   const auth = useAuth();
-  const [activeProfile, setActiveProfile] = useState<{name: string, email: string, isAdmin: boolean} | null>(null);
+  const [activeProfile, setActiveProfile] = useState<{name: string, email: string, isAdmin: boolean, photoURL?: string} | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -161,7 +162,7 @@ function UserMenu() {
       <DropdownMenuTrigger asChild>
         <div className="flex items-center gap-3 cursor-pointer">
             <Avatar className="h-10 w-10 border-2 border-transparent hover:border-primary transition-colors">
-              {user.photoURL && <AvatarImage src={user.photoURL} alt={activeProfile.name} />}
+              <AvatarImage src={activeProfile.photoURL} alt={activeProfile.name} />
               <AvatarFallback>
                 {activeProfile.name ? activeProfile.name.charAt(0).toUpperCase() : <User />}
               </AvatarFallback>
@@ -203,3 +204,5 @@ function UserMenu() {
     </DropdownMenu>
   );
 }
+
+    

@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -7,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useCompany, useLocalStorage } from '@/hooks/use-company';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, Calendar as CalendarIcon, Shield, User as UserIcon, RefreshCw, Search, MoreHorizontal, Pencil, Trash2, Crown, Building, Briefcase } from 'lucide-react';
+import { Check, X, Calendar as CalendarIcon, Shield, User as UserIcon, RefreshCw, Search, MoreHorizontal, Pencil, Trash2, Crown, Building, Briefcase, Upload } from 'lucide-react';
 import { AuditLog, logAudit } from '@/lib/audit-log';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -24,6 +25,7 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useUser } from '@/firebase';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 
 const modules = [
@@ -57,6 +59,7 @@ interface User {
     dataExpiracaoLicenca?: string; // ISO string
     planoId?: 'Gratuito' | 'Basico' | 'Profissional' | 'Empresarial';
     statusLicenca?: 'Ativa' | 'Inadimplente' | 'Cancelada' | 'Expirada';
+    photoURL?: string;
 }
 
 export default function AdminPage() {
@@ -331,7 +334,8 @@ const initialFormState: Omit<User, 'id'> = {
     status: 'Ativo',
     planoId: 'Gratuito',
     statusLicenca: 'Ativa',
-    dataExpiracaoLicenca: ''
+    dataExpiracaoLicenca: '',
+    photoURL: '',
 };
 
 function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile }: UserEditDialogProps) {
@@ -360,7 +364,8 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
                 status: item.status || 'Ativo',
                 planoId: item.planoId || 'Gratuito',
                 statusLicenca: item.statusLicenca || 'Ativa',
-                dataExpiracaoLicenca: item.dataExpiracaoLicenca || ''
+                dataExpiracaoLicenca: item.dataExpiracaoLicenca || '',
+                photoURL: item.photoURL || '',
             });
         } else {
             setFormData(initialFormState);
@@ -370,6 +375,18 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
     const handleInputChange = (field: keyof typeof formData, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
+
+    const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64String = reader.result as string;
+                handleInputChange('photoURL', base64String);
+            };
+            reader.readAsDataURL(file);
+        }
+    }
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -396,6 +413,21 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
                     <DialogDescription>{isApprovalFlow ? 'Revise os dados, defina a licença e aprove o acesso do usuário.' : 'Preencha os dados e defina o perfil de acesso do usuário.'}</DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
+                     <div className="flex flex-col items-center gap-4">
+                        <Avatar className="h-24 w-24">
+                            <AvatarImage src={formData.photoURL} alt={formData.name} />
+                            <AvatarFallback>
+                                <UserIcon className="h-12 w-12 text-muted-foreground" />
+                            </AvatarFallback>
+                        </Avatar>
+                        <Button asChild variant="outline" size="sm">
+                            <label htmlFor="photo-upload" className="cursor-pointer">
+                                <Upload className="mr-2 h-4 w-4" /> Alterar Foto
+                                <input id="photo-upload" type="file" className="sr-only" accept="image/*" onChange={handlePhotoChange} />
+                            </label>
+                        </Button>
+                    </div>
+
                     <div className="space-y-2">
                         <Label htmlFor="name">Nome Completo</Label>
                         <Input id="name" value={formData.name} onChange={(e) => handleInputChange('name', e.target.value)} required />
@@ -530,5 +562,8 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
     
 
     
+
+    
+
 
     
