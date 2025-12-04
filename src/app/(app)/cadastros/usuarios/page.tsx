@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo, useEffect } from 'react';
 import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft, ShieldCheck, ShieldAlert, Building, KeyRound, User as UserIcon, Save, Crown } from 'lucide-react';
@@ -257,7 +258,6 @@ export default function UsuariosPage() {
                                         onOpenChange={setIsDialogOpen}
                                         item={editingItem}
                                         users={users}
-                                        companies={companies}
                                         activeProfile={activeProfile}
                                     />
                                 </Dialog>
@@ -339,7 +339,6 @@ interface ItemFormProps {
     onOpenChange: (open: boolean) => void;
     item: User | null;
     users: User[];
-    companies: { id: number, name: string }[];
     activeProfile: User;
 }
 
@@ -361,7 +360,7 @@ const initialFormState: Omit<User, 'id'> = {
     statusLicenca: 'Ativa'
 };
 
-function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfile }: ItemFormProps) {
+function ItemForm({ onSave, onOpenChange, item, users, activeProfile }: ItemFormProps) {
     const { toast } = useToast();
     const [formData, setFormData] = useState(initialFormState);
 
@@ -392,15 +391,6 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfile 
         }
     }, [item]);
     
-    useEffect(() => {
-        if (formData.isAdmin || formData.isMaster) {
-          setFormData(prev => ({
-              ...prev,
-              allowedCompanyIds: companies.map(c => c.id)
-          }));
-        }
-    }, [formData.isAdmin, formData.isMaster, companies]);
-
     const handleInputChange = (field: keyof typeof formData, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
@@ -412,16 +402,6 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfile 
         }));
     }
     
-    const handleCompanyAccessChange = (companyId: number, checked: boolean) => {
-        if (formData.isAdmin || formData.isMaster) return;
-        setFormData(prev => ({
-            ...prev,
-            allowedCompanyIds: checked
-                ? [...prev.allowedCompanyIds, companyId]
-                : prev.allowedCompanyIds.filter(id => id !== companyId)
-        }));
-    };
-
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.name || !formData.email) {
@@ -553,25 +533,7 @@ function ItemForm({ onSave, onOpenChange, item, users, companies, activeProfile 
                         ))}
                     </div>
                 </div>
-                 <div className="space-y-4 rounded-lg border p-4">
-                    <h3 className="font-medium text-sm">Acesso às Empresas</h3>
-                    <div className="grid grid-cols-1 gap-2">
-                        {companies.map(company => (
-                            <div key={company.id} className="flex items-center gap-2">
-                                <Checkbox
-                                    id={`comp-${company.id}`}
-                                    checked={formData.isAdmin || formData.isMaster || formData.allowedCompanyIds.includes(company.id)}
-                                    onCheckedChange={(checked) => handleCompanyAccessChange(company.id, !!checked)}
-                                    disabled={formData.isAdmin || formData.isMaster}
-                                />
-                                <Label htmlFor={`comp-${company.id}`} className="font-normal text-sm flex items-center gap-2">
-                                    <Building className='h-4 w-4 text-muted-foreground'/>
-                                    {company.name}
-                                </Label>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+
                 <DialogFooter>
                     <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
                     <Button type="submit">Salvar</Button>
@@ -652,3 +614,5 @@ function MyProfileCard({ profile, onSave }: MyProfileCardProps) {
         </Card>
     );
 }
+
+    

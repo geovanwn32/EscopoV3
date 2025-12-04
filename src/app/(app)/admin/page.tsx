@@ -304,7 +304,6 @@ export default function AdminPage() {
             item={userToEdit}
             onSave={handleSaveUserEdit}
             users={users}
-            companies={companies}
             activeProfile={activeProfile}
         />}
 
@@ -420,7 +419,6 @@ interface UserEditDialogProps {
     onSave: (item: Omit<User, 'id'>) => void;
     item: User | null;
     users: User[];
-    companies: { id: number, name: string }[];
     activeProfile: User;
 }
 
@@ -444,7 +442,7 @@ const initialFormState: Omit<User, 'id'> = {
     statusLicenca: 'Ativa'
 };
 
-function UserEditDialog({ open, onOpenChange, item, onSave, users, companies, activeProfile }: UserEditDialogProps) {
+function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile }: UserEditDialogProps) {
     const { toast } = useToast();
     const [formData, setFormData] = useState(initialFormState);
 
@@ -475,15 +473,6 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, companies, ac
             setFormData(initialFormState);
         }
     }, [item]);
-    
-    useEffect(() => {
-        if (formData.isAdmin || formData.isMaster) {
-          setFormData(prev => ({
-              ...prev,
-              allowedCompanyIds: companies.map(c => c.id)
-          }));
-        }
-    }, [formData.isAdmin, formData.isMaster, companies]);
 
     const handleInputChange = (field: keyof typeof formData, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -495,16 +484,6 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, companies, ac
             permissions: { ...prev.permissions, [moduleId]: checked }
         }));
     }
-    
-    const handleCompanyAccessChange = (companyId: number, checked: boolean) => {
-        if (formData.isAdmin || formData.isMaster) return;
-        setFormData(prev => ({
-            ...prev,
-            allowedCompanyIds: checked
-                ? [...prev.allowedCompanyIds, companyId]
-                : prev.allowedCompanyIds.filter(id => id !== companyId)
-        }));
-    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -541,6 +520,32 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, companies, ac
                     <div className="space-y-2">
                         <Label htmlFor="password">{item ? 'Nova Senha' : 'Senha'}</Label>
                         <Input id="password" type="password" value={formData.password || ''} onChange={(e) => handleInputChange('password', e.target.value)} placeholder={item ? "Deixe em branco para não alterar" : "Senha de acesso"} required={!item}/>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="planoId">Plano Contratado</Label>
+                            <Select value={formData.planoId} onValueChange={(value) => handleInputChange('planoId', value)}>
+                                <SelectTrigger id="planoId"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Gratuito">Gratuito</SelectItem>
+                                    <SelectItem value="Basico">Básico</SelectItem>
+                                    <SelectItem value="Profissional">Profissional</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="statusLicenca">Status da Licença</Label>
+                                <Select value={formData.statusLicenca} onValueChange={(value) => handleInputChange('statusLicenca', value)}>
+                                <SelectTrigger id="statusLicenca"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Ativa">Ativa</SelectItem>
+                                    <SelectItem value="Inadimplente">Inadimplente</SelectItem>
+                                    <SelectItem value="Cancelada">Cancelada</SelectItem>
+                                    <SelectItem value="Expirada">Expirada</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
 
                     <Separator />
@@ -607,25 +612,7 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, companies, ac
                             ))}
                         </div>
                     </div>
-                    <div className="space-y-4 rounded-lg border p-4">
-                        <h3 className="font-medium text-sm">Acesso às Empresas</h3>
-                        <div className="grid grid-cols-1 gap-2">
-                            {companies.map(company => (
-                                <div key={company.id} className="flex items-center gap-2">
-                                    <Checkbox
-                                        id={`comp-${company.id}`}
-                                        checked={formData.isAdmin || formData.isMaster || formData.allowedCompanyIds.includes(company.id)}
-                                        onCheckedChange={(checked) => handleCompanyAccessChange(company.id, !!checked)}
-                                        disabled={formData.isAdmin || formData.isMaster}
-                                    />
-                                    <Label htmlFor={`comp-${company.id}`} className="font-normal text-sm flex items-center gap-2">
-                                        <Building className='h-4 w-4 text-muted-foreground'/>
-                                        {company.name}
-                                    </Label>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                    
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
                         <Button type="submit">Salvar</Button>
@@ -635,4 +622,6 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, companies, ac
         </Dialog>
     );
 }
+    
+
     
