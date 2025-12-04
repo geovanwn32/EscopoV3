@@ -66,7 +66,6 @@ export default function AdminPage() {
     const [auditLogs, setAuditLogs] = useLocalStorage<AuditLog[]>('audit-trail-logs', []);
     const { user: firebaseUser } = useUser();
     
-    const [userToManage, setUserToManage] = useState<User | null>(null);
     const [userToEdit, setUserToEdit] = useState<User | null>(null);
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -97,50 +96,31 @@ export default function AdminPage() {
         });
     }, [users, searchTerm]);
     
-    const handleLicenseUpdate = (userId: number, expiryDate: Date) => {
-        const user = users.find(u => u.id === userId);
-        if (!user) return;
-
-        const isApproval = user.status === 'Pendente';
-
-        setUsers(prev => prev.map(u => 
-            u.id === userId 
-            ? { ...u, status: 'Ativo', dataExpiracaoLicenca: expiryDate.toISOString() } 
-            : u
-        ));
-        
-        toast({
-            title: isApproval ? "Usuário Aprovado!" : "Licença Atualizada!",
-            description: `${user.name} agora tem acesso ao sistema até ${format(expiryDate, 'dd/MM/yyyy')}.`
-        });
-
-        const logDetails = isApproval
-            ? `Aprovou o usuário "${user.name}" com licença até ${format(expiryDate, 'dd/MM/yyyy')}.`
-            : `Atualizou a licença do usuário "${user.name}" para ${format(expiryDate, 'dd/MM/yyyy')}.`;
-        
-        logAudit(setAuditLogs, 'UPDATE', 'Admin', logDetails);
-        setUserToManage(null);
-    };
-
      const handleSaveUserEdit = (itemData: Omit<User, 'id'>) => {
         if (!userToEdit) return;
 
         const originalUser = users.find(u => u.id === userToEdit.id);
         const isApprovalFlow = originalUser?.status === 'Pendente';
         
-        const updatedUser = { ...userToEdit, ...itemData };
+        const updatedUser: User = { ...userToEdit, ...itemData };
         if (!itemData.password) {
             delete updatedUser.password;
         }
         
+        if (isApprovalFlow) {
+            updatedUser.status = 'Ativo';
+            if (!updatedUser.dataExpiracaoLicenca) {
+                updatedUser.dataExpiracaoLicenca = addDays(new Date(), 30).toISOString();
+            }
+        }
+
         setUsers(prev => prev.map(user => user.id === userToEdit.id ? updatedUser : user));
         
-        setUserToEdit(null); // Close the edit dialog
+        setUserToEdit(null);
 
         if (isApprovalFlow) {
-            // If it was an approval, now open the license dialog
-            setUserToManage(updatedUser);
-            toast({ title: "Revisão Concluída", description: "Agora, defina a licença para aprovar o usuário." });
+            toast({ title: "Usuário Aprovado!", description: `O acesso para ${updatedUser.name} foi liberado.` });
+            logAudit(setAuditLogs, 'UPDATE', 'Admin', `Aprovou o usuário "${updatedUser.name}".`);
         } else {
             toast({ title: "Usuário Atualizado!", description: "Os dados do usuário foram atualizados." });
             let logDetails = `Atualizou o usuário "${itemData.name}".`;
@@ -258,8 +238,8 @@ export default function AdminPage() {
                                                     Recusar
                                                 </Button>
                                                 <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600" onClick={() => setUserToEdit(user)}>
-                                                    <Check className="mr-2 h-4 w-4"/>
-                                                    Aprovar
+                                                    <Pencil className="mr-2 h-4 w-4"/>
+                                                    Revisar
                                                 </Button>
                                             </div>
                                         ) : (
@@ -273,9 +253,6 @@ export default function AdminPage() {
                                                 <DropdownMenuContent align="end">
                                                     <DropdownMenuItem onClick={() => setUserToEdit(user)}>
                                                         <Pencil className="mr-2 h-4 w-4" /> Editar
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => setUserToManage(user)}>
-                                                        <CalendarIcon className="mr-2 h-4 w-4" /> Gerenciar Licença
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setUserToDelete(user)}>
                                                         <Trash2 className="mr-2 h-4 w-4" /> Excluir
@@ -297,12 +274,6 @@ export default function AdminPage() {
                 </div>
             </CardContent>
         </Card>
-
-        <LicenseManagementDialog 
-            user={userToManage}
-            onOpenChange={() => setUserToManage(null)}
-            onConfirm={handleLicenseUpdate}
-        />
 
         {activeProfile && <UserEditDialog 
             open={!!userToEdit}
@@ -332,92 +303,6 @@ export default function AdminPage() {
     );
 }
 
-interface LicenseManagementDialogProps {
-    user: User | null;
-    onOpenChange: () => void;
-    onConfirm: (userId: number, expiryDate: Date) => void;
-}
-
-function LicenseManagementDialog({ user, onOpenChange, onConfirm }: LicenseManagementDialogProps) {
-    const [period, setPeriod] = useState<string>('30');
-    const [customDate, setCustomDate] = useState<Date | undefined>();
-
-    const calculateExpiryDate = (): Date => {
-        if (period === 'custom' && customDate) {
-            return customDate;
-        }
-        const days = parseInt(period, 10);
-        return addDays(new Date(), days);
-    }
-    
-    const handleConfirm = () => {
-        if (!user) return;
-        const expiryDate = calculateExpiryDate();
-        onConfirm(user.id, expiryDate);
-    }
-    
-    const isApprovalFlow = user && user.status === 'Pendente';
-
-    return (
-        <Dialog open={!!user} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>{isApprovalFlow ? "Aprovar Usuário e Definir Licença" : "Gerenciar Licença"}</DialogTitle>
-                    <DialogDescription>
-                        Defina o período de validade da licença para <span className="font-bold">{user?.name}</span>.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="license-period">Período da Licença</Label>
-                        <Select value={period} onValueChange={setPeriod}>
-                            <SelectTrigger id="license-period">
-                                <SelectValue placeholder="Selecione o período..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="30">30 dias</SelectItem>
-                                <SelectItem value="60">60 dias</SelectItem>
-                                <SelectItem value="90">90 dias</SelectItem>
-                                <SelectItem value="365">1 ano</SelectItem>
-                                <SelectItem value="custom">Data Personalizada</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    {period === 'custom' && (
-                        <div className="space-y-2">
-                             <Label htmlFor="custom-date">Data de Expiração</Label>
-                             <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        id="custom-date"
-                                        variant={"outline"}
-                                        className={cn("w-full justify-start text-left font-normal", !customDate && "text-muted-foreground")}
-                                    >
-                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {customDate ? format(customDate, 'PPP', { locale: ptBR }) : <span>Escolha uma data</span>}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <Calendar
-                                        mode="single"
-                                        selected={customDate}
-                                        onSelect={setCustomDate}
-                                        initialFocus
-                                        disabled={(date) => date < new Date()}
-                                    />
-                                </PopoverContent>
-                            </Popover>
-                        </div>
-                    )}
-                </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={onOpenChange}>Cancelar</Button>
-                    <Button onClick={handleConfirm}>{isApprovalFlow ? "Confirmar Aprovação" : "Atualizar Licença"}</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    )
-}
 
 interface UserEditDialogProps {
     open: boolean;
@@ -445,7 +330,8 @@ const initialFormState: Omit<User, 'id'> = {
     allowedCompanyIds: [],
     status: 'Ativo',
     planoId: 'Gratuito',
-    statusLicenca: 'Ativa'
+    statusLicenca: 'Ativa',
+    dataExpiracaoLicenca: ''
 };
 
 function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile }: UserEditDialogProps) {
@@ -473,7 +359,8 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
                 allowedCompanyIds: item.allowedCompanyIds || [],
                 status: item.status || 'Ativo',
                 planoId: item.planoId || 'Gratuito',
-                statusLicenca: item.statusLicenca || 'Ativa'
+                statusLicenca: item.statusLicenca || 'Ativa',
+                dataExpiracaoLicenca: item.dataExpiracaoLicenca || ''
             });
         } else {
             setFormData(initialFormState);
@@ -506,7 +393,7 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle>{isApprovalFlow ? 'Revisar e Aprovar Usuário' : (item ? 'Editar' : 'Convidar') + ' Usuário'}</DialogTitle>
-                    <DialogDescription>{isApprovalFlow ? 'Revise os dados do usuário antes de definir a licença.' : 'Preencha os dados e defina o perfil de acesso do usuário.'}</DialogDescription>
+                    <DialogDescription>{isApprovalFlow ? 'Revise os dados, defina a licença e aprove o acesso do usuário.' : 'Preencha os dados e defina o perfil de acesso do usuário.'}</DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
@@ -547,6 +434,30 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
                                 </SelectContent>
                             </Select>
                         </div>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="dataVencimento">Data de Vencimento da Licença</Label>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    id="dataVencimento"
+                                    variant={"outline"}
+                                    className={cn("w-full justify-start text-left font-normal", !formData.dataExpiracaoLicenca && "text-muted-foreground")}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {formData.dataExpiracaoLicenca ? format(new Date(formData.dataExpiracaoLicenca), "PPP", { locale: ptBR }) : <span>Escolha a data de expiração</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar 
+                                    mode="single" 
+                                    selected={formData.dataExpiracaoLicenca ? new Date(formData.dataExpiracaoLicenca) : undefined} 
+                                    onSelect={(date) => handleInputChange('dataExpiracaoLicenca', date ? date.toISOString() : '')} 
+                                    initialFocus 
+                                    locale={ptBR} 
+                                />
+                            </PopoverContent>
+                        </Popover>
                     </div>
 
                     <Separator />
@@ -600,7 +511,7 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
                     
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-                        <Button type="submit">{isApprovalFlow ? 'Continuar para Licença' : 'Salvar'}</Button>
+                        <Button type="submit">{isApprovalFlow ? 'Aprovar Usuário' : 'Salvar'}</Button>
                     </DialogFooter>
                 </form>
             </DialogContent>
