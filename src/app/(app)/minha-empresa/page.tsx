@@ -426,7 +426,7 @@ export default function MinhaEmpresaPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Dados Fiscais e de Plano</CardTitle>
-                        <CardDescription>Configurações tributárias, fiscais e de assinatura da empresa.</CardDescription>
+                        <CardDescription>Configurações tributárias e fiscais da empresa.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -483,54 +483,6 @@ export default function MinhaEmpresaPage() {
                                         <SelectItem value="99">99 - Pessoas Jurídicas e Físicas em geral não classificadas nos demais códigos</SelectItem>
                                     </SelectContent>
                                 </Select>
-                        </div>
-                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="planoId">Plano Contratado</Label>
-                                <Select value={companyData.planoId} onValueChange={(value) => handleInputChange('planoId', value)}>
-                                    <SelectTrigger id="planoId"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Gratuito">Gratuito</SelectItem>
-                                        <SelectItem value="Basico">Básico</SelectItem>
-                                        <SelectItem value="Profissional">Profissional</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="statusLicenca">Status da Licença</Label>
-                                 <Select value={companyData.statusLicenca} onValueChange={(value) => handleInputChange('statusLicenca', value)}>
-                                    <SelectTrigger id="statusLicenca"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Ativa">Ativa</SelectItem>
-                                        <SelectItem value="Inadimplente">Inadimplente</SelectItem>
-                                        <SelectItem value="Cancelada">Cancelada</SelectItem>
-                                        <SelectItem value="Expirada">Expirada</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="dataVencimento">Data de Vencimento</Label>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant={"outline"}
-                                            className={cn("w-full justify-start text-left font-normal", !companyData.dataVencimentoLicenca && "text-muted-foreground")}
-                                        >
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {companyData.dataVencimentoLicenca ? format(new Date(companyData.dataVencimentoLicenca), "dd/MM/yyyy", { locale: ptBR }) : <span>Selecione a data</span>}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0">
-                                        <Calendar 
-                                            mode="single" 
-                                            selected={companyData.dataVencimentoLicenca ? new Date(companyData.dataVencimentoLicenca) : undefined} 
-                                            onSelect={(date) => handleInputChange('dataVencimentoLicenca', date ? date.toISOString() : '')} 
-                                            initialFocus 
-                                            locale={ptBR} 
-                                        />
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
                         </div>
                     </CardContent>
                 </Card>
