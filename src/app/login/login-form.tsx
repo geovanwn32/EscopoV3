@@ -1,254 +1,377 @@
 
-
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
-import { Mail, Lock, Eye, EyeOff, Phone, Loader2 } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Phone, Loader2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Tooltip, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useAuth, signInWithGoogle, signUpWithEmail, signInWithEmail } from '@/firebase'; // Assuming these exist
+import { useToast } from "@/hooks/use-toast";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { Partner, PartnerType, PersonType } from '@/types/partner';
 
-// Tipagem para os dados do formulário
-type FormInputs = {
-  fullname?: string;
-  email: string;
-  password: string;
-  remember?: boolean;
-};
+// Define Zod schemas
+const loginSchema = z.object({
+  email: z.string().email({ message: "Por favor, insira um e-mail válido." }),
+  password: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres." }),
+  remember: z.boolean().optional(),
+});
 
-function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
+const signUpSchema = z.object({
+  fullName: z.string().min(3, { message: "O nome completo é obrigatório." }),
+  email: z.string().email({ message: "Por favor, insira um e-mail válido." }),
+  password: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres." }),
+  confirmPassword: z.string(),
+  phone: z.string().optional(),
+  planoId: z.enum(["Gratuito", "Basico", "Profissional", "Empresarial"]),
+  termos: z.literal<boolean>(true, {
+    errorMap: () => ({ message: "Você deve aceitar os termos e condições." }),
+  }),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "As senhas não coincidem",
+  path: ["confirmPassword"],
+});
+
+
+function GoogleIcon(props: React.SVGProps<SVGElement>) {
     return (
         <svg {...props} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px">
             <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
             <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
             <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.222,0-9.619-3.317-11.28-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
-alidar o CNPJ
-            if (personType === 'JURIDICA' && docValue.length !== 14) {
-                toast({
-                    variant: 'destructive',
-                    title: 'CNPJ inválido',
-                    description: 'Por favor, insira um CNPJ válido com 14 dígitos.'
-                });
-                return;
-            }
-            if (personType === 'FISICA' && docValue.length !== 11) {
-                toast({
-                    variant: 'destructive',
-                    title: 'CPF inválido',
-                    description: 'Por favor, insira um CPF válido com 11 dígitos.'
-                });
-                return;
-            }
+            <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C39.901,36.639,44,30.836,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
+        </svg>
+    )
+}
 
-            if (isQueryingDoc) return;
-            setIsQueryingDoc(true);
-            try {
-                // Simulação de consulta a uma API de CNPJ/CPF
-                await new Promise(resolve => setTimeout(resolve, 1500));
-                
-                if (personType === 'JURIDICA') {
-                     // Exemplo de dados para CNPJ (substitua por uma API real se necessário)
-                     setName('Empresa Exemplo LTDA');
-                     setEmail('contato@empresaexemplo.com');
-                     setPhone('(11) 99999-9999');
-                     setAddress({
-                         zipCode: '01001-000',
-                         street: 'Praça da Sé',
-                         number: '100',
-                         complement: 'Lado A',
-                         neighborhood: 'Sé',
-                         city: 'São Paulo',
-                         state: 'SP',
-                     });
-                     setTaxRegime('Simples Nacional');
-                     toast({ title: 'CNPJ Consultado!', description: 'Os dados do parceiro foram preenchidos.' });
-                } else {
-                    // Simulação para CPF
-                     toast({ title: 'Consulta de CPF', description: 'Função de consulta de CPF não implementada.' });
-                }
-            } catch (error: any) {
-                toast({
-                    variant: 'destructive',
-                    title: 'Erro na Consulta',
-                    description: error.message || 'Não foi possível buscar os dados do documento.'
-                });
-            } finally {
-                setIsQueryingDoc(false);
-            }
-        }
-    
-        const handleSubmit = (e: React.FormEvent) => {
-            e.preventDefault();
-            if (isReadOnly) {
-                onOpenChange(false);
-                return;
-            }
-    
-            if (!name || !document || !type) {
-                toast({
-                    variant: 'destructive',
-                    title: 'Campos Obrigatórios',
-                    description: 'Por favor, preencha Nome, Documento e Tipo para salvar.'
-                });
-                return;
-            }
-            
-            onSave({ personType, name, document, type, address, email, phone, taxRegime });
-        };
-    
-        const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-            const { value } = e.target;
-            const onlyNumbers = value.replace(/\D/g, '');
-    
-            if (personType === 'JURIDICA') {
-                let formatted = onlyNumbers;
-                if (formatted.length > 2) formatted = `${formatted.slice(0, 2)}.${formatted.slice(2)}`;
-                if (formatted.length > 6) formatted = `${formatted.slice(0, 6)}.${formatted.slice(6)}`;
-                if (formatted.length > 10) formatted = `${formatted.slice(0, 10)}/${formatted.slice(10)}`;
-                if (formatted.length > 15) formatted = `${formatted.slice(0, 15)}-${formatted.slice(15)}`;
-                setDocument(formatted.slice(0, 18));
-            } else { // FISICA
-                 let formatted = onlyNumbers;
-                if (formatted.length > 3) formatted = `${formatted.slice(0, 3)}.${formatted.slice(3)}`;
-                if (formatted.length > 7) formatted = `${formatted.slice(0, 7)}.${formatted.slice(7)}`;
-                if (formatted.length > 11) formatted = `${formatted.slice(0, 11)}-${formatted.slice(11)}`;
-                setDocument(formatted.slice(0, 14));
-            }
-        }
-        
-        const dialogTitle = isReadOnly ? "Visualizar Parceiro" : partner ? "Editar Parceiro" : "Novo Parceiro";
-        const dialogDescription = isReadOnly ? "Visualize os dados do parceiro." : "Preencha os dados para adicionar ou editar um parceiro.";
-    
-    
-        return (
-            <DialogContent className="sm:max-w-3xl">
-                <DialogHeader>
-                    <DialogTitle>{dialogTitle}</DialogTitle>
-                    <DialogDescription>
-                        {dialogDescription}
-                    </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                        <Label>Tipo de Pessoa</Label>
-                        <RadioGroup defaultValue="JURIDICA" value={personType} onValueChange={(v: PersonType) => { setPersonType(v); setDocument(''); }} disabled={isReadOnly}>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="JURIDICA" id="r_juridica" />
-                                <Label htmlFor="r_juridica">Pessoa Jurídica (CNPJ)</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="FISICA" id="r_fisica" />
-                                <Label htmlFor="r_fisica">Pessoa Física (CPF)</Label>
-                            </div>
-                        </RadioGroup>
-                    </div>
-    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="document">{personType === 'JURIDICA' ? 'CNPJ' : 'CPF'}</Label>
-                            <div className="flex items-center gap-2">
-                                <Input id="document" value={document} onChange={handleDocumentChange} required readOnly={isReadOnly} />
-                                 {!isReadOnly && (
-                                    <Button variant="outline" type="button" onClick={handleDocQuery} disabled={isQueryingDoc}>
-                                        {isQueryingDoc ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                                        <span className="sr-only">Consultar Documento</span>
-                                    </Button>
-                                )}
-                            </div>
-                        </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="name">{personType === 'JURIDICA' ? 'Razão Social' : 'Nome Completo'}</Label>
-                            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required readOnly={isReadOnly} />
-                        </div>
-                    </div>
-    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                         <div className="space-y-2">
-                            <Label htmlFor="type">Tipo de Parceiro</Label>
-                            <Select value={type} onValueChange={(value) => setType(value as any)} required disabled={isReadOnly}>
-                                <SelectTrigger id="type">
-                                    <SelectValue placeholder="Selecione o tipo" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Cliente">Cliente</SelectItem>
-                                    <SelectItem value="Fornecedor">Fornecedor</SelectItem>
-                                    <SelectItem value="Transportadora">Transportadora</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="taxRegime">Regime Tributário</Label>
-                            <Input id="taxRegime" value={taxRegime} onChange={e => setTaxRegime(e.target.value)} readOnly={isReadOnly} />
-                        </div>
-                    </div>
-    
-                    <Separator />
-                    <h3 className='text-md font-medium'>Contato</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="email">Email</Label>
-                            <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} readOnly={isReadOnly} />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="phone">Telefone</Label>
-                            <Input id="phone" value={phone} onChange={e => setPhone(e.target.value)} readOnly={isReadOnly} />
-                        </div>
-                    </div>
-    
-                    <Separator />
-                    <h3 className='text-md font-medium'>Endereço</h3>
-    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="zipCode">CEP</Label>
-                            <Input id="zipCode" value={address.zipCode} onChange={e => setAddress(p => ({...p, zipCode: e.target.value}))} readOnly={isReadOnly} />
-                        </div>
-                         <div className="space-y-2 col-span-2">
-                            <Label htmlFor="street">Logradouro</Label>
-                            <Input id="street" value={address.street} onChange={e => setAddress(p => ({...p, street: e.target.value}))} readOnly={isReadOnly} />
-                        </div>
-                    </div>
-    
-                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="number">Número</Label>
-                            <Input id="number" value={address.number} onChange={e => setAddress(p => ({...p, number: e.target.value}))} readOnly={isReadOnly} />
-                        </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="complement">Complemento</Label>
-                            <Input id="complement" value={address.complement} onChange={e => setAddress(p => ({...p, complement: e.target.value}))} readOnly={isReadOnly} />
-                        </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="neighborhood">Bairro</Label>
-                            <Input id="neighborhood" value={address.neighborhood} onChange={e => setAddress(p => ({...p, neighborhood: e.target.value}))} readOnly={isReadOnly} />
-                        </div>
-                    </div>
-    
-                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2 col-span-2">
-                            <Label htmlFor="city">Cidade</Label>
-                            <Input id="city" value={address.city} onChange={e => setAddress(p => ({...p, city: e.target.value}))} readOnly={isReadOnly} />
-                        </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="state">Estado</Label>
-                            <Input id="state" value={address.state} onChange={e => setAddress(p => ({...p, state: e.target.value}))} readOnly={isReadOnly} />
-                        </div>
-                    </div>
-    
-    
-                    <DialogFooter className='pt-4'>
-                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                            {isReadOnly ? 'Fechar' : 'Cancelar'}
-                        </Button>
-                        {!isReadOnly && <Button type="submit">Salvar</Button>}
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        );
+function LoginForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { toast } = useToast();
+  const auth = useAuth();
+
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const plan = searchParams.get('plano');
+    if (plan) {
+      setIsSignUp(true);
     }
+  }, [searchParams]);
 
-    
+  const loginForm = useForm<z.infer<typeof loginSchema>>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: "", password: "", remember: false },
+  });
+
+  const signupForm = useForm<z.infer<typeof signUpSchema>>({
+    resolver: zodResolver(signUpSchema),
+    defaultValues: { fullName: "", email: "", password: "", confirmPassword: "", phone: "", planoId: "Basico", termos: false },
+  });
+
+  useEffect(() => {
+    const plan = searchParams.get('plano') as 'Gratuito' | 'Basico' | 'Profissional' | 'Empresarial' | null;
+    if (plan && ['Gratuito', 'Basico', 'Profissional', 'Empresarial'].includes(plan)) {
+      signupForm.setValue('planoId', plan);
+    }
+  }, [searchParams, signupForm]);
+
+  const handleLogin: SubmitHandler<z.infer<typeof loginSchema>> = async (data) => {
+    setIsLoading(true);
+    try {
+      await signInWithEmail(auth, data.email, data.password);
+      toast({
+        title: "Login bem-sucedido!",
+        description: "Você será redirecionado em breve.",
+      });
+      router.push('/selecionar-perfil');
+    } catch (error: any) {
+      console.error("Login failed:", error);
+      toast({
+        variant: "destructive",
+        title: "Falha no login",
+        description: error.message || "Por favor, verifique suas credenciais e tente novamente.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSignUp: SubmitHandler<z.infer<typeof signUpSchema>> = async (data) => {
+    setIsLoading(true);
+    try {
+      const userCredential = await signUpWithEmail(auth, data.email, data.password);
+      console.log('User signed up:', userCredential.user);
+      sessionStorage.setItem('selectedPlan', data.planoId);
+      router.push('/pending');
+    } catch (error: any) {
+      console.error("Signup failed:", error);
+      toast({
+        variant: "destructive",
+        title: "Falha no cadastro",
+        description: error.message || "Não foi possível criar sua conta. Por favor, tente novamente.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    try {
+      const result = await signInWithGoogle();
+      if (result) {
+        toast({
+          title: "Login com Google bem-sucedido!",
+          description: "Você será redirecionado em breve.",
+        });
+        const plan = searchParams.get('plano');
+        if (plan) {
+            sessionStorage.setItem('selectedPlan', plan);
+            router.push('/pending');
+        } else {
+            router.push('/selecionar-perfil');
+        }
+      }
+    } catch (error: any) {
+      console.error("Google Sign-In failed:", error);
+      toast({
+        variant: "destructive",
+        title: "Falha no login com Google",
+        description: error.message || "Não foi possível fazer login com o Google.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isSignUp) {
+    return (
+      <div className="grid gap-6 w-full max-w-md">
+        <div className="grid gap-2 text-center">
+          <h1 className="text-3xl font-bold">Criar uma conta</h1>
+          <p className="text-balance text-muted-foreground">
+            Insira seus dados para começar a usar o EscopoV3
+          </p>
+        </div>
+        <Form {...signupForm}>
+          <form onSubmit={signupForm.handleSubmit(handleSignUp)} className="grid gap-4">
+            <FormField
+              control={signupForm.control}
+              name="fullName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nome Completo</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Seu nome completo" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={signupForm.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="seu@email.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={signupForm.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Senha</FormLabel>
+                   <FormControl>
+                    <div className="relative">
+                      <Input type={showPassword ? "text" : "password"} {...field} placeholder="••••••••" />
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400">
+                        {showPassword ? <EyeOff /> : <Eye />}
+                      </button>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={signupForm.control}
+              name="confirmPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Confirmar Senha</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="••••••••" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+                control={signupForm.control}
+                name="planoId"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Plano Escolhido</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Selecione um plano" />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                        <SelectItem value="Gratuito">Gratuito</SelectItem>
+                        <SelectItem value="Basico">Básico - R$39/mês</SelectItem>
+                        <SelectItem value="Profissional">Profissional - R$79/mês</SelectItem>
+                        <SelectItem value="Empresarial">Empresarial - R$149/mês</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+            <FormField
+              control={signupForm.control}
+              name="termos"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>
+                      Eu aceito os <a href="/termos" className="underline">termos e condições</a>
+                    </FormLabel>
+                  </div>
+                </FormItem>
+              )}
+            />
+            <Button type="submit" className="w-full font-semibold" disabled={isLoading}>
+              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Criar Conta'}
+            </Button>
+          </form>
+        </Form>
+        <div className="mt-4 text-center text-sm">
+          Já possui uma conta?{" "}
+          <button onClick={() => setIsSignUp(false)} className="underline font-semibold" disabled={isLoading}>
+            Entrar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+      <div className="mx-auto grid w-[350px] gap-6">
+        <div className="grid gap-2 text-center">
+            <h1 className="text-3xl font-bold">Login</h1>
+            <p className="text-balance text-muted-foreground">
+            Insira seu email para acessar sua conta
+            </p>
+        </div>
+      <Form {...loginForm}>
+        <form onSubmit={loginForm.handleSubmit(handleLogin)} className="grid gap-4">
+          <FormField
+            control={loginForm.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder="nome@exemplo.com" {...field} className="pl-9" />
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={loginForm.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <div className="flex items-center">
+                  <FormLabel>Senha</FormLabel>
+                  <Link
+                    href="#"
+                    className="ml-auto inline-block text-sm underline"
+                  >
+                    Esqueceu sua senha?
+                  </Link>
+                </div>
+                <FormControl>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input type={showPassword ? 'text' : 'password'} {...field} className="pl-9" />
+                    <button type="button" className="absolute inset-y-0 right-0 flex items-center pr-3" onClick={() => setShowPassword(!showPassword)}>
+                      {showPassword ? <EyeOff className="h-4 w-4 text-gray-400" /> : <Eye className="h-4 w-4 text-gray-400" />}
+                    </button>
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={loginForm.control}
+            name="remember"
+            render={({ field }) => (
+                <FormItem className="flex items-center space-x-2">
+                    <FormControl>
+                        <Checkbox id="remember" checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                    <Label htmlFor="remember" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                        Lembrar-me
+                    </Label>
+                </FormItem>
+            )}
+          />
+          <Button type="submit" className="w-full font-semibold" disabled={isLoading}>
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Entrar
+          </Button>
+          <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading}>
+            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-4 w-4" />}
+            Entrar com o Google
+          </Button>
+        </form>
+      </Form>
+      <div className="mt-4 text-center text-sm">
+        Não tem uma conta?{" "}
+        <button onClick={() => setIsSignUp(true)} className="underline font-semibold" disabled={isLoading}>
+          Crie uma agora
+        </button>
+      </div>
+    </div>
+  );
+}
