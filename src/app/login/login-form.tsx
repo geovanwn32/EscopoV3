@@ -1,9 +1,8 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
-import { Mail, Lock, Eye, EyeOff, Phone, Loader2, Search } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,10 +21,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { Partner, PartnerType, PersonType } from '@/types/partner';
 
 // Define Zod schemas
 const loginSchema = z.object({
@@ -50,7 +46,7 @@ const signUpSchema = z.object({
 });
 
 
-function GoogleIcon(props: React.SVGProps<SVGElement>) {
+function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
         <svg {...props} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px">
             <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
@@ -61,7 +57,7 @@ function GoogleIcon(props: React.SVGProps<SVGElement>) {
     )
 }
 
-function LoginForm() {
+export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -109,7 +105,7 @@ function LoginForm() {
       toast({
         variant: "destructive",
         title: "Falha no login",
-        description: error.message || "Por favor, verifique suas credenciais e tente novamente.",
+        description: "Credenciais inválidas. Verifique seu e-mail e senha.",
       });
     } finally {
       setIsLoading(false);
@@ -360,7 +356,7 @@ function LoginForm() {
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Entrar
           </Button>
-          <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading}>
+          <Button variant="outline" className="w-full" type="button" onClick={handleGoogleSignIn} disabled={isLoading}>
             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-4 w-4" />}
             Entrar com o Google
           </Button>
