@@ -1,5 +1,5 @@
 'use client';
-import { Building2 } from 'lucide-react';
+import { CompanyProvider } from '@/hooks/use-company';
 
 export default function AuthLayout({
   children,
@@ -7,8 +7,8 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen w-full flex-col">
-      {children}
-    </div>
+    <CompanyProvider>
+      <div className="flex min-h-screen w-full flex-col">{children}</div>
+    </CompanyProvider>
   );
 }
