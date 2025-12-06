@@ -3,8 +3,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Package, Users, Handshake, Briefcase, FileText, FileSignature, Scale, Table, Globe, BookText, AreaChart, Percent } from 'lucide-react';
 import Link from 'next/link';
+import { useCompany } from '@/hooks/use-company';
+import { useMemo } from 'react';
 
-const cadastroItens = [
+const allCadastroItens = [
     {
         href: '/cadastros/parceiros',
         icon: <Handshake className="h-8 w-8" />,
@@ -113,6 +115,21 @@ const cadastroItens = [
 ]
 
 export default function CadastrosPage() {
+    const { currentCompany } = useCompany();
+
+    const cadastroItens = useMemo(() => {
+        // ID da empresa administradora
+        const adminCompanyId = 1764646068539;
+
+        // Se a empresa atual não for a administradora, filtre o item "Usuários e Perfis"
+        if (currentCompany !== adminCompanyId) {
+            return allCadastroItens.filter(item => item.href !== '/cadastros/usuarios');
+        }
+
+        // Se for a empresa administradora, retorne todos os itens
+        return allCadastroItens;
+    }, [currentCompany]);
+
     return (
         <div className="space-y-6">
             <div className="space-y-1">
