@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useAuth } from '@/firebase';
+import { useAuth, useUser } from '@/firebase';
 
 interface UserProfile {
     id: number;
@@ -28,6 +28,7 @@ interface UserProfile {
 export default function SelecionarPerfilPage() {
     const router = useRouter();
     const auth = useAuth();
+    const { user: firebaseUser } = useUser();
     const { useScopedData } = useCompany();
     const [users, setUsers] = useScopedData<UserProfile[]>('global-users', []);
     const { toast } = useToast();
@@ -60,9 +61,15 @@ export default function SelecionarPerfilPage() {
 
         setTimeout(() => {
             if (password === selectedUser?.password) {
-                toast({ title: "Acesso Autorizado!", description: `Bem-vindo(a) ${selectedUser.name}.` });
-                sessionStorage.setItem('user-profile', JSON.stringify(selectedUser));
-                router.push('/selecionar-empresa');
+                const userProfile = users.find(u => u.email === firebaseUser?.email);
+                if (userProfile) {
+                    sessionStorage.setItem('user-profile', JSON.stringify(userProfile));
+                    toast({ title: "Acesso Autorizado!", description: `Bem-vindo(a) ${selectedUser.name}.` });
+                    router.push('/selecionar-empresa');
+                } else {
+                    toast({ variant: 'destructive', title: "Erro de Perfil", description: "Não foi possível encontrar os dados do seu perfil." });
+                    setIsLoading(false);
+                }
             } else {
                 toast({ variant: 'destructive', title: "Senha Incorreta", description: "A senha que você inseriu está incorreta. Tente novamente." });
                 setIsLoading(false);
@@ -70,6 +77,7 @@ export default function SelecionarPerfilPage() {
             }
         }, 500);
     };
+
 
     const handleDialogClose = () => {
         setSelectedUser(null);
@@ -101,11 +109,14 @@ export default function SelecionarPerfilPage() {
             });
             return;
         }
-        if (user.isAdmin && users.filter(u => u.isAdmin && !u.isMaster).length <= 1) {
+        const adminUsers = users.filter(u => u.isAdmin && !u.isMaster);
+        const masterExists = users.some(u => u.isMaster);
+
+        if (user.isAdmin && masterExists && adminUsers.length <= 1) {
             toast({
                 variant: 'destructive',
                 title: 'Ação não permitida',
-                description: 'Não é possível excluir o único perfil de administrador.',
+                description: 'Não é possível excluir o único perfil de administrador quando um Master existe.',
             });
             return;
         }
