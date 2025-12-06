@@ -11,13 +11,14 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useCompany } from '@/hooks/use-company';
 import { Funcionario } from '@/types/pessoal';
 import { useToast } from '@/hooks/use-toast';
-import { Calculator, Plus, Trash2, Loader2, FileText, BookCopy, ChevronsUpDown, Check } from 'lucide-react';
+import { Calculator, Plus, Trash2, Loader2, FileText, BookCopy, ChevronsUpDown, Check, Search } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import type { Rubrica } from '../../rubricas/page';
 import Link from 'next/link';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 
 interface Lancamento {
@@ -59,14 +60,22 @@ export default function FolhaDePagamentoPage() {
     
     const [mes, setMes] = useState<number>(new Date().getMonth() + 1);
     const [ano, setAno] = useState<number>(new Date().getFullYear());
+    const [searchTerm, setSearchTerm] = useState('');
     const [selectedFuncionarios, setSelectedFuncionarios] = useState<number[]>([]);
     const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
     const [resultados, setResultados] = useState<ResultadoFolha[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
+    const filteredFuncionarios = useMemo(() => {
+        return funcionarios.filter(f => 
+            f.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            f.cpf.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [funcionarios, searchTerm]);
+
     const handleSelectAll = (checked: boolean) => {
         if (checked) {
-            setSelectedFuncionarios(funcionarios.map(f => f.id));
+            setSelectedFuncionarios(filteredFuncionarios.map(f => f.id));
         } else {
             setSelectedFuncionarios([]);
         }
@@ -160,35 +169,48 @@ export default function FolhaDePagamentoPage() {
                 <p className="text-muted-foreground">Calcule a folha de pagamento mensal de seus funcionários.</p>
             </div>
 
-            {/* SEÇÃO 1: COMPETÊNCIA E FUNCIONÁRIOS */}
             <Card>
                 <CardHeader>
-                    <CardTitle>1. Seleção de Competência e Funcionários</CardTitle>
-                    <CardDescription>Escolha o período e os funcionários para o cálculo.</CardDescription>
+                    <CardTitle>1. Competência</CardTitle>
+                    <CardDescription>Escolha o período para o cálculo da folha.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="mes">Mês</Label>
+                        <Select value={String(mes)} onValueChange={(v) => setMes(Number(v))}>
+                            <SelectTrigger id="mes"><SelectValue /></SelectTrigger>
+                            <SelectContent>{meses.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>)}</SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="ano">Ano</Label>
+                        <Select value={String(ano)} onValueChange={(v) => setAno(Number(v))}>
+                            <SelectTrigger id="ano"><SelectValue /></SelectTrigger>
+                            <SelectContent>{anos.map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}</SelectContent>
+                        </Select>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>2. Funcionários e Lançamentos</CardTitle>
+                    <CardDescription>Selecione os funcionários e adicione proventos ou descontos.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="flex gap-4">
-                        <div className="space-y-2 w-full">
-                            <Label htmlFor="mes">Mês</Label>
-                            <Select value={String(mes)} onValueChange={(v) => setMes(Number(v))}>
-                                <SelectTrigger id="mes"><SelectValue /></SelectTrigger>
-                                <SelectContent>{meses.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>)}</SelectContent>
-                            </Select>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="Buscar funcionário por nome ou CPF..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                         </div>
-                        <div className="space-y-2 w-full">
-                            <Label htmlFor="ano">Ano</Label>
-                            <Select value={String(ano)} onValueChange={(v) => setAno(Number(v))}>
-                                <SelectTrigger id="ano"><SelectValue /></SelectTrigger>
-                                <SelectContent>{anos.map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}</SelectContent>
-                            </Select>
-                        </div>
+                        <LancadorDeRubrica onAddLancamento={handleAddLancamento} rubricas={rubricas} />
                     </div>
-                    <div className="rounded-md border max-h-64 overflow-y-auto">
+                    <div className="rounded-md border max-h-[400px] overflow-y-auto">
                         <Table>
-                            <TableHeader>
+                            <TableHeader className="sticky top-0 bg-background z-10">
                                 <TableRow>
                                     <TableHead className="w-[50px]">
-                                        <Checkbox onCheckedChange={handleSelectAll} checked={selectedFuncionarios.length === funcionarios.length && funcionarios.length > 0} />
+                                        <Checkbox onCheckedChange={handleSelectAll} checked={selectedFuncionarios.length === filteredFuncionarios.length && filteredFuncionarios.length > 0} />
                                     </TableHead>
                                     <TableHead>Nome</TableHead>
                                     <TableHead>Cargo</TableHead>
@@ -196,30 +218,21 @@ export default function FolhaDePagamentoPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {funcionarios.map(f => (
+                                {filteredFuncionarios.length > 0 ? filteredFuncionarios.map(f => (
                                     <TableRow key={f.id}>
                                         <TableCell><Checkbox checked={selectedFuncionarios.includes(f.id)} onCheckedChange={checked => setSelectedFuncionarios(prev => checked ? [...prev, f.id] : prev.filter(id => id !== f.id))} /></TableCell>
                                         <TableCell className="font-medium">{f.nome}</TableCell>
                                         <TableCell>{f.cargo}</TableCell>
                                         <TableCell className="text-right font-mono">{f.salario.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</TableCell>
                                     </TableRow>
-                                ))}
+                                )) : (
+                                    <TableRow><TableCell colSpan={4} className="h-24 text-center">Nenhum funcionário encontrado.</TableCell></TableRow>
+                                )}
                             </TableBody>
                         </Table>
                     </div>
-                </CardContent>
-            </Card>
-            
-            {/* SEÇÃO 2: LANÇAMENTOS */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>2. Lançamento de Rubricas (Proventos e Descontos)</CardTitle>
-                    <CardDescription>Adicione eventos como horas extras, comissões, faltas ou adiantamentos.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                     <LancadorDeRubrica onAddLancamento={handleAddLancamento} rubricas={rubricas} />
                      <Separator className='my-6'/>
-                     <h4 className='text-md font-medium'>Lançamentos Realizados</h4>
+                     <h4 className='text-md font-medium'>Lançamentos Manuais Realizados</h4>
                      <div className="rounded-md border max-h-72 overflow-y-auto">
                         <Table>
                             <TableHeader>
@@ -240,7 +253,7 @@ export default function FolhaDePagamentoPage() {
                                         <TableRow key={l.id}>
                                             <TableCell>{func?.nome}</TableCell>
                                             <TableCell>{rubrica?.descricao}</TableCell>
-                                            <TableCell>{rubrica?.tipo}</TableCell>
+                                            <TableCell><Badge variant={rubrica?.tipo === 'Provento' ? 'default' : 'destructive'}>{rubrica?.tipo}</Badge></TableCell>
                                             <TableCell><Input type="number" value={l.referencia || ''} onChange={e => handleLancamentoChange(l.id, 'referencia', parseFloat(e.target.value))} className='h-8 w-24'/></TableCell>
                                             <TableCell className="text-right"><Input type="number" value={l.valor} onChange={e => handleLancamentoChange(l.id, 'valor', parseFloat(e.target.value))} className='h-8 w-32 text-right'/></TableCell>
                                             <TableCell><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveLancamento(l.id)}><Trash2 className="h-4 w-4 text-destructive"/></Button></TableCell>
@@ -260,12 +273,11 @@ export default function FolhaDePagamentoPage() {
                 </CardFooter>
             </Card>
 
-            {/* SEÇÃO 3: RESULTADOS */}
             {resultados.length > 0 && (
                  <Card>
                     <CardHeader>
                         <CardTitle>3. Resultados do Cálculo</CardTitle>
-                        <CardDescription>Resumo da folha de pagamento processada.</CardDescription>
+                        <CardDescription>Resumo da folha de pagamento processada para o mês de {meses.find(m => m.value === mes)?.label} de {ano}.</CardDescription>
                     </CardHeader>
                     <CardContent>
                          <div className="rounded-md border">
@@ -275,7 +287,7 @@ export default function FolhaDePagamentoPage() {
                                         <TableHead>Funcionário</TableHead>
                                         <TableHead className="text-right">Proventos</TableHead>
                                         <TableHead className="text-right">Descontos</TableHead>
-                                        <TableHead className="text-right">Líquido</TableHead>
+                                        <TableHead className="text-right">Salário Líquido</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -310,14 +322,16 @@ function LancadorDeRubrica({ onAddLancamento, rubricas }: LancadorDeRubricaProps
     const [open, setOpen] = useState(false)
     const [value, setValue] = useState("")
  
-    const handleAddClick = () => {
-        if(value) {
-            onAddLancamento(Number(value), 'coletivo');
+    const handleSelect = (rubricaId: string) => {
+        if (rubricaId) {
+            onAddLancamento(Number(rubricaId), 'coletivo');
+            setValue(""); // Reset after adding
+            setOpen(false);
         }
-    }
+    };
 
     return (
-        <div className='flex gap-4 items-end'>
+        <div className='flex gap-4 items-center'>
             <div className='space-y-2 flex-grow'>
                 <Label>Adicionar Rubrica Coletivamente</Label>
                 <Popover open={open} onOpenChange={setOpen}>
@@ -344,11 +358,7 @@ function LancadorDeRubrica({ onAddLancamento, rubricas }: LancadorDeRubricaProps
                                     <CommandItem
                                     key={rubrica.id}
                                     value={`${rubrica.codigo} - ${rubrica.descricao}`}
-                                    onSelect={() => {
-                                        setValue(String(rubrica.id))
-                                        setOpen(false)
-                                        onAddLancamento(rubrica.id, 'coletivo');
-                                    }}
+                                    onSelect={() => handleSelect(String(rubrica.id))}
                                     >
                                     <Check
                                         className={cn(
@@ -356,7 +366,7 @@ function LancadorDeRubrica({ onAddLancamento, rubricas }: LancadorDeRubricaProps
                                         value === String(rubrica.id) ? "opacity-100" : "opacity-0"
                                         )}
                                     />
-                                    {rubrica.codigo} - {rubrica.descricao} ({rubrica.tipo})
+                                    {rubrica.codigo} - {rubrica.descricao} <Badge variant={rubrica.tipo === 'Provento' ? 'default' : 'destructive'} className="ml-auto">{rubrica.tipo}</Badge>
                                     </CommandItem>
                                 ))}
                                 </CommandGroup>
@@ -365,7 +375,7 @@ function LancadorDeRubrica({ onAddLancamento, rubricas }: LancadorDeRubricaProps
                     </PopoverContent>
                 </Popover>
             </div>
-             <Button asChild variant="outline" type="button">
+             <Button asChild variant="outline" type="button" className='self-end'>
                 <Link href="/rubricas" target="_blank">
                     <Plus className='mr-2 h-4 w-4'/> Gerenciar Rubricas
                 </Link>
@@ -373,3 +383,5 @@ function LancadorDeRubrica({ onAddLancamento, rubricas }: LancadorDeRubricaProps
         </div>
     )
 }
+
+    
