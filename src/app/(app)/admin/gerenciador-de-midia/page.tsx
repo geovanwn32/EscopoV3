@@ -184,6 +184,11 @@ function ImageEditDialog({ image, onOpenChange, onSave }: ImageEditDialogProps) 
         onSave(formData);
     };
 
+    const isFixedId = useMemo(() => {
+        if (!image || !image.id) return false;
+        return PlaceHolderImages.some(fixedImage => fixedImage.id === image.id);
+    }, [image]);
+
     return (
         <Dialog open={!!image} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-xl">
@@ -196,7 +201,8 @@ function ImageEditDialog({ image, onOpenChange, onSave }: ImageEditDialogProps) 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="id">ID da Imagem (único)</Label>
-                        <Input id="id" value={formData.id} onChange={e => handleInputChange('id', e.target.value.toLowerCase().replace(/\s+/g, '-'))} required disabled={!!image?.id && !!PlaceHolderImages.find(p => p.id === image.id)} />
+                        <Input id="id" value={formData.id} onChange={e => handleInputChange('id', e.target.value.toLowerCase().replace(/\s+/g, '-'))} required disabled={isFixedId} />
+                         {isFixedId && <p className="text-xs text-muted-foreground">O ID de imagens padrão não pode ser alterado.</p>}
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="description">Descrição (alt text)</Label>
@@ -237,3 +243,5 @@ function ImageEditDialog({ image, onOpenChange, onSave }: ImageEditDialogProps) 
         </Dialog>
     )
 }
+
+    
