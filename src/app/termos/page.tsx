@@ -12,7 +12,7 @@ export default function TermosPage() {
                         <span className="font-bold text-2xl">EscopoV3</span>
                     </Link>
                     <h1 className="text-4xl font-bold tracking-tight font-headline">Termos de Serviço</h1>
-                    <p className="mt-2 text-lg text-muted-foreground">Última atualização: 24 de julho de 2024</p>
+                    <p className="mt-2 text-lg text-muted-foreground">Última atualização: 05 de dezembro de 2025</p>
                 </div>
 
                 <Card className="shadow-lg">
