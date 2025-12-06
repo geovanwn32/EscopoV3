@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useLocalStorage } from '@/hooks/use-company';
 import { PlaceHolderImages, type ImagePlaceholder } from '@/lib/placeholder-images';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
