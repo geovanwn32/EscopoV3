@@ -1,17 +1,17 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Mail, Lock, Eye, EyeOff, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/firebase';
-import { sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
+import { setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signInWithGoogle, signUpWithEmail, signInWithEmail } from '@/firebase/auth/auth';
@@ -20,6 +20,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { useCompany } from '@/hooks/use-company';
+import { Label } from '@/components/ui/label';
+
 
 interface User {
     id: number;
@@ -76,7 +78,6 @@ export default function LoginForm() {
   const { toast } = useToast();
   const auth = useAuth();
   const { useScopedData } = useCompany();
-  // We use the global storage for users, not a scoped one
   const [, setUsers] = useScopedData<User[]>('global-users', []);
 
   const [isSignUp, setIsSignUp] = useState(false);
@@ -159,10 +160,8 @@ export default function LoginForm() {
         statusLicenca: 'Ativa'
       };
 
-      // Save user to the global list, not scoped to any company
       setUsers(prev => [...prev, newUser]);
       
-      // Sign out immediately, user needs admin approval.
       await auth.signOut();
       
       toast({
