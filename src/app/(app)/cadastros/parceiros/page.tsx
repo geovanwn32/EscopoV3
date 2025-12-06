@@ -25,7 +25,7 @@ import { collection, doc, addDoc, updateDoc, deleteDoc, query } from 'firebase/f
 
 export default function ParceirosPage() {
     const { toast } = useToast();
-    const { currentCompany } = useCompany();
+    const { currentCompany, useScopedData } = useCompany();
     const firestore = useFirestore();
 
     const partnersQuery = useMemoFirebase(() => {
@@ -33,9 +33,9 @@ export default function ParceirosPage() {
         return query(collection(firestore, "empresas", String(currentCompany), "parceiros"));
     }, [firestore, currentCompany]);
 
-    const { data: partners, isLoading: isLoadingPartners } = useCollection<Partner>(partnersQuery);
+    const { data: partners, isLoading: isLoadingPartners } = useCollection<Partner>(partnersQuery as any);
     
-    const [auditLogs, setAuditLogs] = useLocalStorage<AuditLog[]>('audit-trail-logs', []);
+    const [, setAuditLogs] = useScopedData<AuditLog[]>('audit-trail-logs', []);
 
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -44,9 +44,8 @@ export default function ParceirosPage() {
     const [isReadOnly, setIsReadOnly] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     
-    const handleSavePartner = async (partnerData: Omit<Partner, 'id'>) => {
+    const handleSavePartner = async (partnerData: Omit<Partner, 'id' | 'empresaId'>) => {
         if (!currentCompany) return;
-        const partnersCollection = collection(firestore, "empresas", String(currentCompany), "parceiros");
         
         try {
             if (editingPartner) {
@@ -60,7 +59,8 @@ export default function ParceirosPage() {
                 logAudit(setAuditLogs, 'UPDATE', 'Parceiros', `Atualizou o parceiro "${partnerData.name}".`);
             } else {
                 // Add new partner
-                await addDoc(partnersCollection, partnerData);
+                const partnersCollection = collection(firestore, "empresas", String(currentCompany), "parceiros");
+                await addDoc(partnersCollection, { ...partnerData, empresaId: String(currentCompany) });
                 toast({
                     title: "Parceiro Salvo!",
                     description: `O parceiro ${partnerData.name} foi adicionado com sucesso.`
@@ -273,7 +273,7 @@ export default function ParceirosPage() {
 }
 
 interface PartnerFormProps {
-    onSave: (partner: Omit<Partner, 'id'>) => void;
+    onSave: (partner: Omit<Partner, 'id' | 'empresaId'>) => void;
     onOpenChange: (open: boolean) => void;
     partner: Partner | null;
     isReadOnly: boolean;
@@ -282,9 +282,7 @@ interface PartnerFormProps {
 
 function PartnerForm({ onSave, onOpenChange, partner, isReadOnly, partners }: PartnerFormProps) {
     const { toast } = useToast();
-    const { currentCompany } = useCompany();
-    const firestore = useFirestore();
-
+    
     const [personType, setPersonType] = useState<PersonType>('JURIDICA');
     const [document, setDocument] = useState('');
     const [name, setName] = useState('');
@@ -410,15 +408,15 @@ function PartnerForm({ onSave, onOpenChange, partner, isReadOnly, partners }: Pa
         if (personType === 'JURIDICA') {
             let formatted = onlyNumbers;
             if (formatted.length > 2) formatted = `${formatted.slice(0, 2)}.${formatted.slice(2)}`;
-            if (formatted.length > 6) formatted = `${formatted.slice(0, 6)}.${formatted.slice(6)}`;
-            if (formatted.length > 10) formatted = `${formatted.slice(0, 10)}/${formatted.slice(10)}`;
-            if (formatted.length > 15) formatted = `${formatted.slice(0, 15)}-${formatted.slice(15)}`;
+            if (formatted.length > 5) formatted = `${formatted.slice(0, 5)}.${formatted.slice(5)}`;
+            if (formatted.length > 8) formatted = `${formatted.slice(0, 8)}/${formatted.slice(8)}`;
+            if (formatted.length > 12) formatted = `${formatted.slice(0, 12)}-${formatted.slice(12)}`;
             setDocument(formatted.slice(0, 18));
         } else { // FISICA
              let formatted = onlyNumbers;
             if (formatted.length > 3) formatted = `${formatted.slice(0, 3)}.${formatted.slice(3)}`;
-            if (formatted.length > 7) formatted = `${formatted.slice(0, 7)}.${formatted.slice(7)}`;
-            if (formatted.length > 11) formatted = `${formatted.slice(0, 11)}-${formatted.slice(11)}`;
+            if (formatted.length > 6) formatted = `${formatted.slice(0, 6)}.${formatted.slice(6)}`;
+            if (formatted.length > 9) formatted = `${formatted.slice(0, 9)}-${formatted.slice(9)}`;
             setDocument(formatted.slice(0, 14));
         }
     }
@@ -553,3 +551,5 @@ function PartnerForm({ onSave, onOpenChange, partner, isReadOnly, partners }: Pa
         </DialogContent>
     );
 }
+
+    
