@@ -256,60 +256,69 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
         <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
                 <DialogTitle>{item ? 'Editar' : 'Nova'} Rubrica</DialogTitle>
-                <DialogDescription>Preencha os dados e incidências da rubrica.</DialogDescription>
+                <DialogDescription>Preencha os dados e incidências da rubrica para eSocial e cálculos internos.</DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="codigo">Código *</Label>
-                        <Input id="codigo" value={formData.codigo} onChange={(e) => setFormData(p => ({ ...p, codigo: e.target.value }))} required />
-                    </div>
-                     <div className="space-y-2 col-span-2">
-                        <Label htmlFor="descricao">Descrição *</Label>
-                        <Input id="descricao" value={formData.descricao} onChange={(e) => setFormData(p => ({ ...p, descricao: e.target.value }))} required />
+            <form onSubmit={handleSubmit} className="space-y-6 pt-4">
+                
+                <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-primary">1. Identificação da Rubrica</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="codigo">Código (eSocial) *</Label>
+                            <Input id="codigo" value={formData.codigo} onChange={(e) => setFormData(p => ({ ...p, codigo: e.target.value }))} required placeholder="Ex: 1000"/>
+                        </div>
+                        <div className="space-y-2 col-span-2">
+                            <Label htmlFor="descricao">Descrição *</Label>
+                            <Input id="descricao" value={formData.descricao} onChange={(e) => setFormData(p => ({ ...p, descricao: e.target.value }))} required placeholder="Ex: Salário Base Mensal"/>
+                        </div>
                     </div>
                 </div>
 
-                <div className="space-y-2">
-                    <Label htmlFor="tipo">Tipo de Rubrica</Label>
-                     <Select value={formData.tipo} onValueChange={(v) => setFormData(p => ({ ...p, tipo: v as any }))}>
-                        <SelectTrigger id="tipo">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="Provento">Provento</SelectItem>
-                            <SelectItem value="Desconto">Desconto</SelectItem>
-                            <SelectItem value="Informativa">Base de Cálculo / Informativa</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-                
                 <Separator />
 
-                <div className="space-y-3">
-                    <Label>Incidências da Rubrica</Label>
-                    <p className="text-sm text-muted-foreground">Marque sobre quais bases esta rubrica deve incidir.</p>
+                 <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-primary">2. Natureza e Tipo</h3>
+                    <div className="space-y-2">
+                        <Label htmlFor="tipo">Tipo da Rubrica</Label>
+                        <Select value={formData.tipo} onValueChange={(v) => setFormData(p => ({ ...p, tipo: v as any }))}>
+                            <SelectTrigger id="tipo">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Provento">Provento</SelectItem>
+                                <SelectItem value="Desconto">Desconto</SelectItem>
+                                <SelectItem value="Informativa">Base de Cálculo / Informativa</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-primary">3. Incidências Tributárias</h3>
+                    <p className="text-sm text-muted-foreground">Marque sobre quais bases esta rubrica deve incidir para o cálculo de tributos.</p>
                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 rounded-md border p-4">
                         <div className="flex items-center space-x-2">
                             <Checkbox id="inc-inss" checked={formData.incidencias.inss} onCheckedChange={(c) => handleIncidenciaChange('inss', !!c)} />
-                            <Label htmlFor="inc-inss">INSS</Label>
+                            <Label htmlFor="inc-inss" className="font-normal">INSS</Label>
                         </div>
                          <div className="flex items-center space-x-2">
                             <Checkbox id="inc-irrf" checked={formData.incidencias.irrf} onCheckedChange={(c) => handleIncidenciaChange('irrf', !!c)} />
-                            <Label htmlFor="inc-irrf">IRRF</Label>
+                            <Label htmlFor="inc-irrf" className="font-normal">IRRF</Label>
                         </div>
                          <div className="flex items-center space-x-2">
                             <Checkbox id="inc-fgts" checked={formData.incidencias.fgts} onCheckedChange={(c) => handleIncidenciaChange('fgts', !!c)} />
-                            <Label htmlFor="inc-fgts">FGTS</Label>
+                            <Label htmlFor="inc-fgts" className="font-normal">FGTS</Label>
                         </div>
                          <div className="flex items-center space-x-2">
                             <Checkbox id="inc-sindical" checked={formData.incidencias.contribuicaoSindical} onCheckedChange={(c) => handleIncidenciaChange('contribuicaoSindical', !!c)} />
-                            <Label htmlFor="inc-sindical">Contrib. Sindical</Label>
+                            <Label htmlFor="inc-sindical" className="font-normal">Contrib. Sindical</Label>
                         </div>
                     </div>
                 </div>
 
-                <DialogFooter>
+                <DialogFooter className="pt-4">
                     <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
                     <Button type="submit">Salvar</Button>
                 </DialogFooter>
