@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
-import { useCompany, useLocalStorage } from '@/hooks/use-company';
+import { useLocalStorage } from '@/hooks/use-company';
 import { Label } from '@/components/ui/label';
 
 
