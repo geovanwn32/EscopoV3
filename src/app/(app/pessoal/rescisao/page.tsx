@@ -117,7 +117,7 @@ export default function RescisaoPage() {
             deducoes.push({ descricao: 'INSS sobre Verbas Rescisórias', valor: valorINSS });
 
             const baseIRRF = verbasRescisorias.reduce((acc, v) => acc + v.valor, 0) - valorINSS;
-            const valorIRRF = getContribuicaoIRRF(baseIRRF, selectedFuncionario.dependente_count || 0);
+            const valorIRRF = getContribuicaoIRRF(baseIRRF, selectedFuncionario.dependentes?.length || 0);
              if (valorIRRF > 0) {
                 deducoes.push({ descricao: 'IRRF na Fonte', valor: valorIRRF });
             }
