@@ -11,15 +11,17 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useCompany, useLocalStorage, type Company } from '@/hooks/use-company';
+import { useCompany, type Company } from '@/hooks/use-company';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { AuditLog, logAudit } from '@/lib/audit-log';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore, useCollection } from '@/firebase';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { collection, doc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { useCompanyUsers } from '@/hooks/use-company-users';
 
 const modules = [
     { id: 'dashboard', label: 'Dashboard' },
@@ -37,27 +39,30 @@ interface UserPermissions {
 }
 
 interface User {
-    id: number;
+    id: string;
+    uid?: string;
     name: string;
     email: string;
     isAdmin: boolean;
     isMaster?: boolean;
     permissions: UserPermissions;
-    allowedCompanyIds: number[];
+    allowedCompanyIds: string[];
     password?: string;
     status: 'Ativo' | 'Inativo' | 'Pendente';
     planoId?: 'Gratuito' | 'Basico' | 'Profissional' | 'Empresarial';
     statusLicenca?: 'Ativa' | 'Inadimplente' | 'Cancelada' | 'Expirada';
+    photoURL?: string;
 }
+
 
 export default function UsuariosPage() {
     const { toast } = useToast();
-    const { companies } = useCompany();
-    const [users, setUsers] = useLocalStorage<User[]>('global-users', []);
-    const [, setAuditLogs] = useLocalStorage<AuditLog[]>('audit-trail-logs', []);
-    
+    const { companies, currentCompany: currentCompanyId } = useCompany();
+    const firestore = useFirestore();
     const { user: firebaseUser } = useUser();
-    
+
+    const { users, setUsers } = useCompanyUsers(currentCompanyId);
+
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<User | null>(null);
     const [editingItem, setEditingItem] = useState<User | null>(null);
@@ -66,44 +71,53 @@ export default function UsuariosPage() {
 
 
     useEffect(() => {
-        if (firebaseUser) {
-            const profileString = sessionStorage.getItem('user-profile');
-            if (profileString) {
-                try {
-                    setActiveProfile(JSON.parse(profileString));
-                } catch (e) { console.error("Failed to parse profile", e); }
-            }
+        if (firebaseUser && users) {
+           const profile = users.find(u => u.uid === firebaseUser.uid);
+           if (profile) {
+             setActiveProfile(profile);
+           }
         }
-    }, [firebaseUser]);
+    }, [firebaseUser, users]);
 
-    const handleSave = (itemData: Omit<User, 'id'>) => {
+    const handleSave = async (itemData: Omit<User, 'id'>) => {
+        if (!currentCompanyId) {
+            toast({ variant: 'destructive', title: 'Erro', description: 'Nenhuma empresa ativa selecionada.' });
+            return;
+        }
+
         const action = editingItem ? 'UPDATE' : 'CREATE';
         let logDetails = '';
 
-        if (editingItem) {
-            const originalUser = users.find(u => u.id === editingItem.id);
-            const updatedUser = { ...editingItem, ...itemData };
-            if (!itemData.password) {
-                delete updatedUser.password;
+        try {
+            if (editingItem) {
+                const updatedUser = { ...editingItem, ...itemData };
+                 if (!itemData.password) {
+                    delete updatedUser.password;
+                }
+
+                const userDocRef = doc(firestore, "empresas", String(currentCompanyId), "usuarios", editingItem.id);
+                await updateDoc(userDocRef, updatedUser);
+
+                toast({ title: "Usuário Atualizado!", description: "Os dados do usuário foram atualizados." });
+                logDetails = `Atualizou o usuário "${itemData.name}".`;
+
+            } else {
+                const newId = String(Date.now());
+                const newItem: User = { ...itemData, id: newId };
+                const userDocRef = doc(firestore, "empresas", String(currentCompanyId), "usuarios", newId);
+                await setDoc(userDocRef, newItem);
+                
+                toast({ title: "Usuário Adicionado!", description: "Um novo usuário foi convidado para a empresa." });
+                logDetails = `Criou o usuário "${itemData.name}" (${itemData.email}).`;
             }
-            
-            setUsers(prev => prev.map(user => user.id === editingItem.id ? updatedUser : user));
-            toast({ title: "Usuário Atualizado!", description: "Os dados do usuário foram atualizados." });
 
-            logDetails = `Atualizou o usuário "${itemData.name}".`;
+            // logAudit(setAuditLogs, action, 'Usuários', logDetails);
 
-            if (originalUser && !originalUser.isMaster && updatedUser.isMaster) {
-                logAudit(setAuditLogs, 'UPDATE', 'Usuários', `O usuário "${itemData.name}" tornou-se Master.`);
-            }
-
-        } else {
-            const newItem: User = { ...itemData, id: Date.now() };
-            setUsers(prev => [...prev, newItem]);
-            toast({ title: "Usuário Adicionado!", description: "Um novo usuário foi convidado para a empresa." });
-            logDetails = `Criou o usuário "${itemData.name}" (${itemData.email}).`;
+        } catch(e: any) {
+            console.error("Error saving user: ", e);
+            toast({ variant: 'destructive', title: 'Erro ao salvar', description: e.message });
         }
 
-        logAudit(setAuditLogs, action, 'Usuários', logDetails);
 
         setIsDialogOpen(false);
         setEditingItem(null);
@@ -119,7 +133,7 @@ export default function UsuariosPage() {
             });
             return;
         }
-        if (item.isAdmin && users.filter(u => u.isAdmin && !u.isMaster).length <= 1 && users.some(u => u.isMaster)) {
+        if (item.isAdmin && users && users.filter(u => u.isAdmin && !u.isMaster).length <= 1 && users.some(u => u.isMaster)) {
              toast({
                 variant: 'destructive',
                 title: 'Ação não permitida',
@@ -130,11 +144,17 @@ export default function UsuariosPage() {
         setItemToDelete(item);
     };
 
-    const handleConfirmDelete = () => {
-        if (itemToDelete) {
-            setUsers(prev => prev.filter(i => i.id !== itemToDelete.id));
-            toast({ variant: "destructive", title: "Usuário Removido!", description: `O acesso do usuário foi removido.` });
-            logAudit(setAuditLogs, 'DELETE', 'Usuários', `Removeu o usuário "${itemToDelete.name}".`);
+    const handleConfirmDelete = async () => {
+        if (itemToDelete && currentCompanyId) {
+            try {
+                const userDocRef = doc(firestore, "empresas", String(currentCompanyId), "usuarios", itemToDelete.id);
+                await deleteDoc(userDocRef);
+                toast({ variant: "destructive", title: "Usuário Removido!", description: `O acesso do usuário foi removido.` });
+                // logAudit(setAuditLogs, 'DELETE', 'Usuários', `Removeu o usuário "${itemToDelete.name}".`);
+            } catch (e: any) {
+                console.error("Error deleting user: ", e);
+                toast({ variant: 'destructive', title: 'Erro ao remover', description: e.message });
+            }
             setItemToDelete(null);
         }
     };
@@ -149,20 +169,25 @@ export default function UsuariosPage() {
         setIsDialogOpen(true);
     }
     
-    const handleMyProfileSave = (newPassword: string) => {
-        if (!activeProfile) return;
+    const handleMyProfileSave = async (newPassword: string) => {
+        if (!activeProfile || !currentCompanyId) return;
 
         const updatedProfile = { ...activeProfile, password: newPassword };
-        setUsers(prev => prev.map(u => u.id === activeProfile.id ? updatedProfile : u));
 
-        sessionStorage.setItem('user-profile', JSON.stringify(updatedProfile));
-
-        toast({ title: "Senha Atualizada!", description: "Sua senha de acesso foi alterada com sucesso." });
-        logAudit(setAuditLogs, 'UPDATE', 'Meu Perfil', 'Alterou a própria senha.');
+        try {
+            const userDocRef = doc(firestore, "empresas", String(currentCompanyId), "usuarios", activeProfile.id);
+            await updateDoc(userDocRef, updatedProfile);
+            toast({ title: "Senha Atualizada!", description: "Sua senha de acesso foi alterada com sucesso." });
+            // logAudit(setAuditLogs, 'UPDATE', 'Meu Perfil', 'Alterou a própria senha.');
+        } catch (e: any) {
+            console.error("Error updating password: ", e);
+            toast({ variant: 'destructive', title: 'Erro ao atualizar', description: e.message });
+        }
     };
 
 
     const filteredItems = useMemo(() => {
+        if (!users) return [];
         return users.filter(item =>
             item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             item.email.toLowerCase().includes(searchTerm.toLowerCase())
@@ -232,7 +257,7 @@ export default function UsuariosPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <CardTitle>Usuários</CardTitle>
-                                <CardDescription>{users.length} usuários encontrados.</CardDescription>
+                                <CardDescription>{users?.length || 0} usuários encontrados.</CardDescription>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="relative flex-grow">
@@ -247,7 +272,7 @@ export default function UsuariosPage() {
                                         onSave={handleSave} 
                                         onOpenChange={setIsDialogOpen}
                                         item={editingItem}
-                                        users={users}
+                                        users={users || []}
                                         activeProfile={activeProfile}
                                         allCompanies={companies}
                                     />
@@ -387,7 +412,7 @@ function ItemForm({ onSave, onOpenChange, item, users, activeProfile, allCompani
         setFormData(prev => ({ ...prev, [field]: value }));
     };
     
-    const handleCompanyAccessChange = (companyId: number, isChecked: boolean) => {
+    const handleCompanyAccessChange = (companyId: string, isChecked: boolean) => {
         setFormData(prev => {
             const currentIds = prev.allowedCompanyIds || [];
             if (isChecked) {
@@ -438,7 +463,7 @@ function ItemForm({ onSave, onOpenChange, item, users, activeProfile, allCompani
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="password">{item ? 'Nova Senha' : 'Senha'}</Label>
-                    <Input id="password" type="password" value={formData.password} onChange={(e) => handleInputChange('password', e.target.value)} placeholder={item ? "Deixe em branco para não alterar" : "Senha de acesso"} required={!item}/>
+                    <Input id="password" type="password" value={formData.password} onChange={(e) => handleInputChange('password', e.target.value as any)} placeholder={item ? "Deixe em branco para não alterar" : "Senha de acesso"} required={!item}/>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -477,8 +502,8 @@ function ItemForm({ onSave, onOpenChange, item, users, activeProfile, allCompani
                                 <div key={company.id} className="flex items-center space-x-2">
                                     <Checkbox
                                         id={`company-${company.id}`}
-                                        checked={formData.allowedCompanyIds?.includes(company.id)}
-                                        onCheckedChange={(checked) => handleCompanyAccessChange(company.id, !!checked)}
+                                        checked={formData.allowedCompanyIds?.includes(String(company.id))}
+                                        onCheckedChange={(checked) => handleCompanyAccessChange(String(company.id), !!checked)}
                                     />
                                     <label htmlFor={`company-${company.id}`} className="text-sm font-medium leading-none">
                                         {company.name}
@@ -500,7 +525,7 @@ function ItemForm({ onSave, onOpenChange, item, users, activeProfile, allCompani
                         </div>
                         <Switch
                             id="isMasterSwitch"
-                            checked={formData.isMaster}
+                            checked={!!formData.isMaster}
                             onCheckedChange={(checked) => handleInputChange('isMaster', checked)}
                             disabled={otherMasterExists}
                         />
