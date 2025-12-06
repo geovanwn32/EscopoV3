@@ -1,33 +1,25 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Mail, Lock, Eye, EyeOff, Loader2, Phone, User as UserIcon } from 'lucide-react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/firebase';
+import { sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { setPersistence, browserLocalPersistence, browserSessionPersistence } from "firebase/auth";
-import { useAuth } from '@/firebase/provider';
 import { signInWithGoogle, signUpWithEmail, signInWithEmail } from '@/firebase/auth/auth';
-import { useToast } from "@/hooks/use-toast";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useCompany } from '@/hooks/use-company';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
+import { useCompany } from '@/hooks/use-company';
 
 interface User {
     id: number;
@@ -84,6 +76,7 @@ export default function LoginForm() {
   const { toast } = useToast();
   const auth = useAuth();
   const { useScopedData } = useCompany();
+  // We use the global storage for users, not a scoped one
   const [, setUsers] = useScopedData<User[]>('global-users', []);
 
   const [isSignUp, setIsSignUp] = useState(false);
@@ -125,9 +118,9 @@ export default function LoginForm() {
       await signInWithEmail(auth, data.email, data.password);
       toast({
         title: "Login bem-sucedido!",
-        description: "Você será redirecionado para a seleção de empresa.",
+        description: "Você será redirecionado para a seleção de perfil.",
       });
-      router.push('/selecionar-empresa');
+      router.push('/selecionar-perfil');
     } catch (error: any) {
       console.error("Login failed:", error);
       let errorMessage = "Ocorreu um erro desconhecido.";
@@ -155,6 +148,7 @@ export default function LoginForm() {
         uid: user.uid,
         name: data.fullName,
         email: data.email,
+        password: data.password, // Storing password for local-only auth
         isAdmin: false,
         isMaster: false,
         permissions: {},
@@ -165,10 +159,12 @@ export default function LoginForm() {
         statusLicenca: 'Ativa'
       };
 
+      // Save user to the global list, not scoped to any company
       setUsers(prev => [...prev, newUser]);
-
+      
+      // Sign out immediately, user needs admin approval.
       await auth.signOut();
-
+      
       toast({
         title: "Solicitação de Cadastro Enviada!",
         description: "Sua conta foi criada e está pendente de aprovação por um administrador.",
@@ -176,8 +172,7 @@ export default function LoginForm() {
 
       router.push('/pending');
 
-    } catch (error: any)
-       {
+    } catch (error: any) {
       console.error("Signup failed:", error);
       let errorMessage = "Não foi possível criar sua conta. Por favor, tente novamente.";
       if (error.code === 'auth/email-already-in-use') {
@@ -335,7 +330,7 @@ export default function LoginForm() {
                         </FormControl>
                         <div className="space-y-1 leading-none">
                             <FormLabel>
-                            Eu aceito os <a href="/termos" className="underline">termos e condições</a>
+                            Eu aceito os <Link href="/termos" className="underline" target="_blank">termos e condições</Link>
                             </FormLabel>
                             <FormMessage />
                         </div>
@@ -423,7 +418,7 @@ export default function LoginForm() {
                     <FormControl>
                         <Checkbox id="remember" checked={field.value} onCheckedChange={field.onChange} />
                     </FormControl>
-                    <Label htmlFor="remember" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                     <Label htmlFor="remember" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                         Lembrar-me
                     </Label>
                 </FormItem>

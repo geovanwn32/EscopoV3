@@ -1,5 +1,3 @@
-
-
 'use client';
 import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -95,7 +93,11 @@ export default function AdminPage() {
         .sort((a, b) => {
             if (a.status === 'Pendente' && b.status !== 'Pendente') return -1;
             if (a.status !== 'Pendente' && b.status === 'Pendente') return 1;
-            return new Date(b.creationDate || 0).getTime() - new Date(a.creationDate || 0).getTime();
+            // Fallback sort, could be by date or name
+            if(a.creationDate && b.creationDate) {
+              return new Date(b.creationDate).getTime() - new Date(a.creationDate).getTime();
+            }
+            return a.name.localeCompare(b.name);
         });
     }, [users, searchTerm]);
     
@@ -557,13 +559,4 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
         </Dialog>
     );
 }
-    
-
-    
-
-    
-
-    
-
-
     
