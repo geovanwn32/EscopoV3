@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useCompany, useLocalStorage } from '@/hooks/use-company';
+import { useCompany, useLocalStorage, type Company } from '@/hooks/use-company';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -52,7 +52,7 @@ interface User {
 
 export default function UsuariosPage() {
     const { toast } = useToast();
-    const { companies, currentCompany } = useCompany();
+    const { companies } = useCompany();
     const [users, setUsers] = useLocalStorage<User[]>('global-users', []);
     const [, setAuditLogs] = useLocalStorage<AuditLog[]>('audit-trail-logs', []);
     
@@ -249,6 +249,7 @@ export default function UsuariosPage() {
                                         item={editingItem}
                                         users={users}
                                         activeProfile={activeProfile}
+                                        allCompanies={companies}
                                     />
                                 </Dialog>
                             </div>
@@ -330,6 +331,7 @@ interface ItemFormProps {
     item: User | null;
     users: User[];
     activeProfile: User;
+    allCompanies: Company[];
 }
 
 const initialPermissions = modules.reduce((acc, module) => {
@@ -350,7 +352,7 @@ const initialFormState: Omit<User, 'id'> = {
     statusLicenca: 'Ativa'
 };
 
-function ItemForm({ onSave, onOpenChange, item, users, activeProfile }: ItemFormProps) {
+function ItemForm({ onSave, onOpenChange, item, users, activeProfile, allCompanies }: ItemFormProps) {
     const { toast } = useToast();
     const [formData, setFormData] = useState(initialFormState);
 
@@ -385,6 +387,17 @@ function ItemForm({ onSave, onOpenChange, item, users, activeProfile }: ItemForm
         setFormData(prev => ({ ...prev, [field]: value }));
     };
     
+    const handleCompanyAccessChange = (companyId: number, isChecked: boolean) => {
+        setFormData(prev => {
+            const currentIds = prev.allowedCompanyIds || [];
+            if (isChecked) {
+                return { ...prev, allowedCompanyIds: [...currentIds, companyId] };
+            } else {
+                return { ...prev, allowedCompanyIds: currentIds.filter(id => id !== companyId) };
+            }
+        });
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.name || !formData.email) {
@@ -455,6 +468,28 @@ function ItemForm({ onSave, onOpenChange, item, users, activeProfile }: ItemForm
                 </div>
 
                 <Separator />
+
+                {!formData.isAdmin && !formData.isMaster && (
+                    <div className="space-y-3">
+                        <Label className="flex items-center"><Building className="mr-2 h-4 w-4" /> Acesso às Empresas</Label>
+                        <div className="max-h-32 overflow-y-auto space-y-2 rounded-md border p-2">
+                            {allCompanies.map(company => (
+                                <div key={company.id} className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id={`company-${company.id}`}
+                                        checked={formData.allowedCompanyIds?.includes(company.id)}
+                                        onCheckedChange={(checked) => handleCompanyAccessChange(company.id, !!checked)}
+                                    />
+                                    <label htmlFor={`company-${company.id}`} className="text-sm font-medium leading-none">
+                                        {company.name}
+                                    </label>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+
                 {activeProfile.isAdmin && isEditingSelf && (
                      <div className="space-y-2 flex items-center justify-between rounded-lg border p-3 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-900">
                         <div className='space-y-0.5'>

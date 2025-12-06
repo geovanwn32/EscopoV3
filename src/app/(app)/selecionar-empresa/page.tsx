@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -207,15 +208,17 @@ export default function SelecionarEmpresaPage() {
                         <CardHeader>
                             <CardTitle>Nenhuma Empresa Cadastrada</CardTitle>
                             <CardDescription>
-                                Você precisa cadastrar sua primeira empresa para continuar.
+                                {activeProfile?.isAdmin ? 'Você precisa cadastrar sua primeira empresa para continuar.' : 'Nenhuma empresa foi associada ao seu perfil. Contate um administrador.'}
                             </CardDescription>
                         </CardHeader>
-                        <CardContent>
-                            <Button onClick={handleAddNewCompany}>
-                                <PlusCircle className="mr-2 h-4 w-4" />
-                                Cadastrar Primeira Empresa
-                            </Button>
-                        </CardContent>
+                        {activeProfile?.isAdmin && (
+                            <CardContent>
+                                <Button onClick={handleAddNewCompany}>
+                                    <PlusCircle className="mr-2 h-4 w-4" />
+                                    Cadastrar Primeira Empresa
+                                </Button>
+                            </CardContent>
+                        )}
                     </Card>
                 </div>
                 )}
@@ -360,3 +363,4 @@ function CompanyForm({ onSave, onCancel }: CompanyFormProps) {
     </DialogContent>
   );
 }
+
