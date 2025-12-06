@@ -29,13 +29,6 @@ const allCadastroItens = [
         color: "text-amber-600 bg-amber-100/80 group-hover:bg-amber-600 dark:bg-amber-900/40 dark:text-amber-400 dark:group-hover:bg-amber-500",
     },
     {
-        href: '/funcionarios',
-        icon: <Users className="h-8 w-8" />,
-        label: 'Funcionários',
-        description: 'Gerencie os dados dos seus colaboradores.',
-        color: "text-red-600 bg-red-100/80 group-hover:bg-red-600 dark:bg-red-900/40 dark:text-red-400 dark:group-hover:bg-red-500",
-    },
-    {
         href: '/socios',
         icon: <Users className="h-8 w-8" />,
         label: 'Sócios',

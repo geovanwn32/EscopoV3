@@ -39,13 +39,6 @@ const calculators = [
         description: 'Calcule o Recibo de Pagamento de Autônomo ou pró-labore.',
         color: "text-indigo-600 bg-indigo-100/80 group-hover:bg-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400 dark:group-hover:bg-indigo-500",
     },
-    {
-        href: '/funcionarios',
-        icon: <Briefcase className="h-8 w-8" />,
-        label: 'Funcionários',
-        description: 'Gerencie os dados dos seus colaboradores.',
-        color: "text-slate-600 bg-slate-100/80 group-hover:bg-slate-600 dark:bg-slate-700/40 dark:text-slate-400 dark:group-hover:bg-slate-500",
-    },
 ]
 
 export default function PessoalPage() {
