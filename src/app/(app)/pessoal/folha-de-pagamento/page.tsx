@@ -11,7 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useCompany } from '@/hooks/use-company';
 import { Funcionario } from '@/types/pessoal';
 import { useToast } from '@/hooks/use-toast';
-import { Calculator, Plus, Trash2, Loader2, FileText, BookCopy, ChevronsUpDown, Check, Search } from 'lucide-react';
+import { Calculator, Plus, Trash2, Loader2, FileText, BookCopy, ChevronsUpDown, Check, Search, ArrowLeft } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import type { Rubrica } from '../../rubricas/page';
 import Link from 'next/link';
@@ -19,6 +19,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 
 interface Lancamento {
@@ -39,6 +41,13 @@ interface ResultadoFolha {
   valorINSS: number;
   baseIRRF: number;
   valorIRRF: number;
+  baseFGTS: number;
+  valorFGTS: number;
+  detalhes: {
+    rubrica: string;
+    tipo: 'Provento' | 'Desconto';
+    valor: number;
+  }[];
 }
 
 
@@ -51,10 +60,33 @@ const meses = [
 
 const anos = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i);
 
+// --- FUNÇÕES DE CÁLCULO DE IMPOSTOS ---
+
+// Tabela INSS (Exemplo 2024 - substitua se necessário)
+const getContribuicaoINSS = (baseCalculo: number) => {
+    if (baseCalculo <= 1412.00) return baseCalculo * 0.075;
+    if (baseCalculo <= 2666.68) return (baseCalculo * 0.09) - 21.18;
+    if (baseCalculo <= 4000.03) return (baseCalculo * 0.12) - 101.18;
+    if (baseCalculo <= 7786.02) return (baseCalculo * 0.14) - 181.18;
+    return 908.85; // Teto de contribuição
+};
+
+// Tabela IRRF (Exemplo 2024 - substitua se necessário)
+const getContribuicaoIRRF = (baseCalculo: number, numDependentes: number) => {
+    const deducaoPorDependente = 189.59;
+    const baseAjustada = baseCalculo - (numDependentes * deducaoPorDependente);
+
+    if (baseAjustada <= 2259.20) return 0;
+    if (baseAjustada <= 2826.65) return (baseAjustada * 0.075) - 169.44;
+    if (baseAjustada <= 3751.05) return (baseAjustada * 0.15) - 381.44;
+    if (baseAjustada <= 4664.68) return (baseAjustada * 0.225) - 662.77;
+    return (baseAjustada * 0.275) - 896.00;
+};
+
 
 export default function FolhaDePagamentoPage() {
     const { toast } = useToast();
-    const { useScopedData } = useCompany();
+    const { useScopedData, companies, currentCompany } = useCompany();
     const [funcionarios] = useScopedData<Funcionario[]>('cadastros-funcionarios', []);
     const [rubricas] = useScopedData<Rubrica[]>('cadastros-rubricas', []);
     
@@ -65,6 +97,8 @@ export default function FolhaDePagamentoPage() {
     const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
     const [resultados, setResultados] = useState<ResultadoFolha[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+
+    const activeCompany = useMemo(() => companies.find(c => c.id === currentCompany), [companies, currentCompany]);
 
     const filteredFuncionarios = useMemo(() => {
         return funcionarios.filter(f => 
@@ -116,43 +150,57 @@ export default function FolhaDePagamentoPage() {
         }
 
         setIsLoading(true);
-        // Simulação de cálculo
         setTimeout(() => {
             const novosResultados = selectedFuncionarios.map(funcId => {
                 const funcionario = funcionarios.find(f => f.id === funcId);
                 if (!funcionario) return null;
 
-                const salarioBase = funcionario.salario;
                 const lancamentosFunc = lancamentos.filter(l => l.funcionarioId === funcId);
 
-                const totalProventos = salarioBase + lancamentosFunc.reduce((acc, l) => {
-                    const rubrica = rubricas.find(r => r.id === l.rubricaId);
-                    return rubrica?.tipo === 'Provento' ? acc + l.valor : acc;
-                }, 0);
+                const getValorRubrica = (tipo: 'Provento' | 'Desconto', incidePara?: keyof Rubrica['incidencias']) => {
+                    return lancamentosFunc.reduce((acc, l) => {
+                        const rubrica = rubricas.find(r => r.id === l.rubricaId);
+                        if (rubrica?.tipo === tipo && (incidePara ? rubrica.incidencias[incidePara] : true)) {
+                            return acc + l.valor;
+                        }
+                        return acc;
+                    }, 0);
+                };
+                
+                const salarioBase = funcionario.salario;
+                const outrosProventos = getValorRubrica('Provento');
+                const totalProventos = salarioBase + outrosProventos;
 
-                const outrosDescontos = lancamentosFunc.reduce((acc, l) => {
-                    const rubrica = rubricas.find(r => r.id === l.rubricaId);
-                    return rubrica?.tipo === 'Desconto' ? acc + l.valor : acc;
-                }, 0);
-                
-                // Simulação simples de impostos
-                const baseINSS = totalProventos;
-                const valorINSS = baseINSS * 0.08; // 8% Fixo (simplificado)
-                const baseIRRF = totalProventos - valorINSS;
-                const valorIRRF = baseIRRF > 2826.65 ? (baseIRRF * 0.075) - 142.80 : 0; // 7.5% (simplificado)
-                
+                const baseINSS = salarioBase + getValorRubrica('Provento', 'inss');
+                const valorINSS = getContribuicaoINSS(baseINSS);
+
+                const baseIRRF = salarioBase + getValorRubrica('Provento', 'irrf') - valorINSS;
+                const numDependentes = funcionario.dependentes?.length || 0;
+                const valorIRRF = getContribuicaoIRRF(baseIRRF, numDependentes);
+
+                const baseFGTS = salarioBase + getValorRubrica('Provento', 'fgts');
+                const valorFGTS = baseFGTS * 0.08;
+
+                const outrosDescontos = getValorRubrica('Desconto');
                 const totalDescontos = outrosDescontos + valorINSS + valorIRRF;
+                
+                const detalhes = [
+                    { rubrica: 'Salário Base', tipo: 'Provento', valor: salarioBase },
+                    ...lancamentosFunc.map(l => {
+                        const rubrica = rubricas.find(r => r.id === l.rubricaId);
+                        return { rubrica: rubrica?.descricao || 'N/D', tipo: rubrica?.tipo === 'Provento' ? 'Provento' : 'Desconto', valor: l.valor }
+                    }).filter(d => d.tipo === 'Provento' && d.valor > 0),
+                    ...lancamentosFunc.map(l => {
+                        const rubrica = rubricas.find(r => r.id === l.rubricaId);
+                        return { rubrica: rubrica?.descricao || 'N/D', tipo: rubrica?.tipo === 'Desconto' ? 'Desconto' : 'Provento', valor: l.valor }
+                    }).filter(d => d.tipo === 'Desconto' && d.valor > 0),
+                    { rubrica: 'INSS', tipo: 'Desconto', valor: valorINSS },
+                    { rubrica: 'IRRF', tipo: 'Desconto', valor: valorIRRF },
+                ];
 
                 return {
-                    funcionarioId: funcId,
-                    nome: funcionario.nome,
-                    totalProventos,
-                    totalDescontos,
-                    salarioLiquido: totalProventos - totalDescontos,
-                    baseINSS,
-                    valorINSS,
-                    baseIRRF,
-                    valorIRRF,
+                    funcionarioId: funcId, nome: funcionario.nome, totalProventos, totalDescontos,
+                    salarioLiquido: totalProventos - totalDescontos, baseINSS, valorINSS, baseIRRF, valorIRRF, baseFGTS, valorFGTS, detalhes
                 };
             }).filter((r): r is ResultadoFolha => r !== null);
             
@@ -162,11 +210,107 @@ export default function FolhaDePagamentoPage() {
         }, 1500);
     };
 
+    const gerarHoleritesPDF = () => {
+        const doc = new jsPDF();
+        
+        resultados.forEach((res, index) => {
+            if (index > 0) doc.addPage();
+            const funcionario = funcionarios.find(f => f.id === res.funcionarioId);
+    
+            // Cabeçalho
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Recibo de Pagamento de Salário (Holerite)', 105, 20, { align: 'center' });
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Competência: ${meses.find(m => m.value === mes)?.label}/${ano}`, 105, 28, { align: 'center' });
+    
+            // Dados da Empresa e Funcionário
+            autoTable(doc, {
+                body: [
+                    [
+                        { content: 'EMPRESA CONTRATANTE', styles: { fontStyle: 'bold' } },
+                        { content: 'FUNCIONÁRIO(A)', styles: { fontStyle: 'bold' } }
+                    ],
+                    [
+                        `Nome: ${activeCompany?.name || 'N/D'}\nCNPJ: ${activeCompany?.data?.cnpj || 'N/D'}`,
+                        `Nome: ${res.nome}\nCPF: ${funcionario?.cpf || 'N/D'}\nCargo: ${funcionario?.cargo || 'N/D'}`
+                    ],
+                ],
+                startY: 35,
+                theme: 'grid',
+                styles: { cellPadding: 2, fontSize: 9, overflow: 'linebreak' }
+            });
+    
+            const finalY = (doc as any).lastAutoTable.finalY;
+    
+            // Detalhes da Folha
+            const body = res.detalhes.map(d => [
+                d.rubrica,
+                d.tipo === 'Provento' ? d.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '',
+                d.tipo === 'Desconto' ? d.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '',
+            ]);
+    
+            autoTable(doc, {
+                head: [['Descrição', 'Proventos (R$)', 'Descontos (R$)']],
+                body: body,
+                startY: finalY + 5,
+                theme: 'striped',
+                headStyles: { fillColor: [22, 163, 74] },
+                columnStyles: {
+                    1: { halign: 'right' },
+                    2: { halign: 'right' }
+                }
+            });
+
+            // Totais
+            const totalY = (doc as any).lastAutoTable.finalY;
+            doc.setFont('helvetica', 'bold');
+            doc.text('Total de Proventos:', 14, totalY + 10);
+            doc.text(res.totalProventos.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), 98, totalY + 10, { align: 'right' });
+            doc.text('Total de Descontos:', 110, totalY + 10);
+            doc.text(res.totalDescontos.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), 196, totalY + 10, { align: 'right' });
+
+            doc.setLineWidth(0.5);
+            doc.line(14, totalY + 13, 196, totalY + 13);
+            
+            doc.setFontSize(14);
+            doc.text('SALÁRIO LÍQUIDO:', 14, totalY + 20);
+            doc.text(res.salarioLiquido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), 196, totalY + 20, { align: 'right' });
+            
+            // Bases de Cálculo
+            const basesY = totalY + 30;
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Base INSS: ${res.baseINSS.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 14, basesY);
+            doc.text(`Base FGTS: ${res.baseFGTS.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 70, basesY);
+            doc.text(`FGTS do Mês: ${res.valorFGTS.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 130, basesY);
+            doc.text(`Base IRRF: ${res.baseIRRF.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 14, basesY + 5);
+
+            // Assinatura
+            const signatureY = basesY + 25;
+            doc.line(40, signatureY, 165, signatureY);
+            doc.text("Assinatura do(a) Funcionário(a)", 105, signatureY + 4, { align: 'center'});
+
+        });
+    
+        doc.save(`Holerites_${mes}_${ano}.pdf`);
+        toast({title: "Holerites Gerados", description: "O arquivo PDF com os holerites foi baixado."});
+    };
+
     return (
         <div className="space-y-6">
-            <div className="space-y-1">
-                <h1 className="text-3xl font-bold tracking-tight font-headline">Folha de Pagamento</h1>
-                <p className="text-muted-foreground">Calcule a folha de pagamento mensal de seus funcionários.</p>
+            <div className="flex items-center gap-4">
+                 <Link href="/pessoal">
+                    <Button variant="outline" size="icon" className="h-8 w-8">
+                        <ArrowLeft className="h-4 w-4" />
+                        <span className="sr-only">Voltar</span>
+                    </Button>
+                </Link>
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-bold tracking-tight font-headline">Folha de Pagamento</h1>
+                    <p className="text-muted-foreground">Calcule a folha de pagamento mensal de seus funcionários.</p>
+                </div>
             </div>
 
             <Card>
@@ -219,7 +363,7 @@ export default function FolhaDePagamentoPage() {
                             </TableHeader>
                             <TableBody>
                                 {filteredFuncionarios.length > 0 ? filteredFuncionarios.map(f => (
-                                    <TableRow key={f.id}>
+                                    <TableRow key={f.id} data-state={selectedFuncionarios.includes(f.id) && "selected"}>
                                         <TableCell><Checkbox checked={selectedFuncionarios.includes(f.id)} onCheckedChange={checked => setSelectedFuncionarios(prev => checked ? [...prev, f.id] : prev.filter(id => id !== f.id))} /></TableCell>
                                         <TableCell className="font-medium">{f.nome}</TableCell>
                                         <TableCell>{f.cargo}</TableCell>
@@ -304,8 +448,8 @@ export default function FolhaDePagamentoPage() {
                          </div>
                     </CardContent>
                     <CardFooter className="flex justify-end gap-2">
-                        <Button variant="outline"><FileText className='mr-2 h-4 w-4'/> Gerar Holerites (PDF)</Button>
-                        <Button variant="outline"><BookCopy className='mr-2 h-4 w-4'/> Contabilizar Folha</Button>
+                         <Button variant="outline" onClick={gerarHoleritesPDF}><FileText className='mr-2 h-4 w-4'/> Gerar Holerites (PDF)</Button>
+                        <Button variant="outline" disabled><BookCopy className='mr-2 h-4 w-4'/> Contabilizar Folha</Button>
                     </CardFooter>
                 </Card>
             )}
@@ -383,5 +527,3 @@ function LancadorDeRubrica({ onAddLancamento, rubricas }: LancadorDeRubricaProps
         </div>
     )
 }
-
-    
