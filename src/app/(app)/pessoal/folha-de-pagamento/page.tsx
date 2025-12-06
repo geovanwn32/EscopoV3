@@ -11,16 +11,16 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useCompany } from '@/hooks/use-company';
 import { Funcionario } from '@/types/pessoal';
 import { useToast } from '@/hooks/use-toast';
-import { Calculator, Plus, Trash2, Loader2, FileText, BookCopy, ChevronsUpDown, Check, Search, ArrowLeft } from 'lucide-react';
+import { Calculator, Plus, Trash2, Loader2, FileText, BookCopy, ChevronsUpDown, Check, Search, FileUp, Sparkles, ArrowLeft } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import type { Rubrica } from '../../rubricas/page';
-import Link from 'next/link';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import Link from 'next/link';
 
 
 interface Lancamento {
@@ -50,12 +50,18 @@ interface ResultadoFolha {
   }[];
 }
 
+interface LancamentoModelo {
+    id: number;
+    rubricaId: number;
+    valor: number;
+    descricao: string;
+}
 
 const meses = [
     { value: 1, label: 'Janeiro' }, { value: 2, label: 'Fevereiro' }, { value: 3, label: 'Março' },
-    { value: 4, label: 'Abril' }, { value: 5, label: 'Maio' }, { value: 6, label: 'Junho' },
+    { value: 4, 'label': 'Abril' }, { value: 5, label: 'Maio' }, { value: 6, label: 'Junho' },
     { value: 7, label: 'Julho' }, { value: 8, label: 'Agosto' }, { value: 9, label: 'Setembro' },
-    { value: 10, label: 'Outubro' }, { value: 11, label: 'Novembro' }, { value: 12, label: 'Dezembro' }
+    { value: 10, 'label': 'Outubro' }, { value: 11, 'label': 'Novembro' }, { value: 12, 'label': 'Dezembro' }
 ];
 
 const anos = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i);
@@ -89,6 +95,7 @@ export default function FolhaDePagamentoPage() {
     const { useScopedData, companies, currentCompany } = useCompany();
     const [funcionarios] = useScopedData<Funcionario[]>('cadastros-funcionarios', []);
     const [rubricas] = useScopedData<Rubrica[]>('cadastros-rubricas', []);
+    const [modelos, setModelos] = useScopedData<LancamentoModelo[]>('pessoal-lancamentos-recorrentes', []);
     
     const [mes, setMes] = useState<number>(new Date().getMonth() + 1);
     const [ano, setAno] = useState<number>(new Date().getFullYear());
@@ -108,30 +115,20 @@ export default function FolhaDePagamentoPage() {
     }, [funcionarios, searchTerm]);
 
     const handleSelectAll = (checked: boolean) => {
-        if (checked) {
-            setSelectedFuncionarios(filteredFuncionarios.map(f => f.id));
-        } else {
-            setSelectedFuncionarios([]);
-        }
+        setSelectedFuncionarios(checked ? filteredFuncionarios.map(f => f.id) : []);
     };
     
     const handleAddLancamento = (rubricaId: number, tipo: 'coletivo' | 'individual', funcionarioId?: number) => {
         if (!rubricaId) return;
-        
         const targetFuncionarios = tipo === 'coletivo' ? selectedFuncionarios : (funcionarioId ? [funcionarioId] : []);
-        
         if(targetFuncionarios.length === 0) {
             toast({variant: 'destructive', title: 'Nenhum funcionário selecionado!'});
             return;
         }
 
         const newLancamentos = targetFuncionarios.map(funcId => ({
-            id: Date.now() + Math.random(),
-            funcionarioId: funcId,
-            rubricaId: rubricaId,
-            valor: 0,
+            id: Date.now() + Math.random(), funcionarioId: funcId, rubricaId: rubricaId, valor: 0,
         }));
-
         setLancamentos(prev => [...prev, ...newLancamentos]);
     };
 
@@ -142,6 +139,29 @@ export default function FolhaDePagamentoPage() {
     const handleLancamentoChange = (id: number, field: 'valor' | 'referencia', value: number) => {
         setLancamentos(prev => prev.map(l => l.id === id ? {...l, [field]: value} : l));
     };
+
+    const aplicarModelos = () => {
+        if (selectedFuncionarios.length === 0) {
+            toast({variant: 'destructive', title: 'Selecione funcionários', description: 'Nenhum funcionário foi selecionado para aplicar os modelos.'});
+            return;
+        }
+        if (modelos.length === 0) {
+            toast({variant: 'destructive', title: 'Sem Modelos', description: 'Nenhum lançamento modelo foi cadastrado ainda.'});
+            return;
+        }
+
+        const novosLancamentos = selectedFuncionarios.flatMap(funcId => 
+            modelos.map(modelo => ({
+                id: Date.now() + Math.random(),
+                funcionarioId: funcId,
+                rubricaId: modelo.rubricaId,
+                valor: modelo.valor,
+            }))
+        );
+
+        setLancamentos(prev => [...prev, ...novosLancamentos]);
+        toast({title: 'Modelos Aplicados', description: `${modelos.length} modelo(s) aplicado(s) para ${selectedFuncionarios.length} funcionário(s).`});
+    }
     
     const handleCalcularFolha = () => {
         if (selectedFuncionarios.length === 0) {
@@ -277,8 +297,9 @@ export default function FolhaDePagamentoPage() {
             doc.setFontSize(14);
             doc.text('SALÁRIO LÍQUIDO:', 14, totalY + 20);
             doc.text(res.salarioLiquido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), 196, totalY + 20, { align: 'right' });
-            
-            // Bases de Cálculo
+            doc.setFontSize(12);
+
+             // Bases de Cálculo
             const basesY = totalY + 30;
             doc.setFontSize(9);
             doc.setFont('helvetica', 'normal');
@@ -286,12 +307,6 @@ export default function FolhaDePagamentoPage() {
             doc.text(`Base FGTS: ${res.baseFGTS.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 70, basesY);
             doc.text(`FGTS do Mês: ${res.valorFGTS.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 130, basesY);
             doc.text(`Base IRRF: ${res.baseIRRF.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 14, basesY + 5);
-
-            // Assinatura
-            const signatureY = basesY + 25;
-            doc.line(40, signatureY, 165, signatureY);
-            doc.text("Assinatura do(a) Funcionário(a)", 105, signatureY + 4, { align: 'center'});
-
         });
     
         doc.save(`Holerites_${mes}_${ano}.pdf`);
@@ -312,143 +327,78 @@ export default function FolhaDePagamentoPage() {
                     <p className="text-muted-foreground">Calcule a folha de pagamento mensal de seus funcionários.</p>
                 </div>
             </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-6">
+                    <Card>
+                        <CardHeader><CardTitle>1. Seleção de Competência e Funcionários</CardTitle><CardDescription>Escolha o período e os funcionários para o cálculo.</CardDescription></CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-2"><Label htmlFor="mes">Mês</Label><Select value={String(mes)} onValueChange={(v) => setMes(Number(v))}><SelectTrigger id="mes"><SelectValue /></SelectTrigger><SelectContent>{meses.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>)}</SelectContent></Select></div>
+                                <div className="space-y-2"><Label htmlFor="ano">Ano</Label><Select value={String(ano)} onValueChange={(v) => setAno(Number(v))}><SelectTrigger id="ano"><SelectValue /></SelectTrigger><SelectContent>{anos.map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}</SelectContent></Select></div>
+                            </div>
+                            <div className="relative pt-2">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Buscar funcionário por nome ou CPF..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                            </div>
+                            <div className="rounded-md border max-h-[300px] overflow-y-auto mt-2">
+                                <Table><TableHeader className="sticky top-0 bg-background z-10"><TableRow><TableHead className="w-[50px]"><Checkbox onCheckedChange={handleSelectAll} checked={selectedFuncionarios.length === filteredFuncionarios.length && filteredFuncionarios.length > 0} /></TableHead><TableHead>Nome</TableHead><TableHead>Cargo</TableHead><TableHead className='text-right'>Salário Base</TableHead></TableRow></TableHeader>
+                                    <TableBody>{filteredFuncionarios.map(f => (<TableRow key={f.id} data-state={selectedFuncionarios.includes(f.id) && "selected"}><TableCell><Checkbox checked={selectedFuncionarios.includes(f.id)} onCheckedChange={checked => setSelectedFuncionarios(prev => checked ? [...prev, f.id] : prev.filter(id => id !== f.id))} /></TableCell><TableCell className="font-medium">{f.nome}</TableCell><TableCell>{f.cargo}</TableCell><TableCell className="text-right font-mono">{f.salario.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</TableCell></TableRow>))}
+                                        {filteredFuncionarios.length === 0 && <TableRow><TableCell colSpan={4} className="h-24 text-center">Nenhum funcionário encontrado.</TableCell></TableRow>}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                <div className="space-y-6">
+                    <Card>
+                        <CardHeader><CardTitle>2. Lançamento de Rubricas</CardTitle><CardDescription>Adicione eventos como horas extras, comissões, faltas ou adiantamentos.</CardDescription></CardHeader>
+                        <CardContent className="space-y-4">
+                            <LancadorDeRubrica onAddLancamento={handleAddLancamento} rubricas={rubricas} />
+                             <Button variant="outline" onClick={aplicarModelos} className="w-full"><Sparkles className="mr-2 h-4 w-4" />Aplicar Modelos</Button>
+                             <Button variant="secondary" disabled className="w-full"><FileUp className="mr-2 h-4 w-4" />Importar Ponto (Em Breve)</Button>
+                        </CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader><CardTitle>Lançamentos Modelo</CardTitle><CardDescription>Gerencie lançamentos recorrentes.</CardDescription></CardHeader>
+                        <CardContent><LancamentosModelo modelos={modelos} setModelos={setModelos} rubricas={rubricas}/></CardContent>
+                    </Card>
+                </div>
+            </div>
 
             <Card>
-                <CardHeader>
-                    <CardTitle>1. Competência</CardTitle>
-                    <CardDescription>Escolha o período para o cálculo da folha.</CardDescription>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="mes">Mês</Label>
-                        <Select value={String(mes)} onValueChange={(v) => setMes(Number(v))}>
-                            <SelectTrigger id="mes"><SelectValue /></SelectTrigger>
-                            <SelectContent>{meses.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>)}</SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="ano">Ano</Label>
-                        <Select value={String(ano)} onValueChange={(v) => setAno(Number(v))}>
-                            <SelectTrigger id="ano"><SelectValue /></SelectTrigger>
-                            <SelectContent>{anos.map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}</SelectContent>
-                        </Select>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>2. Funcionários e Lançamentos</CardTitle>
-                    <CardDescription>Selecione os funcionários e adicione proventos ou descontos.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Buscar funcionário por nome ou CPF..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                        </div>
-                        <LancadorDeRubrica onAddLancamento={handleAddLancamento} rubricas={rubricas} />
-                    </div>
-                    <div className="rounded-md border max-h-[400px] overflow-y-auto">
-                        <Table>
-                            <TableHeader className="sticky top-0 bg-background z-10">
-                                <TableRow>
-                                    <TableHead className="w-[50px]">
-                                        <Checkbox onCheckedChange={handleSelectAll} checked={selectedFuncionarios.length === filteredFuncionarios.length && filteredFuncionarios.length > 0} />
-                                    </TableHead>
-                                    <TableHead>Nome</TableHead>
-                                    <TableHead>Cargo</TableHead>
-                                    <TableHead className='text-right'>Salário Base</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredFuncionarios.length > 0 ? filteredFuncionarios.map(f => (
-                                    <TableRow key={f.id} data-state={selectedFuncionarios.includes(f.id) && "selected"}>
-                                        <TableCell><Checkbox checked={selectedFuncionarios.includes(f.id)} onCheckedChange={checked => setSelectedFuncionarios(prev => checked ? [...prev, f.id] : prev.filter(id => id !== f.id))} /></TableCell>
-                                        <TableCell className="font-medium">{f.nome}</TableCell>
-                                        <TableCell>{f.cargo}</TableCell>
-                                        <TableCell className="text-right font-mono">{f.salario.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</TableCell>
-                                    </TableRow>
-                                )) : (
-                                    <TableRow><TableCell colSpan={4} className="h-24 text-center">Nenhum funcionário encontrado.</TableCell></TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
-                     <Separator className='my-6'/>
-                     <h4 className='text-md font-medium'>Lançamentos Manuais Realizados</h4>
-                     <div className="rounded-md border max-h-72 overflow-y-auto">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Funcionário</TableHead>
-                                    <TableHead>Rubrica</TableHead>
-                                    <TableHead>Tipo</TableHead>
-                                    <TableHead>Referência</TableHead>
-                                    <TableHead className="text-right">Valor (R$)</TableHead>
-                                    <TableHead className="w-12"></TableHead>
-                                </TableRow>
-                            </TableHeader>
+                <CardHeader><CardTitle>Lançamentos Realizados</CardTitle></CardHeader>
+                <CardContent>
+                    <div className="rounded-md border max-h-72 overflow-y-auto">
+                        <Table><TableHeader><TableRow><TableHead>Funcionário</TableHead><TableHead>Rubrica</TableHead><TableHead>Tipo</TableHead><TableHead>Referência</TableHead><TableHead className="text-right">Valor (R$)</TableHead><TableHead className="w-12"></TableHead></TableRow></TableHeader>
                             <TableBody>
                                 {lancamentos.map(l => {
                                     const func = funcionarios.find(f => f.id === l.funcionarioId);
                                     const rubrica = rubricas.find(r => r.id === l.rubricaId);
-                                    return (
-                                        <TableRow key={l.id}>
-                                            <TableCell>{func?.nome}</TableCell>
-                                            <TableCell>{rubrica?.descricao}</TableCell>
-                                            <TableCell><Badge variant={rubrica?.tipo === 'Provento' ? 'default' : 'destructive'}>{rubrica?.tipo}</Badge></TableCell>
-                                            <TableCell><Input type="number" value={l.referencia || ''} onChange={e => handleLancamentoChange(l.id, 'referencia', parseFloat(e.target.value))} className='h-8 w-24'/></TableCell>
-                                            <TableCell className="text-right"><Input type="number" value={l.valor} onChange={e => handleLancamentoChange(l.id, 'valor', parseFloat(e.target.value))} className='h-8 w-32 text-right'/></TableCell>
-                                            <TableCell><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveLancamento(l.id)}><Trash2 className="h-4 w-4 text-destructive"/></Button></TableCell>
-                                        </TableRow>
-                                    )
+                                    return (<TableRow key={l.id}><TableCell>{func?.nome}</TableCell><TableCell>{rubrica?.descricao}</TableCell><TableCell><Badge variant={rubrica?.tipo === 'Provento' ? 'default' : 'destructive'}>{rubrica?.tipo}</Badge></TableCell><TableCell><Input type="number" value={l.referencia || ''} onChange={e => handleLancamentoChange(l.id, 'referencia', parseFloat(e.target.value))} className='h-8 w-24'/></TableCell><TableCell className="text-right"><Input type="number" value={l.valor} onChange={e => handleLancamentoChange(l.id, 'valor', parseFloat(e.target.value))} className='h-8 w-32 text-right'/></TableCell><TableCell><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveLancamento(l.id)}><Trash2 className="h-4 w-4 text-destructive"/></Button></TableCell></TableRow>)
                                 })}
-                                 {lancamentos.length === 0 && <TableRow><TableCell colSpan={6} className='h-24 text-center text-muted-foreground'>Nenhum lançamento adicionado.</TableCell></TableRow>}
+                                {lancamentos.length === 0 && <TableRow><TableCell colSpan={6} className='h-24 text-center text-muted-foreground'>Nenhum lançamento adicionado.</TableCell></TableRow>}
                             </TableBody>
                         </Table>
-                     </div>
+                    </div>
                 </CardContent>
                 <CardFooter className="flex justify-end">
-                    <Button onClick={handleCalcularFolha} disabled={isLoading}>
-                        {isLoading ? <Loader2 className='mr-2 h-4 w-4 animate-spin' /> : <Calculator className="mr-2 h-4 w-4" />}
-                        {isLoading ? 'Calculando...' : 'Calcular Folha'}
-                    </Button>
+                    <Button onClick={handleCalcularFolha} disabled={isLoading}>{isLoading ? <Loader2 className='mr-2 h-4 w-4 animate-spin' /> : <Calculator className="mr-2 h-4 w-4" />}{isLoading ? 'Calculando...' : 'Calcular Folha'}</Button>
                 </CardFooter>
             </Card>
 
             {resultados.length > 0 && (
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>3. Resultados do Cálculo</CardTitle>
-                        <CardDescription>Resumo da folha de pagamento processada para o mês de {meses.find(m => m.value === mes)?.label} de {ano}.</CardDescription>
-                    </CardHeader>
+                 <Card><CardHeader><CardTitle>3. Resultados do Cálculo</CardTitle><CardDescription>Resumo da folha de pagamento processada para o mês de {meses.find(m => m.value === mes)?.label} de {ano}.</CardDescription></CardHeader>
                     <CardContent>
-                         <div className="rounded-md border">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Funcionário</TableHead>
-                                        <TableHead className="text-right">Proventos</TableHead>
-                                        <TableHead className="text-right">Descontos</TableHead>
-                                        <TableHead className="text-right">Salário Líquido</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {resultados.map(res => (
-                                        <TableRow key={res.funcionarioId}>
-                                            <TableCell className="font-medium">{res.nome}</TableCell>
-                                            <TableCell className="text-right font-mono text-emerald-600">{res.totalProventos.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</TableCell>
-                                            <TableCell className="text-right font-mono text-destructive">{res.totalDescontos.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</TableCell>
-                                            <TableCell className="text-right font-mono font-bold">{res.salarioLiquido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
+                        <div className="rounded-md border"><Table><TableHeader><TableRow><TableHead>Funcionário</TableHead><TableHead className="text-right">Proventos</TableHead><TableHead className="text-right">Descontos</TableHead><TableHead className="text-right">Salário Líquido</TableHead></TableRow></TableHeader>
+                            <TableBody>
+                                {resultados.map(res => (<TableRow key={res.funcionarioId}><TableCell className="font-medium">{res.nome}</TableCell><TableCell className="text-right font-mono text-emerald-600">{res.totalProventos.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</TableCell><TableCell className="text-right font-mono text-destructive">{res.totalDescontos.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</TableCell><TableCell className="text-right font-mono font-bold">{res.salarioLiquido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</TableCell></TableRow>))}
+                            </TableBody></Table>
                          </div>
                     </CardContent>
                     <CardFooter className="flex justify-end gap-2">
-                         <Button variant="outline" onClick={gerarHoleritesPDF}><FileText className='mr-2 h-4 w-4'/> Gerar Holerites (PDF)</Button>
+                        <Button variant="outline" onClick={gerarHoleritesPDF}><FileText className='mr-2 h-4 w-4'/> Gerar Holerites (PDF)</Button>
                         <Button variant="outline" disabled><BookCopy className='mr-2 h-4 w-4'/> Contabilizar Folha</Button>
                     </CardFooter>
                 </Card>
@@ -457,73 +407,66 @@ export default function FolhaDePagamentoPage() {
     );
 }
 
-interface LancadorDeRubricaProps {
-    onAddLancamento: (id: number, tipo: 'coletivo' | 'individual', funcId?: number) => void;
-    rubricas: Rubrica[];
-}
-
-function LancadorDeRubrica({ onAddLancamento, rubricas }: LancadorDeRubricaProps) {
-    const [open, setOpen] = useState(false)
-    const [value, setValue] = useState("")
+function LancadorDeRubrica({ onAddLancamento, rubricas }: { onAddLancamento: (id: number, tipo: 'coletivo') => void; rubricas: Rubrica[] }) {
+    const [open, setOpen] = useState(false);
+    const [value, setValue] = useState("");
  
     const handleSelect = (rubricaId: string) => {
         if (rubricaId) {
             onAddLancamento(Number(rubricaId), 'coletivo');
-            setValue(""); // Reset after adding
-            setOpen(false);
+            setValue(""); setOpen(false);
         }
     };
-
     return (
-        <div className='flex gap-4 items-center'>
-            <div className='space-y-2 flex-grow'>
-                <Label>Adicionar Rubrica Coletivamente</Label>
-                <Popover open={open} onOpenChange={setOpen}>
-                    <PopoverTrigger asChild>
-                        <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={open}
-                        className="w-full justify-between"
-                        >
-                        {value
-                            ? rubricas.find((rubrica) => String(rubrica.id) === value)?.descricao
-                            : "Selecione uma rubrica..."}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                        <Command>
-                            <CommandInput placeholder="Buscar rubrica por nome ou código..." />
-                            <CommandEmpty>Nenhuma rubrica encontrada.</CommandEmpty>
-                            <CommandList>
-                                <CommandGroup>
-                                {rubricas.map((rubrica) => (
-                                    <CommandItem
-                                    key={rubrica.id}
-                                    value={`${rubrica.codigo} - ${rubrica.descricao}`}
-                                    onSelect={() => handleSelect(String(rubrica.id))}
-                                    >
-                                    <Check
-                                        className={cn(
-                                        "mr-2 h-4 w-4",
-                                        value === String(rubrica.id) ? "opacity-100" : "opacity-0"
-                                        )}
-                                    />
-                                    {rubrica.codigo} - {rubrica.descricao} <Badge variant={rubrica.tipo === 'Provento' ? 'default' : 'destructive'} className="ml-auto">{rubrica.tipo}</Badge>
-                                    </CommandItem>
-                                ))}
-                                </CommandGroup>
-                            </CommandList>
-                        </Command>
-                    </PopoverContent>
-                </Popover>
-            </div>
-             <Button asChild variant="outline" type="button" className='self-end'>
-                <Link href="/rubricas" target="_blank">
-                    <Plus className='mr-2 h-4 w-4'/> Gerenciar Rubricas
-                </Link>
-            </Button>
+        <div className='space-y-2'><Label>Adicionar Rubrica Coletivamente</Label>
+            <Popover open={open} onOpenChange={setOpen}><PopoverTrigger asChild><Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between">{value ? rubricas.find(r => String(r.id) === value)?.descricao : "Selecione uma rubrica..."}<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" /></Button></PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0"><Command><CommandInput placeholder="Buscar rubrica..." /><CommandEmpty>Nenhuma rubrica encontrada.</CommandEmpty>
+                    <CommandList><CommandGroup>{rubricas.map(r => (<CommandItem key={r.id} value={`${r.codigo} - ${r.descricao}`} onSelect={() => handleSelect(String(r.id))}><Check className={cn("mr-2 h-4 w-4", value === String(r.id) ? "opacity-100" : "opacity-0")} />{r.codigo} - {r.descricao} <Badge variant={r.tipo === 'Provento' ? 'default' : 'destructive'} className="ml-auto">{r.tipo}</Badge></CommandItem>))}</CommandGroup></CommandList>
+                </Command></PopoverContent>
+            </Popover>
         </div>
     )
 }
+
+function LancamentosModelo({ modelos, setModelos, rubricas }: { modelos: LancamentoModelo[], setModelos: (value: LancamentoModelo[] | ((prev: LancamentoModelo[]) => LancamentoModelo[])) => void, rubricas: Rubrica[]}) {
+    const [newRubricaId, setNewRubricaId] = useState<string | undefined>(undefined);
+    const [newValor, setNewValor] = useState<number | ''>('');
+    const [newDescricao, setNewDescricao] = useState('');
+
+    const handleAddModelo = () => {
+        if (newRubricaId && newValor !== '') {
+            const rubrica = rubricas.find(r => r.id === Number(newRubricaId));
+            const newModelo: LancamentoModelo = {
+                id: Date.now(),
+                rubricaId: Number(newRubricaId),
+                valor: newValor,
+                descricao: newDescricao || rubrica?.descricao || 'Novo Modelo'
+            };
+            setModelos(prev => [...prev, newModelo]);
+            setNewRubricaId(undefined); setNewValor(''); setNewDescricao('');
+        }
+    };
+
+    const handleRemoveModelo = (id: number) => {
+        setModelos(prev => prev.filter(m => m.id !== id));
+    };
+
+    return (
+        <div className="space-y-3">
+             {modelos.map(modelo => {
+                const rubrica = rubricas.find(r => r.id === modelo.rubricaId);
+                return (<div key={modelo.id} className="flex items-center justify-between gap-2 text-sm p-2 rounded-md border"><div className='flex-1 truncate'><strong>{modelo.descricao}</strong>: {modelo.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} ({rubrica?.codigo})</div><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleRemoveModelo(modelo.id)}><Trash2 className="h-4 w-4 text-destructive"/></Button></div>);
+             })}
+             <Separator/>
+             <div className="space-y-2">
+                <Label className='text-xs'>Novo Modelo</Label>
+                <Select value={newRubricaId} onValueChange={setNewRubricaId}><SelectTrigger><SelectValue placeholder="Selecione a rubrica..." /></SelectTrigger><SelectContent><Command><CommandInput placeholder="Buscar rubrica..." /><CommandEmpty>Nenhuma rubrica encontrada.</CommandEmpty><CommandList><CommandGroup>{rubricas.map(r => (<CommandItem key={r.id} value={String(r.id)} onSelect={() => setNewRubricaId(String(r.id))}>{r.codigo} - {r.descricao}</CommandItem>))}</CommandGroup></CommandList></Command></SelectContent></Select>
+                <Input value={newDescricao} onChange={e => setNewDescricao(e.target.value)} placeholder="Descrição (opcional)" />
+                <Input type="number" value={newValor} onChange={e => setNewValor(parseFloat(e.target.value) || '')} placeholder="Valor" />
+                <Button onClick={handleAddModelo} size="sm" className="w-full">Adicionar Modelo</Button>
+            </div>
+        </div>
+    )
+}
+
+    
