@@ -61,7 +61,7 @@ export default function UsuariosPage() {
     const firestore = useFirestore();
     const { user: firebaseUser } = useUser();
 
-    const { users, setUsers } = useCompanyUsers(currentCompanyId);
+    const { users } = useCompanyUsers(currentCompanyId);
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<User | null>(null);
@@ -90,20 +90,36 @@ export default function UsuariosPage() {
 
         try {
             if (editingItem) {
-                const updatedUser = { ...editingItem, ...itemData };
-                 if (!itemData.password) {
-                    delete updatedUser.password;
+                 const userDocRef = doc(firestore, "empresas", String(currentCompanyId), "usuarios", editingItem.id);
+                
+                const updatePayload: Partial<User> = {
+                    name: itemData.name,
+                    email: itemData.email,
+                    isAdmin: itemData.isAdmin,
+                    isMaster: itemData.isMaster,
+                    permissions: itemData.permissions,
+                    allowedCompanyIds: itemData.allowedCompanyIds,
+                    status: itemData.status,
+                    planoId: itemData.planoId,
+                    statusLicenca: itemData.statusLicenca,
+                };
+                
+                if (itemData.password) {
+                    updatePayload.password = itemData.password;
                 }
 
-                const userDocRef = doc(firestore, "empresas", String(currentCompanyId), "usuarios", editingItem.id);
-                await updateDoc(userDocRef, updatedUser);
+                await updateDoc(userDocRef, updatePayload);
 
                 toast({ title: "Usuário Atualizado!", description: "Os dados do usuário foram atualizados." });
                 logDetails = `Atualizou o usuário "${itemData.name}".`;
 
             } else {
                 const newId = String(Date.now());
-                const newItem: User = { ...itemData, id: newId };
+                 const newItem: User = { 
+                    ...itemData, 
+                    id: newId, 
+                    uid: firebaseUser?.uid || undefined
+                };
                 const userDocRef = doc(firestore, "empresas", String(currentCompanyId), "usuarios", newId);
                 await setDoc(userDocRef, newItem);
                 
@@ -172,7 +188,7 @@ export default function UsuariosPage() {
     const handleMyProfileSave = async (newPassword: string) => {
         if (!activeProfile || !currentCompanyId) return;
 
-        const updatedProfile = { ...activeProfile, password: newPassword };
+        const updatedProfile = { password: newPassword };
 
         try {
             const userDocRef = doc(firestore, "empresas", String(currentCompanyId), "usuarios", activeProfile.id);
@@ -372,7 +388,7 @@ const initialFormState: Omit<User, 'id'> = {
     isMaster: false,
     permissions: initialPermissions,
     allowedCompanyIds: [],
-    status: 'Ativo',
+    status: 'Pendente',
     planoId: 'Gratuito',
     statusLicenca: 'Ativa'
 };
@@ -392,6 +408,7 @@ function ItemForm({ onSave, onOpenChange, item, users, activeProfile, allCompani
     useEffect(() => {
         if (item) {
             setFormData({
+                uid: item.uid || '',
                 name: item.name || '',
                 email: item.email || '',
                 password: '',
@@ -463,7 +480,7 @@ function ItemForm({ onSave, onOpenChange, item, users, activeProfile, allCompani
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="password">{item ? 'Nova Senha' : 'Senha'}</Label>
-                    <Input id="password" type="password" value={formData.password} onChange={(e) => handleInputChange('password', e.target.value as any)} placeholder={item ? "Deixe em branco para não alterar" : "Senha de acesso"} required={!item}/>
+                    <Input id="password" type="password" value={formData.password} onChange={(e) => handleInputChange('password', e.target.value as any)} placeholder={item ? "Deixe em branco para não alterar" : "Senha de acesso"} />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">

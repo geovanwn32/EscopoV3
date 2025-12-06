@@ -1,8 +1,8 @@
 
 'use client';
-import { useEffect, useState } from "react";
-import { collection, onSnapshot, Firestore, DocumentData } from "firebase/firestore";
-import { useFirestore, useCollection, WithId } from "@/firebase";
+import { useEffect, useState, useMemo } from "react";
+import { collection, onSnapshot, Firestore, DocumentData, query } from "firebase/firestore";
+import { useFirestore, useCollection, WithId, useMemoFirebase } from "@/firebase";
 
 interface User {
   id: string;
@@ -22,29 +22,13 @@ interface User {
 
 export function useCompanyUsers(companyId: number | null) {
   const firestore = useFirestore();
-  const [users, setUsers] = useState<WithId<User>[] | null>(null);
-
-  const query = companyId ? collection(firestore, "empresas", String(companyId), "usuarios") : null;
-
-  const { data, isLoading, error } = useCollection<User>(query as any); // Cast as any to bypass memoization check here
-
-  useEffect(() => {
-    if (data) {
-      setUsers(data);
-    } else {
-      setUsers(null);
-    }
-  }, [data]);
   
-  const setUsersCallback = (value: WithId<User>[] | null | ((prev: WithId<User>[] | null) => WithId<User>[] | null)) => {
-      // This is a simplified setter. In a real scenario, you'd use Firestore operations.
-      if (typeof value === 'function') {
-          setUsers(prev => value(prev));
-      } else {
-          setUsers(value);
-      }
-  }
+  const companyUsersQuery = useMemoFirebase(() => {
+    if (!companyId) return null;
+    return query(collection(firestore, "empresas", String(companyId), "usuarios"));
+  }, [firestore, companyId]);
 
+  const { data, isLoading, error } = useCollection<User>(companyUsersQuery as any);
 
-  return { users, isLoading, error, setUsers: setUsersCallback };
+  return { users: data, isLoading, error };
 }
