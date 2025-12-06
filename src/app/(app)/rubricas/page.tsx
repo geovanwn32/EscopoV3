@@ -17,9 +17,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
 
 interface Incidencias {
     inss: boolean;
@@ -90,7 +87,10 @@ export default function RubricasPage() {
         }
     }
     
-    const handleExportPdf = () => {
+    const handleExportPdf = async () => {
+        const { default: jsPDF } = await import('jspdf');
+        const { default: autoTable } = await import('jspdf-autotable');
+
         const doc = new jsPDF();
         doc.text("Relatório de Rubricas", 14, 16);
         
@@ -127,7 +127,8 @@ export default function RubricasPage() {
         toast({ title: "PDF Gerado!", description: "O relatório de rubricas foi baixado." });
     };
 
-    const handleExportExcel = () => {
+    const handleExportExcel = async () => {
+        const XLSX = await import('xlsx');
         const worksheetData = filteredItems.map(item => ({
             'Código': item.codigo,
             'Descrição': item.descricao,
