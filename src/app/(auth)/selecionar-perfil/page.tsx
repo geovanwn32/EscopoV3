@@ -61,12 +61,14 @@ export default function SelecionarPerfilPage() {
 
         setTimeout(() => {
             if (password === selectedUser?.password) {
-                const userProfile = users.find(u => u.email === firebaseUser?.email);
-                if (userProfile) {
-                    sessionStorage.setItem('user-profile', JSON.stringify(userProfile));
+                // CORREÇÃO: Usar diretamente o 'selectedUser' que já temos.
+                // Ele é o perfil correto que o usuário clicou.
+                if (selectedUser) {
+                    sessionStorage.setItem('user-profile', JSON.stringify(selectedUser));
                     toast({ title: "Acesso Autorizado!", description: `Bem-vindo(a) ${selectedUser.name}.` });
                     router.push('/selecionar-empresa');
                 } else {
+                    // Este caso se torna muito improvável, mas é um fallback.
                     toast({ variant: 'destructive', title: "Erro de Perfil", description: "Não foi possível encontrar os dados do seu perfil." });
                     setIsLoading(false);
                 }
