@@ -1,3 +1,4 @@
+
 'use client';
 
 import { firebaseConfig } from '@/firebase/config';
@@ -11,19 +12,9 @@ export function initializeFirebase() {
   if (getApps().length > 0) {
     return getSdks(getApp());
   }
-
-  // A inicialização automática com App Hosting pode falhar no desenvolvimento.
-  // O fallback para o objeto de configuração é o comportamento esperado.
-  try {
-    const app = initializeApp();
-    return getSdks(app);
-  } catch (e) {
-    if (process.env.NODE_ENV === "production") {
-      console.warn('A inicialização automática falhou. Recorrendo ao objeto de configuração do firebase.', e);
-    }
-    const app = initializeApp(firebaseConfig);
-    return getSdks(app);
-  }
+  // No ambiente da Cloudflare ou em qualquer outro ambiente que não seja o Firebase App Hosting,
+  // é necessário fornecer o objeto de configuração explicitamente.
+  return getSdks(initializeApp(firebaseConfig));
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
