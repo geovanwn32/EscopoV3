@@ -10,12 +10,13 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Search, PlusCircle, Upload, Pencil, Trash2, CheckCircle, Image as ImageIcon, LayoutGrid, List, ArrowUpDown, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight } from 'lucide-react';
+import { Search, PlusCircle, Upload, Pencil, Trash2, CheckCircle, Image as ImageIcon, LayoutGrid, List, ArrowUpDown, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight, ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import Link from 'next/link';
 
 export interface ImagePlaceholder extends BaseImagePlaceholder {
     category?: string;
@@ -106,11 +107,19 @@ export default function GerenciadorDeMidiaPage() {
     
     return (
         <div className="space-y-6">
-            <div className="space-y-1">
-                <h1 className="text-3xl font-bold tracking-tight font-headline">Gerenciador de Mídia</h1>
-                <p className="text-muted-foreground">
-                    Faça upload, edite e gerencie as imagens utilizadas no sistema e no site.
-                </p>
+            <div className="flex items-center gap-4">
+                <Link href="/admin">
+                    <Button variant="outline" size="icon" className="h-8 w-8">
+                        <ArrowLeft className="h-4 w-4" />
+                        <span className="sr-only">Voltar</span>
+                    </Button>
+                </Link>
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-bold tracking-tight font-headline">Gerenciador de Mídia</h1>
+                    <p className="text-muted-foreground">
+                        Faça upload, edite e gerencie as imagens utilizadas no sistema e no site.
+                    </p>
+                </div>
             </div>
 
             <Card>
