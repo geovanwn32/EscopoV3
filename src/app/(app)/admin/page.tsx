@@ -68,7 +68,6 @@ type SortKey = keyof User | 'licenca' | 'criacao';
 const adminTools = [
     { id: 'geral', label: 'Visão Geral', icon: LayoutGrid, href: '/admin' },
     { id: 'media', label: 'Gerenciador de Mídia', icon: ImageIcon, href: '/admin/gerenciador-de-midia' },
-    { id: 'docs', label: 'Documentação', icon: FileType, href: '/admin/docs' },
 ]
 
 export default function AdminPage() {
@@ -874,5 +873,7 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
         </Dialog>
     );
 }
+
+    
 
     
