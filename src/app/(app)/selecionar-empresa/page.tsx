@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -117,7 +118,7 @@ export default function SelecionarEmpresaPage() {
                     </Button>
                     <Button variant="ghost" className=" text-card-foreground" onClick={handleLogout}>
                         <LogOut className="mr-2 h-4 w-4" />
-                        LOGOFF
+                        Logoff
                     </Button>
                 </div>
                 <div className="text-center mb-8 text-card-foreground">
