@@ -75,8 +75,23 @@ service cloud.firestore {
             get(/databases/$(database)/documents/global-users/$(request.auth.uid)).data.allowedCompanyIds.hasAny([string(empresaId)]);
         }
         
-        // Permite acesso se o usuário for membro da empresa OU se for um admin da empresa ADM
-        allow read, write: if isCompanyMember() || (userIsAdmin() && isCompanyAdmin(empresaId));
+        // Regra para ler e escrever documentos INDIVIDUAIS
+        allow get, write: if isCompanyMember() || (userIsAdmin() && isCompanyAdmin(empresaId));
+    }
+    
+    match /empresas/{empresaId}/usuarios {
+        function isCompanyAdmin(empresaId) {
+            return string(empresaId) == '1764646068539';
+        }
+         function userIsAdmin() {
+            return isSignedIn() &&
+                exists(/databases/$(database)/documents/global-users/$(request.auth.uid)) &&
+                get(/databases/$(database)/documents/global-users/$(request.auth.uid)).data.isAdmin == true;
+        }
+
+        // Regra para LISTAR a coleção de usuários
+        // Permite a listagem apenas para administradores da empresa ADM principal
+        allow list: if userIsAdmin() && isCompanyAdmin(empresaId);
     }
 
     match /empresas/{empresaId}/{document=**} {
