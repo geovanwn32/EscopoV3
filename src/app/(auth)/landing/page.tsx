@@ -1,10 +1,9 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { Building2, Check, FileText, Users, Mail, Phone, Cpu, ShieldCheck, Star } from 'lucide-react';
+import { Building2, Check, FileText, Users, Mail, Phone, Cpu, ShieldCheck, Star, PlayCircle } from 'lucide-react';
 import Link from 'next/link';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -177,13 +176,33 @@ export default function LandingPage() {
             <p className="mt-6 max-w-2xl mx-auto text-lg text-muted-foreground">
                 Do financeiro ao fiscal, automatize tarefas, ganhe precisão com nossa IA e tenha uma visão completa do seu negócio. Simplifique a complexidade, otimize seu tempo.
             </p>
-             <div className="mt-8 flex flex-col items-center gap-4">
+             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Button size="lg" asChild className='bg-accent text-accent-foreground hover:bg-accent/90'>
-                    <Link href="/login?plano=profissional">Iniciar Teste Gratuito</Link>
+                    <Link href="/login?plano=profissional">Comece a Otimizar Agora</Link>
                 </Button>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <ShieldCheck className="h-4 w-4 text-emerald-500" />
-                    <span>Teste gratuito por 7 dias. Sem cartão de crédito.</span>
+                 <Button size="lg" variant="outline" asChild>
+                    <Link href="#demonstracao">
+                        <PlayCircle className="mr-2 h-5 w-5" />
+                        Ver Demonstração
+                    </Link>
+                </Button>
+            </div>
+             <div className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <ShieldCheck className="h-4 w-4 text-emerald-500" />
+                <span>Teste gratuito por 7 dias. Sem cartão de crédito.</span>
+            </div>
+        </section>
+
+        {/* Trusted By Section */}
+        <section className="py-8">
+            <div className="text-center">
+                <p className="font-semibold text-muted-foreground">Utilizado por centenas de empresas inovadoras</p>
+                <div className="mt-6 flex flex-wrap justify-center items-center gap-x-8 gap-y-4 text-muted-foreground">
+                    <span className="flex items-center gap-2 text-lg font-bold"><Building2 className='h-5 w-5'/> Empresa A</span>
+                    <span className="flex items-center gap-2 text-lg font-bold"><Building2 className='h-5 w-5'/> Startup B</span>
+                    <span className="flex items-center gap-2 text-lg font-bold"><Building2 className='h-5 w-5'/> Negócio C</span>
+                    <span className="flex items-center gap-2 text-lg font-bold"><Building2 className='h-5 w-5'/> Contábil D</span>
+                    <span className="flex items-center gap-2 text-lg font-bold"><Building2 className='h-5 w-5'/> Grupo E</span>
                 </div>
             </div>
         </section>
@@ -366,5 +385,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
-    
