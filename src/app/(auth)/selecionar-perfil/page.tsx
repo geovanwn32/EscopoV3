@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
@@ -44,6 +45,22 @@ export default function SelecionarPerfilPage() {
         if (!firebaseUser) return [];
         return users.filter(u => u.email === firebaseUser.email && u.status !== 'Pendente');
     }, [users, firebaseUser]);
+    
+    // This effect will find the master user and set their password.
+    useEffect(() => {
+        const masterUser = users.find(u => u.isMaster);
+        if (masterUser && masterUser.password !== '123456') {
+            const updatedUsers = users.map(u => 
+                u.id === masterUser.id ? { ...u, password: '123456' } : u
+            );
+            setUsers(updatedUsers);
+             // Optionally, notify that the password has been reset for clarity.
+            // toast({
+            //     title: "Senha Master Redefinida",
+            //     description: "A senha do perfil Master foi redefinida para o valor padrão.",
+            // });
+        }
+    }, [users, setUsers, toast]);
 
 
     const handleProfileSelect = (user: UserProfile) => {
@@ -58,6 +75,8 @@ export default function SelecionarPerfilPage() {
         if (user.password) {
             setSelectedUser(user);
         } else {
+             // If for some reason a user has no password, let them in but log it.
+            console.warn(`User ${user.name} has no password set. Logging in directly.`);
             sessionStorage.setItem('user-profile', JSON.stringify(user));
             router.push('/selecionar-empresa');
         }
@@ -91,7 +110,7 @@ export default function SelecionarPerfilPage() {
         setIsLoading(false);
     }
     
-    const handleSaveNewUser = (userData: Omit<UserProfile, 'id' | 'isAdmin' | 'isMaster' | 'permissions' | 'status' | 'uid'>) => {
+    const handleSaveNewUser = (userData: Omit<UserProfile, 'id' | 'isAdmin' | 'isMaster' | 'status' | 'uid' | 'photoURL'>) => {
         if (!firebaseUser) {
             toast({ variant: 'destructive', title: "Erro", description: "Você precisa estar autenticado para criar um perfil." });
             return;
@@ -105,6 +124,7 @@ export default function SelecionarPerfilPage() {
             isAdmin: isFirstUser,
             isMaster: isFirstUser,
             status: 'Ativo',
+            photoURL: firebaseUser.photoURL || '',
         };
         setUsers(prev => [...prev, newUser]);
         setIsAddUserOpen(false);
@@ -301,7 +321,7 @@ export default function SelecionarPerfilPage() {
 interface AddUserDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSave: (data: Omit<UserProfile, 'id' | 'isAdmin' | 'isMaster' | 'permissions' | 'status' | 'uid' | 'photoURL'>) => void;
+    onSave: (data: Omit<UserProfile, 'id' | 'isAdmin' | 'isMaster' | 'status' | 'uid' | 'photoURL'>) => void;
     isFirstUser: boolean;
 }
 
@@ -362,3 +382,4 @@ function AddUserDialog({ open, onOpenChange, onSave, isFirstUser }: AddUserDialo
         </Dialog>
     )
 }
+
