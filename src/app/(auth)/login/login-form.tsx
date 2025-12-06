@@ -23,6 +23,9 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { logAudit } from '@/lib/audit-log';
+import { useCompany } from '@/hooks/use-company';
+
 
 // Define Zod schemas
 const loginSchema = z.object({
@@ -46,6 +49,21 @@ const signUpSchema = z.object({
   path: ["confirmPassword"],
 });
 
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  isAdmin: boolean;
+  isMaster?: boolean;
+  permissions: any;
+  allowedCompanyIds: number[];
+  password?: string;
+  status: 'Ativo' | 'Inativo' | 'Pendente';
+  creationDate?: string; // ISO string
+  dataExpiracaoLicenca?: string; // ISO string
+  planoId?: 'Gratuito' | 'Basico' | 'Profissional' | 'Empresarial';
+  statusLicenca?: 'Ativa' | 'Inadimplente' | 'Cancelada' | 'Expirada';
+}
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
@@ -63,6 +81,10 @@ export default function LoginForm() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const auth = useAuth();
+  const { useScopedData } = useCompany();
+  const [, setUsers] = useScopedData<User[]>('global-users', []);
+  const [, setAuditLogs] = useScopedData<AuditLog[]>('audit-trail-logs', []);
+
 
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -95,18 +117,44 @@ export default function LoginForm() {
   const handleLogin: SubmitHandler<z.infer<typeof loginSchema>> = async (data) => {
     setIsLoading(true);
     try {
-      await signInWithEmail(auth, data.email, data.password);
-      toast({
-        title: "Login bem-sucedido!",
-        description: "Você será redirecionado em breve.",
+      const userCredential = await signInWithEmail(auth, data.email, data.password);
+      const user = userCredential.user;
+      
+      let userProfile;
+      setUsers(prevUsers => {
+          const foundUser = prevUsers.find(u => u.uid === user.uid);
+          if (foundUser) {
+              userProfile = foundUser;
+          }
+          return prevUsers;
       });
-      router.push('/selecionar-perfil');
+
+      if (userProfile) {
+          sessionStorage.setItem('user-profile', JSON.stringify(userProfile));
+          toast({
+              title: "Login bem-sucedido!",
+              description: "Você será redirecionado para a seleção de empresa.",
+          });
+          router.push('/selecionar-empresa');
+      } else {
+          toast({
+              variant: "destructive",
+              title: "Perfil não encontrado",
+              description: "Nenhum perfil local encontrado para este usuário.",
+          });
+          auth.signOut();
+      }
+
     } catch (error: any) {
       console.error("Login failed:", error);
+      let errorMessage = "Ocorreu um erro desconhecido.";
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        errorMessage = "Credenciais inválidas. Verifique seu e-mail e senha.";
+      }
       toast({
         variant: "destructive",
         title: "Falha no login",
-        description: "Credenciais inválidas. Verifique seu e-mail e senha.",
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
@@ -117,15 +165,48 @@ export default function LoginForm() {
     setIsLoading(true);
     try {
       const userCredential = await signUpWithEmail(auth, data.email, data.password);
-      console.log('User signed up:', userCredential.user);
-      sessionStorage.setItem('selectedPlan', data.planoId);
+      const user = userCredential.user;
+
+      const newUser: User = {
+        id: Date.now(),
+        uid: user.uid,
+        name: data.fullName,
+        email: data.email,
+        isAdmin: false,
+        isMaster: false,
+        permissions: {},
+        allowedCompanyIds: [],
+        status: 'Pendente',
+        creationDate: new Date().toISOString(),
+        planoId: data.planoId,
+        statusLicenca: 'Ativa'
+      };
+
+      setUsers(prev => [...prev, newUser]);
+
+      // Do not log in the user, wait for admin approval
+      await auth.signOut();
+
+      toast({
+        title: "Solicitação de Cadastro Enviada!",
+        description: "Sua conta foi criada e está pendente de aprovação por um administrador.",
+      });
+
+      // Clear session storage and redirect
+      sessionStorage.clear();
       router.push('/pending');
+      
+
     } catch (error: any) {
       console.error("Signup failed:", error);
+      let errorMessage = "Não foi possível criar sua conta. Por favor, tente novamente.";
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = "Este e-mail já está em uso. Tente fazer login ou use outro e-mail.";
+      }
       toast({
         variant: "destructive",
         title: "Falha no cadastro",
-        description: error.message || "Não foi possível criar sua conta. Por favor, tente novamente.",
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
@@ -135,19 +216,65 @@ export default function LoginForm() {
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
-      const result = await signInWithGoogle(auth);
-      if (result) {
-        toast({
-          title: "Login com Google bem-sucedido!",
-          description: "Você será redirecionado em breve.",
+      const user = await signInWithGoogle(auth);
+      if (user) {
+
+        let userProfile: User | undefined;
+        setUsers(prevUsers => {
+          const foundUser = prevUsers.find(u => u.email === user.email);
+          if (foundUser) {
+            userProfile = {...foundUser, uid: user.uid };
+            // Update UID if it's missing
+            return prevUsers.map(u => u.id === foundUser.id ? { ...u, uid: user.uid } : u);
+          } else {
+             // If user doesn't exist, create a new pending user
+             const plan = searchParams.get('plano') || 'Gratuito';
+             userProfile = {
+                id: Date.now(),
+                uid: user.uid,
+                name: user.displayName || 'Usuário Google',
+                email: user.email!,
+                isAdmin: false,
+                isMaster: false,
+                permissions: {},
+                allowedCompanyIds: [],
+                status: 'Pendente',
+                creationDate: new Date().toISOString(),
+                planoId: plan as any,
+                statusLicenca: 'Ativa',
+                photoURL: user.photoURL || undefined
+             }
+             return [...prevUsers, userProfile]
+          }
         });
-        const plan = searchParams.get('plano');
-        if (plan) {
-            sessionStorage.setItem('selectedPlan', plan);
+
+        // After state update logic, decide where to go
+        setTimeout(() => {
+          if (userProfile && userProfile.status === 'Pendente') {
+            toast({
+              title: "Solicitação de Cadastro Enviada!",
+              description: "Sua conta está pendente de aprovação por um administrador.",
+            });
+            auth.signOut(); // Log out user to wait for approval
             router.push('/pending');
-        } else {
-            router.push('/selecionar-perfil');
-        }
+          } else if (userProfile) {
+            sessionStorage.setItem('user-profile', JSON.stringify(userProfile));
+            toast({
+              title: "Login com Google bem-sucedido!",
+              description: "Você será redirecionado para a seleção de empresa.",
+            });
+            router.push('/selecionar-empresa');
+          } else {
+            // This case should ideally not happen if the logic above is correct
+            toast({
+              variant: 'destructive',
+              title: "Erro de Perfil",
+              description: "Não foi possível encontrar ou criar seu perfil. Tente novamente.",
+            });
+             auth.signOut();
+          }
+        }, 100);
+
       }
     } catch (error: any) {
       console.error("Google Sign-In failed:", error);
@@ -242,10 +369,10 @@ export default function LoginForm() {
                         </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                        <SelectItem value="Gratuito">Gratuito</SelectItem>
-                        <SelectItem value="Basico">Básico - R$39/mês</SelectItem>
-                        <SelectItem value="Profissional">Profissional - R$79/mês</SelectItem>
-                        <SelectItem value="Empresarial">Empresarial - R$149/mês</SelectItem>
+                            <SelectItem value="Gratuito">Gratuito</SelectItem>
+                            <SelectItem value="Basico">Básico - R$39/mês</SelectItem>
+                            <SelectItem value="Profissional">Profissional - R$79/mês</SelectItem>
+                            <SelectItem value="Empresarial">Empresarial - R$149/mês</SelectItem>
                         </SelectContent>
                     </Select>
                     <FormMessage />
@@ -319,12 +446,19 @@ export default function LoginForm() {
               <FormItem>
                 <div className="flex items-center">
                   <FormLabel>Senha</FormLabel>
-                  <Link
+                  <a
                     href="#"
                     className="ml-auto inline-block text-sm underline"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      toast({
+                        title: 'Funcionalidade em desenvolvimento',
+                        description: 'A recuperação de senha ainda não foi implementada.',
+                      });
+                    }}
                   >
                     Esqueceu sua senha?
-                  </Link>
+                  </a>
                 </div>
                 <FormControl>
                   <div className="relative">
