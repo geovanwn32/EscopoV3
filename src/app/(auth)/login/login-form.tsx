@@ -36,6 +36,7 @@ interface User {
     creationDate?: string;
     planoId?: 'Gratuito' | 'Basico' | 'Profissional' | 'Empresarial';
     statusLicenca?: 'Ativa' | 'Inadimplente' | 'Cancelada' | 'Expirada';
+    photoURL?: string;
 }
 
 const loginSchema = z.object({
@@ -139,17 +140,15 @@ export default function LoginForm() {
   const handleSignUp: SubmitHandler<z.infer<typeof signUpSchema>> = async (data) => {
     setIsLoading(true);
     try {
-      // 1. Create user in Firebase Auth
       const userCredential = await signUpWithEmail(auth, data.email, data.password);
       const user = userCredential.user;
 
-      // 2. Create user document in our local state (simulating Firestore)
       const newUser: User = {
         id: Date.now(),
         uid: user.uid,
         name: data.fullName,
         email: data.email,
-        password: data.password, // Storing password for local-only auth
+        password: data.password, 
         isAdmin: false,
         isMaster: false,
         permissions: {},
@@ -162,10 +161,8 @@ export default function LoginForm() {
 
       setUsers(prev => [...prev, newUser]);
       
-      // 3. Sign out the user immediately so they can't proceed
       await auth.signOut();
       
-      // 4. Show success and redirect to pending page
       toast({
         title: "Solicitação de Cadastro Enviada!",
         description: "Sua conta foi criada e está pendente de aprovação por um administrador.",

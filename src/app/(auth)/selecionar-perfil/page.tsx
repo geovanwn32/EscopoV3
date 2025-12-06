@@ -1,10 +1,10 @@
 
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Shield, KeyRound, Loader2, ArrowLeft, PlusCircle, Trash2, LogOut } from 'lucide-react';
-import { useCompany } from '@/hooks/use-company';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { useCompany, useLocalStorage } from '@/hooks/use-company';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -17,20 +17,21 @@ import { useAuth, useUser } from '@/firebase';
 
 interface UserProfile {
     id: number;
+    uid: string;
     name: string;
     email: string;
     isAdmin: boolean;
     isMaster?: boolean;
     password?: string;
-    status: 'Ativo' | 'Inativo';
+    status: 'Ativo' | 'Inativo' | 'Pendente';
+    photoURL?: string;
 }
 
 export default function SelecionarPerfilPage() {
     const router = useRouter();
     const auth = useAuth();
     const { user: firebaseUser } = useUser();
-    const { useScopedData } = useCompany();
-    const [users, setUsers] = useScopedData<UserProfile[]>('global-users', []);
+    const [users, setUsers] = useLocalStorage<UserProfile[]>('global-users', []);
     const { toast } = useToast();
 
     const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
@@ -38,6 +39,12 @@ export default function SelecionarPerfilPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isAddUserOpen, setIsAddUserOpen] = useState(false);
     const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
+
+    const availableProfiles = useMemo(() => {
+        if (!firebaseUser) return [];
+        return users.filter(u => u.email === firebaseUser.email && u.status !== 'Pendente');
+    }, [users, firebaseUser]);
+
 
     const handleProfileSelect = (user: UserProfile) => {
         if (user.status === 'Inativo') {
@@ -61,14 +68,11 @@ export default function SelecionarPerfilPage() {
 
         setTimeout(() => {
             if (password === selectedUser?.password) {
-                // CORREÇÃO: Usar diretamente o 'selectedUser' que já temos.
-                // Ele é o perfil correto que o usuário clicou.
                 if (selectedUser) {
                     sessionStorage.setItem('user-profile', JSON.stringify(selectedUser));
                     toast({ title: "Acesso Autorizado!", description: `Bem-vindo(a) ${selectedUser.name}.` });
                     router.push('/selecionar-empresa');
                 } else {
-                    // Este caso se torna muito improvável, mas é um fallback.
                     toast({ variant: 'destructive', title: "Erro de Perfil", description: "Não foi possível encontrar os dados do seu perfil." });
                     setIsLoading(false);
                 }
@@ -87,14 +91,19 @@ export default function SelecionarPerfilPage() {
         setIsLoading(false);
     }
     
-    const handleSaveNewUser = (userData: Omit<UserProfile, 'id' | 'isAdmin' | 'isMaster' | 'permissions' | 'status'>) => {
+    const handleSaveNewUser = (userData: Omit<UserProfile, 'id' | 'isAdmin' | 'isMaster' | 'permissions' | 'status' | 'uid'>) => {
+        if (!firebaseUser) {
+            toast({ variant: 'destructive', title: "Erro", description: "Você precisa estar autenticado para criar um perfil." });
+            return;
+        }
+        
         const isFirstUser = users.length === 0;
         const newUser: UserProfile = {
             id: Date.now(),
+            uid: firebaseUser.uid,
             ...userData,
-            isAdmin: isFirstUser, // First user is always admin
-            isMaster: isFirstUser, // First user is always master
-            permissions: {},
+            isAdmin: isFirstUser,
+            isMaster: isFirstUser,
             status: 'Ativo',
         };
         setUsers(prev => [...prev, newUser]);
@@ -160,15 +169,19 @@ export default function SelecionarPerfilPage() {
                     </p>
                 </div>
                 
-                {users.length > 0 ? (
+                {availableProfiles.length > 0 ? (
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 justify-center">
-                    {users.map((user) => (
+                    {availableProfiles.map((user) => (
                         <Card
                             key={user.id}
                             className="flex flex-col justify-between transition-shadow hover:shadow-lg focus-within:shadow-lg"
                         >
-                            <CardContent className="flex flex-col flex-grow items-center justify-center p-6 text-center space-y-4">
+                             <CardContent 
+                                className="flex flex-col flex-grow items-center justify-center p-6 text-center space-y-4 cursor-pointer"
+                                onClick={() => handleProfileSelect(user)}
+                            >
                                 <Avatar className="h-20 w-20 border-2">
+                                     <AvatarImage src={user.photoURL} alt={user.name} />
                                     <AvatarFallback className="bg-muted">
                                         {user.isMaster ? (
                                             <Shield className="h-10 w-10 text-amber-500" />
@@ -214,7 +227,7 @@ export default function SelecionarPerfilPage() {
                         <CardHeader>
                             <CardTitle>Nenhum Perfil Cadastrado</CardTitle>
                             <CardDescription>
-                                Vamos criar o primeiro perfil de administrador para você começar a usar o sistema.
+                                Você precisa criar seu primeiro perfil para este login.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -288,24 +301,33 @@ export default function SelecionarPerfilPage() {
 interface AddUserDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSave: (data: Omit<UserProfile, 'id' | 'isAdmin' | 'isMaster' | 'permissions' | 'status'>) => void;
+    onSave: (data: Omit<UserProfile, 'id' | 'isAdmin' | 'isMaster' | 'permissions' | 'status' | 'uid' | 'photoURL'>) => void;
     isFirstUser: boolean;
 }
 
 function AddUserDialog({ open, onOpenChange, onSave, isFirstUser }: AddUserDialogProps) {
+    const { user: firebaseUser } = useUser();
     const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const { toast } = useToast();
 
+    useEffect(() => {
+        if(firebaseUser?.displayName) {
+            setName(firebaseUser.displayName);
+        }
+    }, [firebaseUser]);
+
     const handleSubmit = () => {
-        if (!name || !email || !password) {
-            toast({ variant: 'destructive', title: "Campos obrigatórios", description: "Nome, email e senha são obrigatórios." });
+        if (!name || !password) {
+            toast({ variant: 'destructive', title: "Campos obrigatórios", description: "Nome e senha são obrigatórios." });
             return;
         }
-        onSave({ name, email, password });
+         if (!firebaseUser?.email) {
+            toast({ variant: 'destructive', title: "Erro", description: "Email do usuário não encontrado." });
+            return;
+        }
+        onSave({ name, email: firebaseUser.email, password });
         setName('');
-        setEmail('');
         setPassword('');
     };
 
@@ -323,12 +345,12 @@ function AddUserDialog({ open, onOpenChange, onSave, isFirstUser }: AddUserDialo
                         <Label htmlFor="new-name">Nome</Label>
                         <Input id="new-name" value={name} onChange={(e) => setName(e.target.value)} />
                     </div>
-                    <div className="space-y-2">
+                     <div className="space-y-2">
                         <Label htmlFor="new-email">Email</Label>
-                        <Input id="new-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                        <Input id="new-email" type="email" value={firebaseUser?.email || ''} disabled />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="new-password">Senha</Label>
+                        <Label htmlFor="new-password">Senha de acesso ao perfil</Label>
                         <Input id="new-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
                     </div>
                 </div>
