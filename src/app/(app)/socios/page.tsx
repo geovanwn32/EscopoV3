@@ -18,15 +18,44 @@ import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { MoneyInput } from '@/components/ui/money-input';
 
 interface Socio {
     id: number;
+    // Dados Pessoais
     nome: string;
     cpf: string;
-    participacao: number;
-    dataEntrada: string; // ISO string
+    dataNascimento?: string;
+    nacionalidade?: string;
+    estadoCivil?: 'Solteiro(a)' | 'Casado(a)' | 'Divorciado(a)' | 'Viúvo(a)' | 'União Estável';
+    profissao?: string;
+    rg?: { numero: string; orgaoEmissor: string; uf: string; };
+    pis?: string;
+    endereco?: { rua: string; numero: string; bairro: string; cidade: string; cep: string; estado: string; complemento?: string; };
+    telefone?: string;
+    email?: string;
+    // Dados Societários
+    tipoSocio?: 'Pessoa Física' | 'Pessoa Jurídica';
     cargo: string;
+    dataEntrada: string; // ISO string
+    participacao: number;
+    responsabilidadeAdmin?: string;
+    // Remuneração
+    dadosRemuneracao?: {
+        tipo: 'Pró-labore' | 'Distribuição de Lucros' | 'RCI';
+        proLaboreValor?: number;
+    };
+    // Dados Bancários
+    dadosBancarios?: {
+        banco: string;
+        agencia: string;
+        conta: string;
+        tipoConta: 'Corrente' | 'Poupança';
+    };
 }
+
 
 export default function SociosPage() {
     const { toast } = useToast();
@@ -183,35 +212,62 @@ interface ItemFormProps {
     item: Socio | null;
 }
 
+const initialFormData: Omit<Socio, 'id'> = {
+    nome: '',
+    cpf: '',
+    dataNascimento: '',
+    nacionalidade: 'Brasileiro(a)',
+    estadoCivil: 'Solteiro(a)',
+    profissao: '',
+    rg: { numero: '', orgaoEmissor: '', uf: '' },
+    pis: '',
+    endereco: { rua: '', numero: '', bairro: '', cidade: '', cep: '', estado: '' },
+    telefone: '',
+    email: '',
+    tipoSocio: 'Pessoa Física',
+    cargo: 'Sócio-Administrador',
+    dataEntrada: '',
+    participacao: 0,
+    responsabilidadeAdmin: '',
+    dadosRemuneracao: { tipo: 'Pró-labore', proLaboreValor: 0 },
+    dadosBancarios: { banco: '', agencia: '', conta: '', tipoConta: 'Corrente' },
+};
+
+
 function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
     const { toast } = useToast();
-    const [formData, setFormData] = useState<Omit<Socio, 'id'>>({
-        nome: '',
-        cpf: '',
-        participacao: 0,
-        dataEntrada: '',
-        cargo: 'Sócio-Administrador',
-    });
+    const [formData, setFormData] = useState<Omit<Socio, 'id'>>(initialFormData);
 
     useEffect(() => {
         if (item) {
             setFormData({
-                nome: item.nome || '',
-                cpf: item.cpf || '',
-                participacao: item.participacao || 0,
-                dataEntrada: item.dataEntrada || '',
-                cargo: item.cargo || '',
+               ...initialFormData, // Start with defaults to avoid undefined errors
+               ...item,
+               // Ensure nested objects are not undefined
+               rg: item.rg || initialFormData.rg,
+               endereco: item.endereco || initialFormData.endereco,
+               dadosRemuneracao: item.dadosRemuneracao || initialFormData.dadosRemuneracao,
+               dadosBancarios: item.dadosBancarios || initialFormData.dadosBancarios
             });
         } else {
-            setFormData({
-                nome: '', cpf: '', participacao: 0, dataEntrada: '', cargo: 'Sócio-Administrador',
-            });
+            setFormData(initialFormData);
         }
     }, [item]);
 
     const handleInputChange = (field: keyof Omit<Socio, 'id'>, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
+    
+    const handleNestedChange = (section: 'rg' | 'endereco' | 'dadosRemuneracao' | 'dadosBancarios', field: string, value: any) => {
+        setFormData(prev => ({
+            ...prev,
+            [section]: {
+                // @ts-ignore
+                ...prev[section],
+                [field]: value
+            }
+        }));
+    }
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -227,47 +283,36 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
     };
     
     return (
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="sm:max-w-3xl">
             <DialogHeader>
                 <DialogTitle>{item ? 'Editar' : 'Novo'} Sócio</DialogTitle>
                 <DialogDescription>Preencha os dados do sócio.</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                    <Label htmlFor="nome">Nome Completo *</Label>
-                    <Input id="nome" value={formData.nome} onChange={(e) => handleInputChange('nome', e.target.value)} required />
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="cpf">CPF *</Label>
-                    <Input id="cpf" value={formData.cpf} onChange={(e) => handleInputChange('cpf', e.target.value)} required />
-                </div>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="participacao">Participação Societária (%) *</Label>
-                        <Input id="participacao" type="number" value={formData.participacao} onChange={(e) => handleInputChange('participacao', parseFloat(e.target.value) || 0)} required />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="dataEntrada">Data de Entrada *</Label>
-                         <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                variant={"outline"}
-                                className={cn("w-full justify-start text-left font-normal", !formData.dataEntrada && "text-muted-foreground")}
-                                >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {formData.dataEntrada ? format(new Date(formData.dataEntrada), "dd/MM/yyyy", { locale: ptBR }) : <span>Escolha uma data</span>}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                                <Calendar mode="single" selected={formData.dataEntrada ? new Date(formData.dataEntrada) : undefined} onSelect={(d) => handleInputChange('dataEntrada', d?.toISOString() || '')} initialFocus locale={ptBR} />
-                            </PopoverContent>
-                        </Popover>
-                    </div>
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="cargo">Cargo</Label>
-                    <Input id="cargo" value={formData.cargo} onChange={(e) => handleInputChange('cargo', e.target.value)} />
-                </div>
+                 <Tabs defaultValue="pessoal">
+                    <TabsList className="grid w-full grid-cols-3">
+                        <TabsTrigger value="pessoal">Dados Pessoais</TabsTrigger>
+                        <TabsTrigger value="societario">Dados Societários</TabsTrigger>
+                        <TabsTrigger value="remuneracao">Remuneração/RCI</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="pessoal" className="space-y-4 pt-4">
+                        <div className="space-y-2"><Label>Nome Completo *</Label><Input value={formData.nome} onChange={e => handleInputChange('nome', e.target.value)} required /></div>
+                        <div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label>CPF *</Label><Input value={formData.cpf} onChange={e => handleInputChange('cpf', e.target.value)} required /></div><div className="space-y-2"><Label>Data de Nascimento</Label><Input type="date" value={formData.dataNascimento?.split('T')[0]} onChange={e => handleInputChange('dataNascimento', e.target.value)} /></div></div>
+                        <div className="grid grid-cols-3 gap-4"><div className="space-y-2"><Label>Nacionalidade</Label><Input value={formData.nacionalidade} onChange={e => handleInputChange('nacionalidade', e.target.value)} /></div><div className="space-y-2"><Label>Estado Civil</Label><Select value={formData.estadoCivil} onValueChange={(v) => handleInputChange('estadoCivil', v)}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="Solteiro(a)">Solteiro(a)</SelectItem><SelectItem value="Casado(a)">Casado(a)</SelectItem><SelectItem value="Divorciado(a)">Divorciado(a)</SelectItem><SelectItem value="Viúvo(a)">Viúvo(a)</SelectItem><SelectItem value="União Estável">União Estável</SelectItem></SelectContent></Select></div><div className="space-y-2"><Label>Profissão</Label><Input value={formData.profissao} onChange={e => handleInputChange('profissao', e.target.value)} /></div></div>
+                        <div className="grid grid-cols-3 gap-4"><div className="space-y-2"><Label>RG</Label><Input placeholder="Número" value={formData.rg?.numero} onChange={e => handleNestedChange('rg', 'numero', e.target.value)} /></div><div className="space-y-2"><Label>Órgão Emissor</Label><Input placeholder="SSP" value={formData.rg?.orgaoEmissor} onChange={e => handleNestedChange('rg', 'orgaoEmissor', e.target.value)} /></div><div className="space-y-2"><Label>UF</Label><Input placeholder="GO" value={formData.rg?.uf} onChange={e => handleNestedChange('rg', 'uf', e.target.value)} /></div></div>
+                        <div className="space-y-2"><Label>Endereço</Label><Input placeholder="Rua, Av..." value={formData.endereco?.rua} onChange={e => handleNestedChange('endereco', 'rua', e.target.value)} /></div>
+                    </TabsContent>
+                    <TabsContent value="societario" className="space-y-4 pt-4">
+                        <div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label>Tipo de Sócio</Label><Select value={formData.tipoSocio} onValueChange={v => handleInputChange('tipoSocio', v)}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="Pessoa Física">Pessoa Física</SelectItem><SelectItem value="Pessoa Jurídica">Pessoa Jurídica</SelectItem></SelectContent></Select></div><div className="space-y-2"><Label>Função / Cargo *</Label><Input value={formData.cargo} onChange={e => handleInputChange('cargo', e.target.value)} required/></div></div>
+                        <div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label>Data de Ingresso *</Label><Input type="date" value={formData.dataEntrada?.split('T')[0]} onChange={e => handleInputChange('dataEntrada', e.target.value)} required/></div><div className="space-y-2"><Label>Participação (%) *</Label><Input type="number" value={formData.participacao} onChange={e => handleInputChange('participacao', parseFloat(e.target.value) || 0)} required /></div></div>
+                        <div className="space-y-2"><Label>Responsabilidade Administrativa</Label><Input placeholder="Ex: Assina pela empresa" value={formData.responsabilidadeAdmin} onChange={e => handleInputChange('responsabilidadeAdmin', e.target.value)} /></div>
+                    </TabsContent>
+                    <TabsContent value="remuneracao" className="space-y-4 pt-4">
+                         <div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label>Tipo de Remuneração</Label><Select value={formData.dadosRemuneracao?.tipo} onValueChange={v => handleNestedChange('dadosRemuneracao', 'tipo', v)}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="Pró-labore">Pró-labore</SelectItem><SelectItem value="Distribuição de Lucros">Distribuição de Lucros</SelectItem><SelectItem value="RCI">RCI</SelectItem></SelectContent></Select></div>{formData.dadosRemuneracao?.tipo === 'Pró-labore' && <div className="space-y-2"><Label>Valor Pró-labore (R$)</Label><MoneyInput id="pro-labore" value={formData.dadosRemuneracao.proLaboreValor || 0} onValueChange={v => handleNestedChange('dadosRemuneracao', 'proLaboreValor', v)} /></div>}</div>
+                         <h4 className="font-semibold text-sm pt-4">Dados Bancários para Pagamento</h4>
+                         <div className="grid grid-cols-3 gap-4"><div className="space-y-2"><Label>Banco</Label><Input value={formData.dadosBancarios?.banco} onChange={e => handleNestedChange('dadosBancarios', 'banco', e.target.value)} /></div><div className="space-y-2"><Label>Agência</Label><Input value={formData.dadosBancarios?.agencia} onChange={e => handleNestedChange('dadosBancarios', 'agencia', e.target.value)} /></div><div className="space-y-2"><Label>Conta</Label><Input value={formData.dadosBancarios?.conta} onChange={e => handleNestedChange('dadosBancarios', 'conta', e.target.value)} /></div></div>
+                    </TabsContent>
+                </Tabs>
                 <DialogFooter>
                     <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
                     <Button type="submit">Salvar</Button>
@@ -276,4 +321,3 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
         </DialogContent>
     );
 }
-
