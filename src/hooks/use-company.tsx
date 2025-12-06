@@ -191,11 +191,15 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
 
 
     const useScopedData = <T,>(key: string, defaultValue: T): [T, (value: T | ((prev: T) => T)) => void] => {
+        if (typeof window === 'undefined') {
+            return [defaultValue, () => {}];
+        }
+
         const scopedKey = `company-${currentCompany}-${key}`;
         const defaultValueRef = useRef(defaultValue);
 
         const [data, setData] = useState<T>(() => {
-            if (typeof window === 'undefined' || !currentCompany) return defaultValueRef.current;
+            if (!currentCompany) return defaultValueRef.current;
             try {
                 const item = localStorage.getItem(scopedKey);
                 return item ? JSON.parse(item) : defaultValueRef.current;
@@ -221,7 +225,7 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
         }, [currentCompany, isLoaded, scopedKey]);
 
         const setScopedData = useCallback((value: T | ((prev: T) => T)) => {
-            if (typeof window !== 'undefined' && currentCompany) {
+            if (currentCompany) {
                 setData(prevData => {
                     const newValue = value instanceof Function ? value(prevData) : value;
                     try {

@@ -95,6 +95,7 @@ export default function ParceirosPage() {
     }
 
     const filteredPartners = useMemo(() => {
+        if (!partners) return [];
         return partners.filter(partner => 
             partner.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             partner.document.toLowerCase().includes(searchTerm.toLowerCase())
@@ -124,7 +125,7 @@ export default function ParceirosPage() {
                     <div className="flex items-center justify-between">
                         <div>
                             <CardTitle>Parceiros Cadastrados</CardTitle>
-                            <CardDescription>{partners.length} parceiros encontrados.</CardDescription>
+                            <CardDescription>{partners?.length || 0} parceiros encontrados.</CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
                              <div className="relative flex-grow">
