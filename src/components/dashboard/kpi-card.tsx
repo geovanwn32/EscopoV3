@@ -14,7 +14,7 @@ export default function KpiCard({ title, value, icon, variant = 'default' }: Kpi
   return (
     <Card className={cn(
       "rounded-2xl",
-      variant === 'default' ? 'bg-accent' : 'bg-primary text-primary-foreground'
+      variant === 'default' ? 'bg-card' : 'bg-primary text-primary-foreground'
     )}>
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
@@ -23,7 +23,7 @@ export default function KpiCard({ title, value, icon, variant = 'default' }: Kpi
         <div className="text-3xl font-bold">{value}</div>
         <div className={cn(
             "flex items-center justify-center h-8 w-8 rounded-full",
-            variant === 'default' ? 'bg-black/10' : 'bg-white/20'
+            variant === 'default' ? 'bg-muted' : 'bg-white/20'
         )}>
             {icon}
         </div>

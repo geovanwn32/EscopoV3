@@ -205,7 +205,7 @@ export default function DashboardPage() {
               <Card className='flex flex-col h-full'>
                     <CardHeader>
                       <CardTitle className="flex items-center justify-between">
-                          <span>Notificações</span>
+                          <span>Próximos Eventos e Pendências</span>
                           {allNotifications.length > 0 && (
                               <span className="flex items-center text-sm font-medium text-muted-foreground">
                                   <AlertTriangle className="mr-2 h-4 w-4 text-amber-500" />
@@ -254,5 +254,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    

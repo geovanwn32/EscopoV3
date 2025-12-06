@@ -1,4 +1,5 @@
 
+
 'use client';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -38,7 +39,7 @@ interface ResultsChartProps {
 
 export default function ResultsChart({ data, period, onPeriodChange }: ResultsChartProps) {
   return (
-    <Card>
+    <Card className='h-full'>
       <CardHeader className='flex-row items-center justify-between'>
         <div>
             <CardTitle>Resultados</CardTitle>
