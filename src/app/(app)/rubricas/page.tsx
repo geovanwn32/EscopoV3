@@ -6,6 +6,7 @@ import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft, Loader2 } from
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -335,4 +336,6 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
         </DialogContent>
     );
 }
+    
+
     
