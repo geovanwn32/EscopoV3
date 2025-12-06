@@ -5,11 +5,11 @@ import { useState, useEffect, ChangeEvent, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { PackagePlus, Wrench, Upload, FileMinus, Receipt, MoreHorizontal, Search, Filter, Plus, FileUp, Trash2, X, Eye, Pencil } from "lucide-react";
+import { PackagePlus, Wrench, Upload, FileMinus, Receipt, MoreHorizontal, Search, Filter, Plus, FileUp, Trash2, X, Eye, Pencil, Calendar as CalendarIcon } from "lucide-react";
 import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
@@ -25,6 +25,11 @@ import { Partner } from "@/types/partner";
 import { useCompany } from "@/hooks/use-company";
 import { NotaFiscal, ProductItem, ServiceItem } from "@/types/fiscal";
 import { AuditLog, logAudit } from "@/lib/audit-log";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { addDays, format, startOfDay } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import type { DateRange } from "react-day-picker";
 
 
 const actions = [
@@ -121,6 +126,8 @@ export default function FiscalPage() {
     const [isRejectedFilesDialogOpen, setIsRejectedFilesDialogOpen] = useState(false);
     const [sourceXmlId, setSourceXmlId] = useState<number | undefined>(undefined);
 
+    const [searchTerm, setSearchTerm] = useState('');
+    const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
 
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -209,7 +216,7 @@ export default function FiscalPage() {
                         id: Date.now() + Math.random(),
                         fileName: file.name,
                         fileContent: content,
-                        date: new Date().toLocaleDateString('pt-BR'),
+                        date: new Date().toISOString(), // Use ISO for easier filtering
                         status: 'Importado',
                     });
                     successCount++;
@@ -465,6 +472,47 @@ export default function FiscalPage() {
         setEditingNota(nota);
         openLancamentoDialog(tipo as any, nota.dados, false);
     };
+
+    const filteredXmls = useMemo(() => {
+        return xmls.filter(item => {
+            const searchTermLower = searchTerm.toLowerCase();
+            const searchMatch = item.fileName.toLowerCase().includes(searchTermLower);
+
+            if (!dateRange?.from) return searchMatch;
+
+            const itemDate = startOfDay(new Date(item.date));
+            const fromDate = startOfDay(dateRange.from);
+            const toDate = dateRange.to ? startOfDay(dateRange.to) : fromDate;
+
+            return searchMatch && itemDate >= fromDate && itemDate <= toDate;
+        });
+    }, [xmls, searchTerm, dateRange]);
+
+    const filterNotas = (notas: NotaFiscal[]) => {
+        return notas.filter(item => {
+            const searchTermLower = searchTerm.toLowerCase();
+            const num = item.dados.geral?.numero || item.dados.identificacao?.numero || '';
+            const emitente = item.dados.emitente?.razaoSocial || item.dados.prestador?.razaoSocial || '';
+            const dest = item.dados.destinatario?.razaoSocial || item.dados.tomador?.razaoSocial || '';
+            
+            const searchMatch = num.includes(searchTermLower) || emitente.toLowerCase().includes(searchTermLower) || dest.toLowerCase().includes(searchTermLower);
+
+            if (!dateRange?.from) return searchMatch;
+            
+            const itemDateStr = item.dados.geral?.dataEmissao || item.dados.identificacao?.dataEmissao;
+            if (!itemDateStr) return searchMatch; // if no date, don't filter by date
+
+            const itemDate = startOfDay(new Date(itemDateStr));
+            const fromDate = startOfDay(dateRange.from);
+            const toDate = dateRange.to ? startOfDay(dateRange.to) : fromDate;
+
+            return searchMatch && itemDate >= fromDate && itemDate <= toDate;
+        });
+    };
+
+    const filteredNotasProduto = useMemo(() => filterNotas(notasProduto), [notasProduto, searchTerm, dateRange]);
+    const filteredNotasSaida = useMemo(() => filterNotas(notasSaida), [notasSaida, searchTerm, dateRange]);
+    const filteredNotasServico = useMemo(() => filterNotas(notasServico), [notasServico, searchTerm, dateRange]);
     
     return (
         <>
@@ -512,20 +560,57 @@ export default function FiscalPage() {
                                 <div className="flex w-full sm:w-auto items-center gap-2">
                                     <div className="relative flex-grow">
                                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                        <Input placeholder="Buscar..." className="pl-9 w-full" />
+                                        <Input 
+                                            placeholder="Buscar..." 
+                                            className="pl-9 w-full"
+                                            value={searchTerm}
+                                            onChange={e => setSearchTerm(e.target.value)}
+                                        />
                                     </div>
-                                    <Button variant="outline"><Filter className="mr-2 h-4 w-4"/>Filtrar</Button>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button variant="outline" id="date" className={cn("justify-start text-left font-normal", !dateRange && "text-muted-foreground")}>
+                                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                                {dateRange?.from ? (
+                                                dateRange.to ? (
+                                                    <>
+                                                    {format(dateRange.from, "LLL dd, y")} -{" "}
+                                                    {format(dateRange.to, "LLL dd, y")}
+                                                    </>
+                                                ) : (
+                                                    format(dateRange.from, "LLL dd, y")
+                                                )
+                                                ) : (
+                                                <span>Selecione a data</span>
+                                                )}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0" align="end">
+                                            <Calendar
+                                                initialFocus
+                                                mode="range"
+                                                defaultMonth={dateRange?.from}
+                                                selected={dateRange}
+                                                onSelect={setDateRange}
+                                                numberOfMonths={2}
+                                                locale={ptBR}
+                                            />
+                                            <div className="p-2 border-t flex justify-end">
+                                                 <Button variant="outline" size="sm" onClick={() => setDateRange(undefined)}>Limpar</Button>
+                                            </div>
+                                        </PopoverContent>
+                                    </Popover>
                                 </div>
                             </div>
                             <div className="mt-4">
                                 <TabsContent value="xmls">
                                     <RecentDocumentsTable
                                         headers={['Arquivo', 'Data Importação', 'Status']}
-                                        data={xmls}
+                                        data={filteredXmls}
                                         renderRow={(item: XmlFile) => (
                                             <>
                                                 <TableCell className="font-medium">{item.fileName}</TableCell>
-                                                <TableCell>{item.date}</TableCell>
+                                                <TableCell>{format(new Date(item.date), 'dd/MM/yyyy')}</TableCell>
                                                 <TableCell>
                                                     <Badge variant={
                                                         item.status === 'Lançado' ? 'default' :
@@ -541,13 +626,13 @@ export default function FiscalPage() {
                                     />
                                 </TabsContent>
                                 <TabsContent value="produtos">
-                                    <NotasFiscaisTable data={notasProduto} tipo="produto" onDelete={handleDeleteNota} onView={handleViewNota} onEdit={handleEditNota} />
+                                    <NotasFiscaisTable data={filteredNotasProduto} tipo="produto" onDelete={handleDeleteNota} onView={handleViewNota} onEdit={handleEditNota} />
                                 </TabsContent>
                                 <TabsContent value="saidas">
-                                    <NotasFiscaisTable data={notasSaida} tipo="saida" onDelete={handleDeleteNota} onView={handleViewNota} onEdit={handleEditNota} />
+                                    <NotasFiscaisTable data={filteredNotasSaida} tipo="saida" onDelete={handleDeleteNota} onView={handleViewNota} onEdit={handleEditNota} />
                                 </TabsContent>
                                 <TabsContent value="servicos">
-                                    <NotasFiscaisTable data={notasServico} tipo="servico" onDelete={handleDeleteNota} onView={handleViewNota} onEdit={handleEditNota} />
+                                    <NotasFiscaisTable data={filteredNotasServico} tipo="servico" onDelete={handleDeleteNota} onView={handleViewNota} onEdit={handleEditNota} />
                                 </TabsContent>
                                 <TabsContent value="recibos">
                                     <div className="text-center py-10">
@@ -781,8 +866,8 @@ function NotasFiscaisTable({
     }
     
     const headers = tipo === 'servico' 
-        ? ['Número', 'Prestador', 'Tomador', 'Valor Total']
-        : ['Número', 'Emitente', 'Destinatário', 'Valor Total'];
+        ? ['Número', 'Data', 'Prestador', 'Tomador', 'Valor Total']
+        : ['Número', 'Data', 'Emitente', 'Destinatário', 'Valor Total'];
 
 
     const renderRow = (item: NotaFiscal) => {
@@ -790,9 +875,12 @@ function NotasFiscaisTable({
             ? (item.items as ServiceItem[]).reduce((acc: number, service) => acc + (Number(service.value) || 0), 0)
             : (item.items as ProductItem[]).reduce((acc: number, product) => acc + product.total, 0);
 
+        const dataEmissao = item.dados.geral?.dataEmissao || item.dados.identificacao?.dataEmissao;
+
         return (
             <>
                 <TableCell className="font-medium">{item.dados.geral?.numero || item.dados.identificacao?.numero}</TableCell>
+                <TableCell>{dataEmissao ? format(new Date(dataEmissao), 'dd/MM/yyyy') : 'N/A'}</TableCell>
                 <TableCell>{item.dados.emitente?.razaoSocial || item.dados.prestador?.razaoSocial}</TableCell>
                 <TableCell>{item.dados.destinatario?.razaoSocial || item.dados.tomador?.razaoSocial}</TableCell>
                 <TableCell className="text-right font-mono">
