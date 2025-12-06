@@ -1,6 +1,7 @@
-import { Building2 } from 'lucide-react';
+import { Building2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 export default function TermosPage() {
     return (
@@ -90,6 +91,14 @@ export default function TermosPage() {
                         </div>
 
                     </CardContent>
+                     <CardFooter className="p-8 md:p-10 border-t justify-center">
+                        <Button asChild variant="outline">
+                            <Link href="/landing">
+                                <ArrowLeft className="mr-2 h-4 w-4" />
+                                Voltar
+                            </Link>
+                        </Button>
+                    </CardFooter>
                 </Card>
             </div>
         </div>
