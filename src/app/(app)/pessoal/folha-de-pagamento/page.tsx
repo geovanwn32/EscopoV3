@@ -1,5 +1,3 @@
-
-
 'use client';
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -469,5 +467,3 @@ function LancamentosModelo({ modelos, setModelos, rubricas }: { modelos: Lancame
         </div>
     )
 }
-
-    
