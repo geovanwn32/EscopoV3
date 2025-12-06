@@ -146,7 +146,7 @@ const faqs = [
 
 export default function LandingPage() {
   return (
-    <div className="w-full bg-background text-foreground">
+    <div className="w-full bg-background text-foreground animated-gradient">
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur-sm">
         <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
