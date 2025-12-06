@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { useCompany, useLocalStorage } from '@/hooks/use-company';
+import { useLocalStorage } from '@/hooks/use-company';
 import { Badge } from '@/components/ui/badge';
 import { Check, X, Calendar as CalendarIcon, Shield, User as UserIcon, RefreshCw, Search, MoreHorizontal, Pencil, Trash2, Crown, Building, Briefcase, Upload } from 'lucide-react';
 import { AuditLog, logAudit } from '@/lib/audit-log';
@@ -62,7 +62,6 @@ interface User {
 
 export default function AdminPage() {
     const { toast } = useToast();
-    const { companies } = useCompany();
     const [users, setUsers] = useLocalStorage<User[]>('global-users', []);
     const [auditLogs, setAuditLogs] = useLocalStorage<AuditLog[]>('audit-trail-logs', []);
     const { user: firebaseUser } = useUser();

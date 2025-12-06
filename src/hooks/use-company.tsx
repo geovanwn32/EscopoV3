@@ -62,6 +62,22 @@ export function useLocalStorage<T>(key: string, defaultValue: T): [T, (value: T 
         }
     }, [key]);
 
+    // This effect ensures that the state is updated if the localStorage is changed in another tab.
+    useEffect(() => {
+        const handleStorageChange = (event: StorageEvent) => {
+            if (event.key === key) {
+                try {
+                    setData(event.newValue ? JSON.parse(event.newValue) : defaultValueRef.current);
+                } catch (error) {
+                    console.error(`Error parsing updated ${key} from storage event`, error);
+                }
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        return () => window.removeEventListener('storage', handleStorageChange);
+    }, [key]);
+
     return [data, setStoredData];
 };
 
