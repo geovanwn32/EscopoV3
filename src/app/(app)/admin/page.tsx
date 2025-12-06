@@ -4,9 +4,9 @@ import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useLocalStorage } from '@/hooks/use-company';
+import { useLocalStorage, type Company } from '@/hooks/use-company';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, Calendar as CalendarIcon, Shield, User as UserIcon, RefreshCw, Search, MoreHorizontal, Pencil, Trash2, Crown, Building, Briefcase, Upload, Users, Clock, FileWarning, ArrowUpDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { Check, X, Calendar as CalendarIcon, Shield, User as UserIcon, RefreshCw, Search, MoreHorizontal, Pencil, Trash2, Crown, Building, Briefcase, Upload, Users, Clock, FileWarning, ArrowUpDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Image as ImageIcon, LayoutGrid, FileType } from 'lucide-react';
 import { AuditLog, logAudit } from '@/lib/audit-log';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -25,6 +25,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useUser } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
 const modules = [
@@ -63,11 +65,18 @@ interface User {
 
 type SortKey = keyof User | 'licenca' | 'criacao';
 
+const adminTools = [
+    { id: 'geral', label: 'Visão Geral', icon: LayoutGrid, href: '/admin' },
+    { id: 'media', label: 'Gerenciador de Mídia', icon: ImageIcon, href: '/admin/gerenciador-de-midia' },
+    { id: 'docs', label: 'Documentação', icon: FileType, href: '/admin/docs' },
+]
+
 export default function AdminPage() {
     const { toast } = useToast();
     const [users, setUsers] = useLocalStorage<User[]>('global-users', []);
     const [auditLogs, setAuditLogs] = useLocalStorage<AuditLog[]>('audit-trail-logs', []);
     const { user: firebaseUser } = useUser();
+    const [companies] = useLocalStorage<Company[]>('companies', []);
     
     const [userToEdit, setUserToEdit] = useState<User | null>(null);
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
@@ -304,208 +313,222 @@ export default function AdminPage() {
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-             <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total de Usuários</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent><div className="text-2xl font-bold">{kpiData.totalUsers}</div></CardContent>
-            </Card>
-             <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Acessos Pendentes</CardTitle>
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent><div className="text-2xl font-bold">{kpiData.pendingUsers}</div></CardContent>
-            </Card>
-             <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Licenças Ativas</CardTitle>
-                    <Check className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent><div className="text-2xl font-bold">{kpiData.activeLicenses}</div></CardContent>
-            </Card>
-             <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Licenças a Expirar</CardTitle>
-                    <FileWarning className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent><div className="text-2xl font-bold">{kpiData.expiringSoon}</div></CardContent>
-            </Card>
-        </div>
+        <Tabs defaultValue="geral">
+            <TabsList>
+                {adminTools.map(tool => (
+                    <TabsTrigger key={tool.id} value={tool.id} asChild>
+                       <Link href={tool.href}>
+                         <tool.icon className="mr-2 h-4 w-4" /> {tool.label}
+                       </Link>
+                    </TabsTrigger>
+                ))}
+            </TabsList>
+            
+            <TabsContent value="geral" className="mt-4">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total de Usuários</CardTitle>
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent><div className="text-2xl font-bold">{kpiData.totalUsers}</div></CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Acessos Pendentes</CardTitle>
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent><div className="text-2xl font-bold">{kpiData.pendingUsers}</div></CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Licenças Ativas</CardTitle>
+                            <Check className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent><div className="text-2xl font-bold">{kpiData.activeLicenses}</div></CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Licenças a Expirar</CardTitle>
+                            <FileWarning className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent><div className="text-2xl font-bold">{kpiData.expiringSoon}</div></CardContent>
+                    </Card>
+                </div>
 
-        <Card>
-            <CardHeader>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                        <CardTitle>Gerenciamento de Usuários</CardTitle>
-                        <CardDescription>{filteredAndSortedUsers.length} usuários encontrados.</CardDescription>
-                    </div>
-                     <div className="flex flex-wrap items-center gap-2">
-                        <div className="relative flex-grow">
-                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Buscar por nome ou e-mail..." className="pl-9" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                <Card className="mt-6">
+                    <CardHeader>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div>
+                                <CardTitle>Gerenciamento de Usuários</CardTitle>
+                                <CardDescription>{filteredAndSortedUsers.length} usuários encontrados.</CardDescription>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <div className="relative flex-grow">
+                                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                    <Input placeholder="Buscar por nome ou e-mail..." className="pl-9" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                                </div>
+                                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                    <SelectTrigger className="w-full sm:w-[180px]"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Todos os Status</SelectItem>
+                                        <SelectItem value="Pendente">Pendente</SelectItem>
+                                        <SelectItem value="Ativo">Ativo</SelectItem>
+                                        <SelectItem value="Inativo">Inativo</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <Select value={planFilter} onValueChange={setPlanFilter}>
+                                    <SelectTrigger className="w-full sm:w-[180px]"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Todos os Planos</SelectItem>
+                                        <SelectItem value="Gratuito">Gratuito</SelectItem>
+                                        <SelectItem value="Basico">Básico</SelectItem>
+                                        <SelectItem value="Profissional">Profissional</SelectItem>
+                                        <SelectItem value="Empresarial">Empresarial</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <Button variant="outline" size="icon" onClick={handleRefresh}>
+                                    <RefreshCw className="h-4 w-4" />
+                                    <span className="sr-only">Atualizar</span>
+                                </Button>
+                            </div>
                         </div>
-                        <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger className="w-full sm:w-[180px]"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Todos os Status</SelectItem>
-                                <SelectItem value="Pendente">Pendente</SelectItem>
-                                <SelectItem value="Ativo">Ativo</SelectItem>
-                                <SelectItem value="Inativo">Inativo</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <Select value={planFilter} onValueChange={setPlanFilter}>
-                            <SelectTrigger className="w-full sm:w-[180px]"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Todos os Planos</SelectItem>
-                                <SelectItem value="Gratuito">Gratuito</SelectItem>
-                                <SelectItem value="Basico">Básico</SelectItem>
-                                <SelectItem value="Profissional">Profissional</SelectItem>
-                                <SelectItem value="Empresarial">Empresarial</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <Button variant="outline" size="icon" onClick={handleRefresh}>
-                            <RefreshCw className="h-4 w-4" />
-                            <span className="sr-only">Atualizar</span>
-                        </Button>
-                    </div>
-                </div>
-                 {selectedUserIds.length > 0 && (
-                    <div className="flex items-center gap-2 mt-4 border-t pt-4">
-                        <span className="text-sm text-muted-foreground">{selectedUserIds.length} selecionado(s)</span>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild><Button variant="outline">Ações em Lote <ArrowUpDown className="ml-2 h-4 w-4"/></Button></DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                                <DropdownMenuItem onSelect={() => handleBulkAction('approve')} className="text-emerald-600 focus:text-emerald-700">Aprovar Selecionados</DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => handleBulkAction('reject')} className="text-destructive focus:text-destructive">Recusar Selecionados</DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                )}
-            </CardHeader>
-            <CardContent>
-                 <div className="rounded-md border">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-[50px]"><Checkbox onCheckedChange={toggleSelectAll} checked={selectedUserIds.length === paginatedUsers.length && paginatedUsers.length > 0} /></TableHead>
-                                <TableHead className="cursor-pointer" onClick={() => handleSort('name')}>
-                                    <div className='flex items-center gap-2'>Nome <ArrowUpDown className="h-3 w-3" /></div>
-                                </TableHead>
-                                <TableHead>Email</TableHead>
-                                <TableHead>Plano Solicitado</TableHead>
-                                <TableHead className="cursor-pointer" onClick={() => handleSort('criacao')}>
-                                     <div className='flex items-center gap-2'>Data de Criação <ArrowUpDown className="h-3 w-3" /></div>
-                                </TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="cursor-pointer" onClick={() => handleSort('licenca')}>
-                                     <div className='flex items-center gap-2'>Licença Expira em <ArrowUpDown className="h-3 w-3" /></div>
-                                </TableHead>
-                                <TableHead className="w-[100px] text-center">Ações</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {paginatedUsers.length > 0 ? paginatedUsers.map(user => (
-                                <TableRow key={user.id} className={user.status === 'Pendente' ? 'bg-muted/50' : ''} data-state={selectedUserIds.includes(user.id) && "selected"}>
-                                    <TableCell><Checkbox checked={selectedUserIds.includes(user.id)} onCheckedChange={(checked) => setSelectedUserIds(prev => checked ? [...prev, user.id] : prev.filter(id => id !== user.id))} /></TableCell>
-                                    <TableCell className="font-medium flex items-center gap-2">
-                                        {user.isMaster ? <Crown className='h-4 w-4 text-amber-500' /> : user.isAdmin ? <Shield className='h-4 w-4 text-primary' /> : <UserIcon className='h-4 w-4 text-muted-foreground' />}
-                                        {user.name}
-                                    </TableCell>
-                                    <TableCell>{user.email}</TableCell>
-                                     <TableCell>
-                                        {user.planoId ? <Badge variant="outline" className='flex items-center gap-1.5'><Briefcase className='h-3 w-3'/> {user.planoId}</Badge> : 'N/A'}
-                                    </TableCell>
-                                    <TableCell>
-                                        {user.creationDate ? format(new Date(user.creationDate), 'dd/MM/yyyy') : 'N/A'}
-                                    </TableCell>
-                                    <TableCell>{getStatusBadge(user.status)}</TableCell>
-                                    <TableCell>
-                                        {user.dataExpiracaoLicenca ? format(new Date(user.dataExpiracaoLicenca), 'dd/MM/yyyy') : 'N/A'}
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                        {user.status === 'Pendente' ? (
-                                            <div className="space-x-2">
-                                                <Button size="sm" variant="outline" className="text-red-500 border-red-500/50 hover:bg-red-500/10 hover:text-red-600" onClick={() => handleRejection(user.id)}>
-                                                    <X className="mr-2 h-4 w-4"/>
-                                                    Recusar
-                                                </Button>
-                                                <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600" onClick={() => setUserToEdit(user)}>
-                                                    <Pencil className="mr-2 h-4 w-4"/>
-                                                    Revisar
-                                                </Button>
-                                            </div>
-                                        ) : (
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                        <span className="sr-only">Ações</span>
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem onClick={() => setUserToEdit(user)}>
-                                                        <Pencil className="mr-2 h-4 w-4" /> Editar
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setUserToDelete(user)}>
-                                                        <Trash2 className="mr-2 h-4 w-4" /> Excluir
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        )}
-                                    </TableCell>
-                                </TableRow>
-                            )) : (
-                                <TableRow>
-                                    <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
-                                        Nenhum usuário encontrado com os filtros atuais.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
-                 <div className="flex items-center justify-between pt-4">
-                    <div className="text-sm text-muted-foreground">
-                        {selectedUserIds.length} de {filteredAndSortedUsers.length} linha(s) selecionada(s).
-                    </div>
-                    <div className="flex items-center space-x-6 lg:space-x-8">
-                        <div className="flex items-center space-x-2">
-                            <p className="text-sm font-medium">Linhas por página</p>
-                            <Select
-                                value={`${rowsPerPage}`}
-                                onValueChange={(value) => {
-                                setRowsPerPage(Number(value))
-                                setCurrentPage(1)
-                                }}
-                            >
-                                <SelectTrigger className="h-8 w-[70px]">
-                                <SelectValue placeholder={rowsPerPage} />
-                                </SelectTrigger>
-                                <SelectContent side="top">
-                                {[5, 10, 20, 50].map((pageSize) => (
-                                    <SelectItem key={pageSize} value={`${pageSize}`}>
-                                    {pageSize}
-                                    </SelectItem>
-                                ))}
-                                </SelectContent>
-                            </Select>
+                        {selectedUserIds.length > 0 && (
+                            <div className="flex items-center gap-2 mt-4 border-t pt-4">
+                                <span className="text-sm text-muted-foreground">{selectedUserIds.length} selecionado(s)</span>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild><Button variant="outline">Ações em Lote <ArrowUpDown className="ml-2 h-4 w-4"/></Button></DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                        <DropdownMenuItem onSelect={() => handleBulkAction('approve')} className="text-emerald-600 focus:text-emerald-700">Aprovar Selecionados</DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => handleBulkAction('reject')} className="text-destructive focus:text-destructive">Recusar Selecionados</DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                        )}
+                    </CardHeader>
+                    <CardContent>
+                        <div className="rounded-md border">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="w-[50px]"><Checkbox onCheckedChange={toggleSelectAll} checked={selectedUserIds.length === paginatedUsers.length && paginatedUsers.length > 0} /></TableHead>
+                                        <TableHead className="cursor-pointer" onClick={() => handleSort('name')}>
+                                            <div className='flex items-center gap-2'>Nome <ArrowUpDown className="h-3 w-3" /></div>
+                                        </TableHead>
+                                        <TableHead>Email</TableHead>
+                                        <TableHead>Plano Solicitado</TableHead>
+                                        <TableHead className="cursor-pointer" onClick={() => handleSort('criacao')}>
+                                            <div className='flex items-center gap-2'>Data de Criação <ArrowUpDown className="h-3 w-3" /></div>
+                                        </TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead className="cursor-pointer" onClick={() => handleSort('licenca')}>
+                                            <div className='flex items-center gap-2'>Licença Expira em <ArrowUpDown className="h-3 w-3" /></div>
+                                        </TableHead>
+                                        <TableHead className="w-[100px] text-center">Ações</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {paginatedUsers.length > 0 ? paginatedUsers.map(user => (
+                                        <TableRow key={user.id} className={user.status === 'Pendente' ? 'bg-muted/50' : ''} data-state={selectedUserIds.includes(user.id) && "selected"}>
+                                            <TableCell><Checkbox checked={selectedUserIds.includes(user.id)} onCheckedChange={(checked) => setSelectedUserIds(prev => checked ? [...prev, user.id] : prev.filter(id => id !== user.id))} /></TableCell>
+                                            <TableCell className="font-medium flex items-center gap-2">
+                                                {user.isMaster ? <Crown className='h-4 w-4 text-amber-500' /> : user.isAdmin ? <Shield className='h-4 w-4 text-primary' /> : <UserIcon className='h-4 w-4 text-muted-foreground' />}
+                                                {user.name}
+                                            </TableCell>
+                                            <TableCell>{user.email}</TableCell>
+                                            <TableCell>
+                                                {user.planoId ? <Badge variant="outline" className='flex items-center gap-1.5'><Briefcase className='h-3 w-3'/> {user.planoId}</Badge> : 'N/A'}
+                                            </TableCell>
+                                            <TableCell>
+                                                {user.creationDate ? format(new Date(user.creationDate), 'dd/MM/yyyy') : 'N/A'}
+                                            </TableCell>
+                                            <TableCell>{getStatusBadge(user.status)}</TableCell>
+                                            <TableCell>
+                                                {user.dataExpiracaoLicenca ? format(new Date(user.dataExpiracaoLicenca), 'dd/MM/yyyy') : 'N/A'}
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                {user.status === 'Pendente' ? (
+                                                    <div className="space-x-2">
+                                                        <Button size="sm" variant="outline" className="text-red-500 border-red-500/50 hover:bg-red-500/10 hover:text-red-600" onClick={() => handleRejection(user.id)}>
+                                                            <X className="mr-2 h-4 w-4"/>
+                                                            Recusar
+                                                        </Button>
+                                                        <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600" onClick={() => setUserToEdit(user)}>
+                                                            <Pencil className="mr-2 h-4 w-4"/>
+                                                            Revisar
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                                <MoreHorizontal className="h-4 w-4" />
+                                                                <span className="sr-only">Ações</span>
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem onClick={() => setUserToEdit(user)}>
+                                                                <Pencil className="mr-2 h-4 w-4" /> Editar
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setUserToDelete(user)}>
+                                                                <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                )}
+                                            </TableCell>
+                                        </TableRow>
+                                    )) : (
+                                        <TableRow>
+                                            <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                                                Nenhum usuário encontrado com os filtros atuais.
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
                         </div>
-                        <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-                            Página {currentPage} de {totalPages}
+                        <div className="flex items-center justify-between pt-4">
+                            <div className="text-sm text-muted-foreground">
+                                {selectedUserIds.length} de {filteredAndSortedUsers.length} linha(s) selecionada(s).
+                            </div>
+                            <div className="flex items-center space-x-6 lg:space-x-8">
+                                <div className="flex items-center space-x-2">
+                                    <p className="text-sm font-medium">Linhas por página</p>
+                                    <Select
+                                        value={`${rowsPerPage}`}
+                                        onValueChange={(value) => {
+                                        setRowsPerPage(Number(value))
+                                        setCurrentPage(1)
+                                        }}
+                                    >
+                                        <SelectTrigger className="h-8 w-[70px]">
+                                        <SelectValue placeholder={rowsPerPage} />
+                                        </SelectTrigger>
+                                        <SelectContent side="top">
+                                        {[5, 10, 20, 50].map((pageSize) => (
+                                            <SelectItem key={pageSize} value={`${pageSize}`}>
+                                            {pageSize}
+                                            </SelectItem>
+                                        ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+                                    Página {currentPage} de {totalPages}
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <Button variant="outline" className="hidden h-8 w-8 p-0 lg:flex" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}><ChevronsLeft className="h-4 w-4" /></Button>
+                                    <Button variant="outline" className="h-8 w-8 p-0" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}><ChevronLeft className="h-4 w-4" /></Button>
+                                    <Button variant="outline" className="h-8 w-8 p-0" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}><ChevronRight className="h-4 w-4" /></Button>
+                                    <Button variant="outline" className="hidden h-8 w-8 p-0 lg:flex" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}><ChevronsRight className="h-4 w-4" /></Button>
+                                </div>
+                            </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                            <Button variant="outline" className="hidden h-8 w-8 p-0 lg:flex" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}><ChevronsLeft className="h-4 w-4" /></Button>
-                            <Button variant="outline" className="h-8 w-8 p-0" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}><ChevronLeft className="h-4 w-4" /></Button>
-                            <Button variant="outline" className="h-8 w-8 p-0" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}><ChevronRight className="h-4 w-4" /></Button>
-                            <Button variant="outline" className="hidden h-8 w-8 p-0 lg:flex" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}><ChevronsRight className="h-4 w-4" /></Button>
-                        </div>
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+        </Tabs>
 
         {activeProfile && <UserEditDialog 
             open={!!userToEdit}
@@ -514,6 +537,7 @@ export default function AdminPage() {
             onSave={handleSaveUserEdit}
             users={users}
             activeProfile={activeProfile}
+            allCompanies={companies}
         />}
 
         <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
@@ -530,7 +554,6 @@ export default function AdminPage() {
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
-
       </div>
     );
 }
@@ -543,6 +566,7 @@ interface UserEditDialogProps {
     item: User | null;
     users: User[];
     activeProfile: User;
+    allCompanies: Company[];
 }
 
 const initialPermissions: UserPermissions = modules.reduce((acc, module) => {
@@ -567,7 +591,7 @@ const initialFormState: Omit<User, 'id'> = {
     photoURL: '',
 };
 
-function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile }: UserEditDialogProps) {
+function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile, allCompanies }: UserEditDialogProps) {
     const { toast } = useToast();
     const [formData, setFormData] = useState(initialFormState);
 
@@ -604,6 +628,27 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
     const handleInputChange = (field: keyof typeof formData, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
+    
+    const handlePermissionChange = (permission: string, isChecked: boolean) => {
+        setFormData(prev => ({
+            ...prev,
+            permissions: {
+                ...prev.permissions,
+                [permission]: isChecked,
+            }
+        }))
+    };
+
+    const handleCompanyAccessChange = (companyId: number, isChecked: boolean) => {
+        setFormData(prev => {
+            const currentIds = prev.allowedCompanyIds || [];
+            if (isChecked) {
+                return { ...prev, allowedCompanyIds: [...currentIds, companyId] };
+            } else {
+                return { ...prev, allowedCompanyIds: currentIds.filter(id => id !== companyId) };
+            }
+        });
+    };
 
     const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -636,7 +681,7 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="sm:max-w-4xl">
                 <DialogHeader>
                     <DialogTitle>{isApprovalFlow ? 'Revisar e Aprovar Usuário' : (item ? 'Editar' : 'Convidar') + ' Usuário'}</DialogTitle>
                     <DialogDescription>{isApprovalFlow ? 'Revise os dados, defina a licença e aprove o acesso do usuário.' : 'Preencha os dados e defina o perfil de acesso do usuário.'}</DialogDescription>
@@ -762,6 +807,49 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
                         </div>
                         </>
                     )}
+
+                    {!formData.isAdmin && !formData.isMaster && (
+                        <>
+                            <Separator />
+                            <div className="space-y-3">
+                                <Label className="flex items-center"><Building className="mr-2 h-4 w-4" /> Acesso às Empresas</Label>
+                                <div className="max-h-32 overflow-y-auto space-y-2 rounded-md border p-2">
+                                    {allCompanies.map(company => (
+                                        <div key={company.id} className="flex items-center space-x-2">
+                                            <Checkbox
+                                                id={`company-${company.id}`}
+                                                checked={formData.allowedCompanyIds?.includes(company.id)}
+                                                onCheckedChange={(checked) => handleCompanyAccessChange(company.id, !!checked)}
+                                            />
+                                            <label htmlFor={`company-${company.id}`} className="text-sm font-medium leading-none">
+                                                {company.name}
+                                            </label>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <Separator />
+                            <div className="space-y-3">
+                                <Label className="flex items-center"><Shield className="mr-2 h-4 w-4" /> Permissões de Módulo</Label>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 rounded-md border p-4">
+                                    {modules.map(module => (
+                                        <div key={module.id} className="flex items-center space-x-2">
+                                            <Checkbox
+                                                id={`perm-${module.id}`}
+                                                checked={formData.permissions?.[module.id] || false}
+                                                onCheckedChange={(checked) => handlePermissionChange(module.id, !!checked)}
+                                            />
+                                            <label htmlFor={`perm-${module.id}`} className="text-sm font-medium leading-none">
+                                                {module.label}
+                                            </label>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+
                     <div className="space-y-2 flex items-center justify-between rounded-lg border p-3">
                         <div className='space-y-0.5'>
                             <Label htmlFor="status" className='flex items-center'>Status do Usuário</Label>
@@ -787,7 +875,4 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
     );
 }
 
-    
-
-    
     

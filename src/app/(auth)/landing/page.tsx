@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -148,7 +149,7 @@ const faqs = [
 export default function LandingPage() {
     const heroBg = PlaceHolderImages.find(p => p.id === 'login-background-professional');
   return (
-    <div className="w-full bg-background text-foreground animated-gradient">
+    <div className="w-full bg-background text-foreground">
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur-sm">
         <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
@@ -404,3 +405,4 @@ export default function LandingPage() {
     </div>
   );
 }
+

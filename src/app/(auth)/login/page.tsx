@@ -37,7 +37,7 @@ export default function LoginPage() {
           </blockquote>
         </div>
       </div>
-       <div className="relative flex flex-col items-center justify-center py-12 px-4 sm:px-0 animated-gradient">
+       <div className="relative flex flex-col items-center justify-center py-12 px-4 sm:px-0">
             <Button asChild variant="ghost" className="absolute top-6 left-6 text-muted-foreground hover:text-foreground">
                 <Link href="/landing">
                     <ArrowLeft className="mr-2 h-4 w-4" />
@@ -60,3 +60,4 @@ export default function LoginPage() {
     </div>
   );
 }
+
