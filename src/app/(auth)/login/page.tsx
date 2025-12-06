@@ -1,5 +1,6 @@
+
 'use client';
-import { Building2, ArrowLeft } from 'lucide-react';
+import { Building2, ArrowLeft, HelpCircle } from 'lucide-react';
 import LoginForm from './login-form';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -44,10 +45,16 @@ export default function LoginPage() {
                 </Link>
             </Button>
           <LoginForm />
-           <div className="absolute bottom-6 text-center text-xs text-muted-foreground">
-                <Link href="#" className="underline underline-offset-2">Política de Privacidade</Link>
-                {' | '}
-                <Link href="#" className="underline underline-offset-2">Termos de Serviço</Link>
+           <div className="absolute bottom-6 text-center text-xs text-muted-foreground space-y-2">
+                <div className='flex items-center justify-center gap-2'>
+                    <HelpCircle className="h-4 w-4" />
+                    <p>Precisa de ajuda? <a href="https://wa.me/5562998554529" target="_blank" rel="noopener noreferrer" className="underline font-semibold">Contate o administrador</a>.</p>
+                </div>
+                <div>
+                    <Link href="#" className="underline underline-offset-2">Política de Privacidade</Link>
+                    {' | '}
+                    <Link href="#" className="underline underline-offset-2">Termos de Serviço</Link>
+                </div>
             </div>
       </div>
     </div>
