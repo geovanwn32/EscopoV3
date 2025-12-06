@@ -35,10 +35,10 @@ export default function GerenciadorDeMidiaPage() {
     const handleSave = (imageData: ImagePlaceholder) => {
         const isNew = !images.some(img => img.id === imageData.id);
         if (isNew) {
-            setImages(prev => [...prev, imageData]);
+            setImages(prev => [...(prev || []), imageData]);
             toast({ title: 'Imagem Adicionada!', description: 'A nova imagem foi salva com sucesso.' });
         } else {
-            setImages(prev => prev.map(img => img.id === imageData.id ? imageData : img));
+            setImages(prev => (prev || []).map(img => img.id === imageData.id ? imageData : img));
             toast({ title: 'Imagem Atualizada!', description: 'Os dados da imagem foram atualizados.' });
         }
         setEditingImage(null);
@@ -46,7 +46,7 @@ export default function GerenciadorDeMidiaPage() {
 
     const handleDelete = () => {
         if (imageToDelete) {
-            setImages(prev => prev.filter(img => img.id !== imageToDelete.id));
+            setImages(prev => (prev || []).filter(img => img.id !== imageToDelete.id));
             toast({ variant: 'destructive', title: 'Imagem Excluída!', description: `A imagem "${imageToDelete.id}" foi removida.` });
             setImageToDelete(null);
         }
@@ -146,12 +146,8 @@ function ImageEditDialog({ image, onOpenChange, onSave }: ImageEditDialogProps) 
     const [formData, setFormData] = useState<ImagePlaceholder | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const { toast } = useToast();
-    const [images] = useLocalStorage<ImagePlaceholder[]>('placeholderImages', PlaceHolderImages);
-
-    const isFixedId = useMemo(() => {
-        if (!image || !image.id) return false;
-        return PlaceHolderImages.some(fixedImage => fixedImage.id === image.id);
-    }, [image]);
+    
+    const isEditing = useMemo(() => !!image?.id, [image]);
 
     useEffect(() => {
         setFormData(image);
@@ -161,13 +157,6 @@ function ImageEditDialog({ image, onOpenChange, onSave }: ImageEditDialogProps) 
 
     const handleInputChange = (field: keyof ImagePlaceholder, value: string) => {
         setFormData(prev => prev ? { ...prev, [field]: value } : null);
-    };
-
-    const handleSelectChange = (id: string) => {
-        const selectedImage = images.find(img => img.id === id);
-        if (selectedImage) {
-            setFormData(selectedImage);
-        }
     };
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -202,7 +191,7 @@ function ImageEditDialog({ image, onOpenChange, onSave }: ImageEditDialogProps) 
         <Dialog open={!!image} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-xl">
                 <DialogHeader>
-                    <DialogTitle>{image?.id ? 'Editar Imagem' : 'Adicionar Nova Imagem'}</DialogTitle>
+                    <DialogTitle>{isEditing ? 'Editar Imagem' : 'Adicionar Nova Imagem'}</DialogTitle>
                     <DialogDescription>
                         Preencha os detalhes da imagem. O ID é usado para referenciar a imagem no código.
                     </DialogDescription>
@@ -210,23 +199,15 @@ function ImageEditDialog({ image, onOpenChange, onSave }: ImageEditDialogProps) 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="id">ID da Imagem</Label>
-                        {image?.id ? (
-                             <Select onValueChange={handleSelectChange} value={formData.id}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Selecione um ID..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {images.map(img => (
-                                        <SelectItem key={img.id} value={img.id} disabled={isFixedId && img.id !== image.id}>
-                                            {img.id}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        ) : (
-                            <Input id="id" value={formData.id} onChange={e => handleInputChange('id', e.target.value.toLowerCase().replace(/\s+/g, '-'))} required placeholder="ID único (ex: minha-imagem-nova)" />
-                        )}
-                         {isFixedId && <p className="text-xs text-muted-foreground">O ID de imagens padrão não pode ser alterado.</p>}
+                        <Input 
+                            id="id" 
+                            value={formData.id} 
+                            onChange={e => handleInputChange('id', e.target.value.toLowerCase().replace(/\s+/g, '-'))} 
+                            required 
+                            placeholder="id-unico-para-a-imagem"
+                            disabled={isEditing}
+                        />
+                         {isEditing && <p className="text-xs text-muted-foreground">O ID não pode ser alterado após a criação.</p>}
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="description">Descrição (alt text)</Label>
@@ -267,5 +248,3 @@ function ImageEditDialog({ image, onOpenChange, onSave }: ImageEditDialogProps) 
         </Dialog>
     )
 }
-
-    
