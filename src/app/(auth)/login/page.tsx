@@ -1,12 +1,12 @@
 'use client';
-import { Building2, ArrowLeft, HelpCircle } from 'lucide-react';
+import { Building2, ArrowLeft, HelpCircle, Loader2 } from 'lucide-react';
 import LoginForm from './login-form';
 import Image from 'next/image';
 import { PlaceHolderImages, type ImagePlaceholder } from '@/lib/placeholder-images';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useLocalStorage } from '@/hooks/use-company';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, Suspense } from 'react';
 
 
 export default function LoginPage() {
@@ -60,7 +60,9 @@ export default function LoginPage() {
                     Voltar
                 </Link>
             </Button>
-          <LoginForm />
+            <Suspense fallback={<div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+                <LoginForm />
+            </Suspense>
            <div className="absolute bottom-6 text-center text-xs text-muted-foreground space-y-2">
                 <div className='flex items-center justify-center gap-2'>
                     <HelpCircle className="h-4 w-4" />
