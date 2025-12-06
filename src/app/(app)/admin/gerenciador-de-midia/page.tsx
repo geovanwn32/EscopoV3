@@ -28,7 +28,7 @@ export default function GerenciadorDeMidiaPage() {
         return images.filter(img => 
             img.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
             img.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            img.imageHint.toLowerCase().includes(searchTerm.toLowerCase())
+            (img.imageHint && img.imageHint.toLowerCase().includes(searchTerm.toLowerCase()))
         );
     }, [images, searchTerm]);
 
@@ -113,6 +113,7 @@ export default function GerenciadorDeMidiaPage() {
 
             <ImageEditDialog 
                 image={editingImage} 
+                allImages={images}
                 onOpenChange={() => setEditingImage(null)}
                 onSave={handleSave}
             />
@@ -138,11 +139,12 @@ export default function GerenciadorDeMidiaPage() {
 
 interface ImageEditDialogProps {
     image: ImagePlaceholder | null;
+    allImages: ImagePlaceholder[];
     onOpenChange: () => void;
     onSave: (image: ImagePlaceholder) => void;
 }
 
-function ImageEditDialog({ image, onOpenChange, onSave }: ImageEditDialogProps) {
+function ImageEditDialog({ image, allImages, onOpenChange, onSave }: ImageEditDialogProps) {
     const [formData, setFormData] = useState<ImagePlaceholder | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const { toast } = useToast();
@@ -152,6 +154,13 @@ function ImageEditDialog({ image, onOpenChange, onSave }: ImageEditDialogProps) 
     useEffect(() => {
         setFormData(image);
     }, [image]);
+
+    const handleIdSelectChange = (id: string) => {
+        const selectedImage = allImages.find(img => img.id === id);
+        if(selectedImage) {
+            setFormData(selectedImage);
+        }
+    };
 
     if (!formData) return null;
 
@@ -199,15 +208,28 @@ function ImageEditDialog({ image, onOpenChange, onSave }: ImageEditDialogProps) 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="id">ID da Imagem</Label>
-                        <Input 
-                            id="id" 
-                            value={formData.id} 
-                            onChange={e => handleInputChange('id', e.target.value.toLowerCase().replace(/\s+/g, '-'))} 
-                            required 
-                            placeholder="id-unico-para-a-imagem"
-                            disabled={isEditing}
-                        />
-                         {isEditing && <p className="text-xs text-muted-foreground">O ID não pode ser alterado após a criação.</p>}
+                        {isEditing ? (
+                             <Select value={formData.id} onValueChange={handleIdSelectChange}>
+                                <SelectTrigger id="id">
+                                    <SelectValue placeholder="Selecione um ID para editar..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {allImages.map(img => (
+                                        <SelectItem key={img.id} value={img.id}>
+                                            {img.id}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        ) : (
+                            <Input 
+                                id="id" 
+                                value={formData.id} 
+                                onChange={e => handleInputChange('id', e.target.value.toLowerCase().replace(/\s+/g, '-'))} 
+                                required 
+                                placeholder="id-unico-para-a-imagem"
+                            />
+                        )}
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="description">Descrição (alt text)</Label>
