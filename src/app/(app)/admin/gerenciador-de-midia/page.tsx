@@ -14,6 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { Search, PlusCircle, Upload, Pencil, Trash2 } from 'lucide-react';
 import Image from 'next/image';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function GerenciadorDeMidiaPage() {
     const { toast } = useToast();
@@ -145,20 +146,28 @@ function ImageEditDialog({ image, onOpenChange, onSave }: ImageEditDialogProps) 
     const [formData, setFormData] = useState<ImagePlaceholder | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const { toast } = useToast();
-
-    useEffect(() => {
-        setFormData(image);
-    }, [image]);
+    const [images] = useLocalStorage<ImagePlaceholder[]>('placeholderImages', PlaceHolderImages);
 
     const isFixedId = useMemo(() => {
         if (!image || !image.id) return false;
         return PlaceHolderImages.some(fixedImage => fixedImage.id === image.id);
     }, [image]);
 
+    useEffect(() => {
+        setFormData(image);
+    }, [image]);
+
     if (!formData) return null;
 
     const handleInputChange = (field: keyof ImagePlaceholder, value: string) => {
         setFormData(prev => prev ? { ...prev, [field]: value } : null);
+    };
+
+    const handleSelectChange = (id: string) => {
+        const selectedImage = images.find(img => img.id === id);
+        if (selectedImage) {
+            setFormData(selectedImage);
+        }
     };
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -200,8 +209,23 @@ function ImageEditDialog({ image, onOpenChange, onSave }: ImageEditDialogProps) 
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="id">ID da Imagem (único)</Label>
-                        <Input id="id" value={formData.id} onChange={e => handleInputChange('id', e.target.value.toLowerCase().replace(/\s+/g, '-'))} required disabled={isFixedId} />
+                        <Label htmlFor="id">ID da Imagem</Label>
+                        {image?.id ? (
+                             <Select onValueChange={handleSelectChange} value={formData.id}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecione um ID..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {images.map(img => (
+                                        <SelectItem key={img.id} value={img.id} disabled={isFixedId && img.id !== image.id}>
+                                            {img.id}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        ) : (
+                            <Input id="id" value={formData.id} onChange={e => handleInputChange('id', e.target.value.toLowerCase().replace(/\s+/g, '-'))} required placeholder="ID único (ex: minha-imagem-nova)" />
+                        )}
                          {isFixedId && <p className="text-xs text-muted-foreground">O ID de imagens padrão não pode ser alterado.</p>}
                     </div>
                     <div className="space-y-2">
@@ -243,3 +267,5 @@ function ImageEditDialog({ image, onOpenChange, onSave }: ImageEditDialogProps) 
         </Dialog>
     )
 }
+
+    
