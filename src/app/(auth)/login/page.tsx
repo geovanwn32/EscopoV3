@@ -1,21 +1,30 @@
-
 'use client';
 import { Building2, ArrowLeft, HelpCircle } from 'lucide-react';
 import LoginForm from './login-form';
 import Image from 'next/image';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { PlaceHolderImages, type ImagePlaceholder } from '@/lib/placeholder-images';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useLocalStorage } from '@/hooks/use-company';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 
 
 export default function LoginPage() {
   const [loginBgId] = useLocalStorage<string>('loginBackgroundId', 'login-background-professional');
   
-  const loginBg = useMemo(() => {
-    return PlaceHolderImages.find(p => p.id === loginBgId) || PlaceHolderImages.find(p => p.id === 'login-background-professional');
-  }, [loginBgId]);
+  // Start with the default image that the server will also use.
+  const defaultBg = useMemo(() => PlaceHolderImages.find(p => p.id === 'login-background-professional'), []);
+  const [loginBg, setLoginBg] = useState<ImagePlaceholder | undefined>(defaultBg);
+
+  // This effect runs only on the client, after the initial render.
+  useEffect(() => {
+    // Find the image based on the ID from localStorage.
+    const clientSideBg = PlaceHolderImages.find(p => p.id === loginBgId) || defaultBg;
+    // Update the state if it's different from the initial state.
+    if (clientSideBg?.id !== loginBg?.id) {
+        setLoginBg(clientSideBg);
+    }
+  }, [loginBgId, defaultBg, loginBg?.id]);
   
   return (
     <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
@@ -67,4 +76,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
