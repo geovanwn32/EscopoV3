@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useLocalStorage } from '@/hooks/use-company';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, Calendar as CalendarIcon, Shield, User as UserIcon, RefreshCw, Search, MoreHorizontal, Pencil, Trash2, Crown, Building, Briefcase, Upload } from 'lucide-react';
+import { Check, X, Calendar as CalendarIcon, Shield, User as UserIcon, RefreshCw, Search, MoreHorizontal, Pencil, Trash2, Crown, Building, Briefcase, Upload, Users, Clock, FileWarning, ArrowUpDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { AuditLog, logAudit } from '@/lib/audit-log';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -61,6 +61,8 @@ interface User {
     photoURL?: string;
 }
 
+type SortKey = keyof User | 'licenca' | 'criacao';
+
 export default function AdminPage() {
     const { toast } = useToast();
     const [users, setUsers] = useLocalStorage<User[]>('global-users', []);
@@ -71,6 +73,15 @@ export default function AdminPage() {
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeProfile, setActiveProfile] = useState<User | null>(null);
+
+    // State for advanced controls
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [planFilter, setPlanFilter] = useState('all');
+    const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'ascending' | 'descending' }>({ key: 'name', direction: 'ascending' });
+    const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
+
 
      useEffect(() => {
         if (firebaseUser) {
@@ -83,23 +94,73 @@ export default function AdminPage() {
         }
     }, [firebaseUser]);
 
+    const kpiData = useMemo(() => {
+        const totalUsers = users.length;
+        const pendingUsers = users.filter(u => u.status === 'Pendente').length;
+        const activeLicenses = users.filter(u => u.statusLicenca === 'Ativa').length;
+        const expiringSoon = users.filter(u => u.dataExpiracaoLicenca && new Date(u.dataExpiracaoLicenca) <= addDays(new Date(), 7)).length;
+        return { totalUsers, pendingUsers, activeLicenses, expiringSoon };
+    }, [users]);
+    
+
     // Filter out the master user from the list displayed
-    const displayUsers = useMemo(() => {
-        return users.filter(user => 
-            !user.isMaster &&
-            (user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-             user.email.toLowerCase().includes(searchTerm.toLowerCase()))
-        )
-        .sort((a, b) => {
-            if (a.status === 'Pendente' && b.status !== 'Pendente') return -1;
-            if (a.status !== 'Pendente' && b.status === 'Pendente') return 1;
-            // Fallback sort, could be by date or name
-            if(a.creationDate && b.creationDate) {
-              return new Date(b.creationDate).getTime() - new Date(a.creationDate).getTime();
-            }
-            return a.name.localeCompare(b.name);
+    const filteredAndSortedUsers = useMemo(() => {
+        const nonMasterUsers = users.filter(user => !user.isMaster);
+        
+        let filtered = nonMasterUsers.filter(user => {
+            const searchMatch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                user.email.toLowerCase().includes(searchTerm.toLowerCase());
+            const statusMatch = statusFilter === 'all' || user.status === statusFilter;
+            const planMatch = planFilter === 'all' || user.planoId === planFilter;
+            return searchMatch && statusMatch && planMatch;
         });
-    }, [users, searchTerm]);
+
+        if (sortConfig.key) {
+            filtered.sort((a, b) => {
+                let aValue, bValue;
+
+                if (sortConfig.key === 'licenca') {
+                    aValue = a.dataExpiracaoLicenca ? new Date(a.dataExpiracaoLicenca).getTime() : 0;
+                    bValue = b.dataExpiracaoLicenca ? new Date(b.dataExpiracaoLicenca).getTime() : 0;
+                } else if (sortConfig.key === 'criacao') {
+                     aValue = a.creationDate ? new Date(a.creationDate).getTime() : 0;
+                     bValue = b.creationDate ? new Date(b.creationDate).getTime() : 0;
+                } else {
+                    aValue = a[sortConfig.key as keyof User];
+                    bValue = b[sortConfig.key as keyof User];
+                }
+
+                if (aValue === undefined || aValue === null) return 1;
+                if (bValue === undefined || bValue === null) return -1;
+                
+                if (aValue < bValue) {
+                    return sortConfig.direction === 'ascending' ? -1 : 1;
+                }
+                if (aValue > bValue) {
+                    return sortConfig.direction === 'ascending' ? 1 : -1;
+                }
+                return 0;
+            });
+        }
+        
+        return filtered;
+
+    }, [users, searchTerm, statusFilter, planFilter, sortConfig]);
+
+    const paginatedUsers = useMemo(() => {
+        const startIndex = (currentPage - 1) * rowsPerPage;
+        return filteredAndSortedUsers.slice(startIndex, startIndex + rowsPerPage);
+    }, [filteredAndSortedUsers, currentPage, rowsPerPage]);
+
+    const totalPages = Math.ceil(filteredAndSortedUsers.length / rowsPerPage);
+
+    const handleSort = (key: SortKey) => {
+        let direction: 'ascending' | 'descending' = 'ascending';
+        if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+            direction = 'descending';
+        }
+        setSortConfig({ key, direction });
+    };
     
      const handleSaveUserEdit = (itemData: Omit<User, 'id'>) => {
         if (!userToEdit) return;
@@ -199,6 +260,41 @@ export default function AdminPage() {
         }
     };
 
+    const handleBulkAction = (action: 'approve' | 'reject') => {
+        if (selectedUserIds.length === 0) {
+            toast({ variant: 'destructive', title: 'Nenhum usuário selecionado' });
+            return;
+        }
+
+        if (action === 'approve') {
+            setUsers(prev => prev.map(user => {
+                if (selectedUserIds.includes(user.id) && user.status === 'Pendente') {
+                    return { 
+                        ...user, 
+                        status: 'Ativo', 
+                        dataExpiracaoLicenca: user.dataExpiracaoLicenca || addDays(new Date(), 30).toISOString() 
+                    };
+                }
+                return user;
+            }));
+            toast({ title: "Usuários Aprovados", description: `${selectedUserIds.length} usuários foram aprovados.` });
+        } else if (action === 'reject') {
+            setUsers(prev => prev.filter(user => !selectedUserIds.includes(user.id)));
+            toast({ variant: 'destructive', title: "Usuários Recusados", description: `${selectedUserIds.length} solicitações foram recusadas.` });
+        }
+
+        setSelectedUserIds([]);
+    };
+    
+    const toggleSelectAll = (checked: boolean) => {
+        if (checked) {
+            setSelectedUserIds(paginatedUsers.map(u => u.id));
+        } else {
+            setSelectedUserIds([]);
+        }
+    };
+
+
     return (
       <div className="space-y-6">
         <div className="space-y-1">
@@ -207,44 +303,115 @@ export default function AdminPage() {
             Gerencie usuários, aprove solicitações e controle as licenças de acesso ao sistema.
           </p>
         </div>
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+             <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total de Usuários</CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent><div className="text-2xl font-bold">{kpiData.totalUsers}</div></CardContent>
+            </Card>
+             <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Acessos Pendentes</CardTitle>
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent><div className="text-2xl font-bold">{kpiData.pendingUsers}</div></CardContent>
+            </Card>
+             <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Licenças Ativas</CardTitle>
+                    <Check className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent><div className="text-2xl font-bold">{kpiData.activeLicenses}</div></CardContent>
+            </Card>
+             <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Licenças a Expirar</CardTitle>
+                    <FileWarning className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent><div className="text-2xl font-bold">{kpiData.expiringSoon}</div></CardContent>
+            </Card>
+        </div>
+
         <Card>
             <CardHeader>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                         <CardTitle>Gerenciamento de Usuários</CardTitle>
-                        <CardDescription>Abaixo estão todos os usuários do sistema. Aprove os pendentes e gerencie os ativos.</CardDescription>
+                        <CardDescription>{filteredAndSortedUsers.length} usuários encontrados.</CardDescription>
                     </div>
-                     <div className="flex items-center gap-2">
+                     <div className="flex flex-wrap items-center gap-2">
                         <div className="relative flex-grow">
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                             <Input placeholder="Buscar por nome ou e-mail..." className="pl-9" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                         </div>
+                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                            <SelectTrigger className="w-full sm:w-[180px]"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Todos os Status</SelectItem>
+                                <SelectItem value="Pendente">Pendente</SelectItem>
+                                <SelectItem value="Ativo">Ativo</SelectItem>
+                                <SelectItem value="Inativo">Inativo</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <Select value={planFilter} onValueChange={setPlanFilter}>
+                            <SelectTrigger className="w-full sm:w-[180px]"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Todos os Planos</SelectItem>
+                                <SelectItem value="Gratuito">Gratuito</SelectItem>
+                                <SelectItem value="Basico">Básico</SelectItem>
+                                <SelectItem value="Profissional">Profissional</SelectItem>
+                                <SelectItem value="Empresarial">Empresarial</SelectItem>
+                            </SelectContent>
+                        </Select>
                         <Button variant="outline" size="icon" onClick={handleRefresh}>
                             <RefreshCw className="h-4 w-4" />
                             <span className="sr-only">Atualizar</span>
                         </Button>
                     </div>
                 </div>
+                 {selectedUserIds.length > 0 && (
+                    <div className="flex items-center gap-2 mt-4 border-t pt-4">
+                        <span className="text-sm text-muted-foreground">{selectedUserIds.length} selecionado(s)</span>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild><Button variant="outline">Ações em Lote <ArrowUpDown className="ml-2 h-4 w-4"/></Button></DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                <DropdownMenuItem onSelect={() => handleBulkAction('approve')} className="text-emerald-600 focus:text-emerald-700">Aprovar Selecionados</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => handleBulkAction('reject')} className="text-destructive focus:text-destructive">Recusar Selecionados</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                )}
             </CardHeader>
             <CardContent>
                  <div className="rounded-md border">
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Nome</TableHead>
+                                <TableHead className="w-[50px]"><Checkbox onCheckedChange={toggleSelectAll} checked={selectedUserIds.length === paginatedUsers.length && paginatedUsers.length > 0} /></TableHead>
+                                <TableHead className="cursor-pointer" onClick={() => handleSort('name')}>
+                                    <div className='flex items-center gap-2'>Nome <ArrowUpDown className="h-3 w-3" /></div>
+                                </TableHead>
                                 <TableHead>Email</TableHead>
                                 <TableHead>Plano Solicitado</TableHead>
-                                <TableHead>Data de Criação</TableHead>
+                                <TableHead className="cursor-pointer" onClick={() => handleSort('criacao')}>
+                                     <div className='flex items-center gap-2'>Data de Criação <ArrowUpDown className="h-3 w-3" /></div>
+                                </TableHead>
                                 <TableHead>Status</TableHead>
-                                <TableHead>Licença Expira em</TableHead>
-                                <TableHead className="w-[180px] text-center">Ações</TableHead>
+                                <TableHead className="cursor-pointer" onClick={() => handleSort('licenca')}>
+                                     <div className='flex items-center gap-2'>Licença Expira em <ArrowUpDown className="h-3 w-3" /></div>
+                                </TableHead>
+                                <TableHead className="w-[100px] text-center">Ações</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {displayUsers.length > 0 ? displayUsers.map(user => (
-                                <TableRow key={user.id} className={user.status === 'Pendente' ? 'bg-muted/50' : ''}>
+                            {paginatedUsers.length > 0 ? paginatedUsers.map(user => (
+                                <TableRow key={user.id} className={user.status === 'Pendente' ? 'bg-muted/50' : ''} data-state={selectedUserIds.includes(user.id) && "selected"}>
+                                    <TableCell><Checkbox checked={selectedUserIds.includes(user.id)} onCheckedChange={(checked) => setSelectedUserIds(prev => checked ? [...prev, user.id] : prev.filter(id => id !== user.id))} /></TableCell>
                                     <TableCell className="font-medium flex items-center gap-2">
-                                        {user.isAdmin ? <Shield className='h-4 w-4 text-primary' /> : <UserIcon className='h-4 w-4 text-muted-foreground' />}
+                                        {user.isMaster ? <Crown className='h-4 w-4 text-amber-500' /> : user.isAdmin ? <Shield className='h-4 w-4 text-primary' /> : <UserIcon className='h-4 w-4 text-muted-foreground' />}
                                         {user.name}
                                     </TableCell>
                                     <TableCell>{user.email}</TableCell>
@@ -292,13 +459,50 @@ export default function AdminPage() {
                                 </TableRow>
                             )) : (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                                        Nenhum usuário para gerenciar no momento.
+                                    <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                                        Nenhum usuário encontrado com os filtros atuais.
                                     </TableCell>
                                 </TableRow>
                             )}
                         </TableBody>
                     </Table>
+                </div>
+                 <div className="flex items-center justify-between pt-4">
+                    <div className="text-sm text-muted-foreground">
+                        {selectedUserIds.length} de {filteredAndSortedUsers.length} linha(s) selecionada(s).
+                    </div>
+                    <div className="flex items-center space-x-6 lg:space-x-8">
+                        <div className="flex items-center space-x-2">
+                            <p className="text-sm font-medium">Linhas por página</p>
+                            <Select
+                                value={`${rowsPerPage}`}
+                                onValueChange={(value) => {
+                                setRowsPerPage(Number(value))
+                                setCurrentPage(1)
+                                }}
+                            >
+                                <SelectTrigger className="h-8 w-[70px]">
+                                <SelectValue placeholder={rowsPerPage} />
+                                </SelectTrigger>
+                                <SelectContent side="top">
+                                {[5, 10, 20, 50].map((pageSize) => (
+                                    <SelectItem key={pageSize} value={`${pageSize}`}>
+                                    {pageSize}
+                                    </SelectItem>
+                                ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+                            Página {currentPage} de {totalPages}
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <Button variant="outline" className="hidden h-8 w-8 p-0 lg:flex" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}><ChevronsLeft className="h-4 w-4" /></Button>
+                            <Button variant="outline" className="h-8 w-8 p-0" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}><ChevronLeft className="h-4 w-4" /></Button>
+                            <Button variant="outline" className="h-8 w-8 p-0" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}><ChevronRight className="h-4 w-4" /></Button>
+                            <Button variant="outline" className="hidden h-8 w-8 p-0 lg:flex" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}><ChevronsRight className="h-4 w-4" /></Button>
+                        </div>
+                    </div>
                 </div>
             </CardContent>
         </Card>
@@ -582,5 +786,7 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
         </Dialog>
     );
 }
+
+    
 
     
