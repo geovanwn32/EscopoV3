@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -233,6 +234,7 @@ export default function AdminPage() {
                                 <TableHead>Nome</TableHead>
                                 <TableHead>Email</TableHead>
                                 <TableHead>Plano Solicitado</TableHead>
+                                <TableHead>Data de Criação</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Licença Expira em</TableHead>
                                 <TableHead className="w-[180px] text-center">Ações</TableHead>
@@ -248,6 +250,9 @@ export default function AdminPage() {
                                     <TableCell>{user.email}</TableCell>
                                      <TableCell>
                                         {user.planoId ? <Badge variant="outline" className='flex items-center gap-1.5'><Briefcase className='h-3 w-3'/> {user.planoId}</Badge> : 'N/A'}
+                                    </TableCell>
+                                    <TableCell>
+                                        {user.creationDate ? format(new Date(user.creationDate), 'dd/MM/yyyy') : 'N/A'}
                                     </TableCell>
                                     <TableCell>{getStatusBadge(user.status)}</TableCell>
                                     <TableCell>
