@@ -4,11 +4,9 @@ import { useState, useMemo, useEffect } from 'react';
 import { useLocalStorage } from '@/hooks/use-company';
 import { PlaceHolderImages, type ImagePlaceholder } from '@/lib/placeholder-images';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -148,22 +146,26 @@ function ImageEditDialog({ image, allImages, onOpenChange, onSave }: ImageEditDi
     const [formData, setFormData] = useState<ImagePlaceholder | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const { toast } = useToast();
-    
-    const isEditing = useMemo(() => !!image?.id, [image]);
 
     useEffect(() => {
         setFormData(image);
     }, [image]);
 
-    const handleIdSelectChange = (id: string) => {
-        const selectedImage = allImages.find(img => img.id === id);
-        if(selectedImage) {
-            setFormData(selectedImage);
-        }
-    };
+    const isEditing = useMemo(() => !!image?.id, [image]);
 
     if (!formData) return null;
-
+    
+    const handleIdChange = (id: string) => {
+        if (isEditing) {
+            const selectedImage = allImages.find(img => img.id === id);
+            if(selectedImage) {
+                setFormData(selectedImage);
+            }
+        } else {
+             handleInputChange('id', id.toLowerCase().replace(/\s+/g, '-'));
+        }
+    };
+    
     const handleInputChange = (field: keyof ImagePlaceholder, value: string) => {
         setFormData(prev => prev ? { ...prev, [field]: value } : null);
     };
@@ -209,7 +211,7 @@ function ImageEditDialog({ image, allImages, onOpenChange, onSave }: ImageEditDi
                     <div className="space-y-2">
                         <Label htmlFor="id">ID da Imagem</Label>
                         {isEditing ? (
-                             <Select value={formData.id} onValueChange={handleIdSelectChange}>
+                             <Select value={formData.id} onValueChange={handleIdChange}>
                                 <SelectTrigger id="id">
                                     <SelectValue placeholder="Selecione um ID para editar..." />
                                 </SelectTrigger>
@@ -225,7 +227,7 @@ function ImageEditDialog({ image, allImages, onOpenChange, onSave }: ImageEditDi
                             <Input 
                                 id="id" 
                                 value={formData.id} 
-                                onChange={e => handleInputChange('id', e.target.value.toLowerCase().replace(/\s+/g, '-'))} 
+                                onChange={e => handleIdChange(e.target.value)} 
                                 required 
                                 placeholder="id-unico-para-a-imagem"
                             />
@@ -237,7 +239,7 @@ function ImageEditDialog({ image, allImages, onOpenChange, onSave }: ImageEditDi
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="imageHint">Dica de IA (palavras-chave)</Label>
-                        <Input id="imageHint" value={formData.imageHint} onChange={e => handleInputChange('imageHint', e.target.value)} placeholder="Ex: escritorio moderno" />
+                        <Input id="imageHint" value={formData.imageHint || ''} onChange={e => handleInputChange('imageHint', e.target.value)} placeholder="Ex: escritorio moderno" />
                     </div>
                     <div className="space-y-2">
                         <Label>Pré-visualização</Label>
