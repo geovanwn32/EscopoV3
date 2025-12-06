@@ -23,6 +23,7 @@ export default function GerenciadorDeMidiaPage() {
     const [imageToDelete, setImageToDelete] = useState<ImagePlaceholder | null>(null);
 
     const filteredImages = useMemo(() => {
+        if (!images) return [];
         return images.filter(img => 
             img.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
             img.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -64,7 +65,7 @@ export default function GerenciadorDeMidiaPage() {
                     <div className="flex items-center justify-between">
                         <div>
                             <CardTitle>Galeria de Imagens</CardTitle>
-                            <CardDescription>{images.length} imagens cadastradas.</CardDescription>
+                            <CardDescription>{images?.length || 0} imagens cadastradas.</CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
                              <div className="relative flex-grow">
@@ -195,7 +196,7 @@ function ImageEditDialog({ image, onOpenChange, onSave }: ImageEditDialogProps) 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="id">ID da Imagem (único)</Label>
-                        <Input id="id" value={formData.id} onChange={e => handleInputChange('id', e.target.value.toLowerCase().replace(/\s+/g, '-'))} required disabled={!!image?.id} />
+                        <Input id="id" value={formData.id} onChange={e => handleInputChange('id', e.target.value.toLowerCase().replace(/\s+/g, '-'))} required disabled={!!image?.id && !!PlaceHolderImages.find(p => p.id === image.id)} />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="description">Descrição (alt text)</Label>
