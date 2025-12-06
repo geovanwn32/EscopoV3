@@ -3,7 +3,7 @@ export type PartnerType = 'Cliente' | 'Fornecedor' | 'Transportadora';
 
 export interface Partner {
     id: string;
-    empresaId: string;
+    empresaId?: string; // Optional because it's handled at the collection level
     personType: PersonType;
     name: string;
     document: string;
@@ -21,5 +21,3 @@ export interface Partner {
     };
     taxRegime?: string;
 }
-
-    

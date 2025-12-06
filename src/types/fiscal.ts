@@ -1,7 +1,3 @@
-
-
-
-
 export interface ProductItem {
     id: string;
     name: string;
@@ -26,6 +22,7 @@ export interface NotaFiscal {
 
 export interface Product {
     id: string;
+    empresaId?: string;
     tipo: 'Produto';
     codigo: string;
     descricao: string;
@@ -56,6 +53,7 @@ export interface Product {
 
 export interface Service {
     id: string;
+    empresaId?: string;
     tipo: 'Serviço';
     codigo: string;
     descricao: string;
@@ -71,4 +69,3 @@ export interface Service {
         aliquota: number;
     };
 }
-    
