@@ -3,7 +3,7 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Shield, KeyRound, Loader2, ArrowLeft, PlusCircle, Trash2, LogOut } from 'lucide-react';
+import { User, Shield, KeyRound, Loader2, ArrowLeft, PlusCircle, Trash2, LogOut, Pencil } from 'lucide-react';
 import { useCompany, useLocalStorage } from '@/hooks/use-company';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -39,6 +39,7 @@ export default function SelecionarPerfilPage() {
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+    const [userToEdit, setUserToEdit] = useState<UserProfile | null>(null);
     const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
 
     const availableProfiles = useMemo(() => {
@@ -54,13 +55,8 @@ export default function SelecionarPerfilPage() {
                 u.id === masterUser.id ? { ...u, password: '123456' } : u
             );
             setUsers(updatedUsers);
-             // Optionally, notify that the password has been reset for clarity.
-            // toast({
-            //     title: "Senha Master Redefinida",
-            //     description: "A senha do perfil Master foi redefinida para o valor padrão.",
-            // });
         }
-    }, [users, setUsers, toast]);
+    }, [users, setUsers]);
 
 
     const handleProfileSelect = (user: UserProfile) => {
@@ -129,6 +125,16 @@ export default function SelecionarPerfilPage() {
         setUsers(prev => [...prev, newUser]);
         setIsAddUserOpen(false);
         toast({ title: "Perfil Adicionado", description: "O novo perfil foi criado. Agora você pode fazer login com ele." });
+    };
+
+    const handleUpdateUserName = (userId: number, newName: string) => {
+        if (!newName) {
+            toast({ variant: 'destructive', title: "Nome inválido", description: "O nome não pode ser vazio." });
+            return;
+        }
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, name: newName } : u));
+        setUserToEdit(null);
+        toast({ title: "Perfil Atualizado", description: `O nome do perfil foi alterado para ${newName}.` });
     };
 
     const handleDeleteClick = (user: UserProfile) => {
@@ -222,6 +228,10 @@ export default function SelecionarPerfilPage() {
                                     <KeyRound className="mr-2 h-4 w-4" />
                                     Acessar
                                 </Button>
+                                <Button variant="ghost" size="icon" className="text-muted-foreground hover:bg-primary/10 hover:text-primary" onClick={() => setUserToEdit(user)}>
+                                    <Pencil className="h-4 w-4" />
+                                    <span className="sr-only">Editar</span>
+                                </Button>
                                 {!user.isMaster && (
                                     <Button variant="ghost" size="icon" className="text-destructive/70 hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDeleteClick(user)}>
                                         <Trash2 className="h-4 w-4"/>
@@ -297,6 +307,12 @@ export default function SelecionarPerfilPage() {
                 onOpenChange={setIsAddUserOpen}
                 onSave={handleSaveNewUser}
                 isFirstUser={users.length === 0}
+            />
+
+            <EditUserDialog
+                user={userToEdit}
+                onOpenChange={() => setUserToEdit(null)}
+                onSave={handleUpdateUserName}
             />
 
             <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
@@ -383,3 +399,43 @@ function AddUserDialog({ open, onOpenChange, onSave, isFirstUser }: AddUserDialo
     )
 }
 
+interface EditUserDialogProps {
+    user: UserProfile | null;
+    onOpenChange: () => void;
+    onSave: (userId: number, newName: string) => void;
+}
+
+function EditUserDialog({ user, onOpenChange, onSave }: EditUserDialogProps) {
+    const [name, setName] = useState('');
+
+    useEffect(() => {
+        if (user) {
+            setName(user.name);
+        }
+    }, [user]);
+
+    const handleSubmit = () => {
+        if (user) {
+            onSave(user.id, name);
+        }
+    };
+    
+    return (
+        <Dialog open={!!user} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Editar Nome do Perfil</DialogTitle>
+                    <DialogDescription>Altere o nome de exibição para este perfil.</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-2 py-4">
+                    <Label htmlFor="edit-name">Nome do Perfil</Label>
+                    <Input id="edit-name" value={name} onChange={(e) => setName(e.target.value)} autoFocus/>
+                </div>
+                 <DialogFooter>
+                    <Button variant="outline" onClick={onOpenChange}>Cancelar</Button>
+                    <Button onClick={handleSubmit}>Salvar Alterações</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
