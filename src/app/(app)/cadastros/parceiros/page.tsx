@@ -16,15 +16,25 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Partner, PartnerType, PersonType } from '@/types/partner';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useCompany, useLocalStorage } from '@/hooks/use-company';
+import { useCompany } from '@/hooks/use-company';
 import { AuditLog, logAudit } from '@/lib/audit-log';
 import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, doc, addDoc, updateDoc, deleteDoc, query } from 'firebase/firestore';
 
 export default function ParceirosPage() {
     const { toast } = useToast();
-    const { useScopedData } = useCompany();
-    const [partners, setPartners] = useScopedData<Partner[]>('partners', []);
+    const { currentCompany } = useCompany();
+    const firestore = useFirestore();
+
+    const partnersQuery = useMemoFirebase(() => {
+        if (!currentCompany) return null;
+        return query(collection(firestore, "empresas", String(currentCompany), "parceiros"));
+    }, [firestore, currentCompany]);
+
+    const { data: partners, isLoading: isLoadingPartners } = useCollection<Partner>(partnersQuery);
+    
     const [auditLogs, setAuditLogs] = useLocalStorage<AuditLog[]>('audit-trail-logs', []);
 
 
@@ -34,26 +44,38 @@ export default function ParceirosPage() {
     const [isReadOnly, setIsReadOnly] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     
-    const handleSavePartner = (partnerData: Omit<Partner, 'id'>) => {
-        if (editingPartner) {
-            // Update existing partner
-            setPartners(prev => prev.map(p => p.id === editingPartner.id ? { ...editingPartner, ...partnerData } : p));
-            toast({
-                title: "Parceiro Atualizado!",
-                description: `O parceiro ${partnerData.name} foi atualizado com sucesso.`
+    const handleSavePartner = async (partnerData: Omit<Partner, 'id'>) => {
+        if (!currentCompany) return;
+        const partnersCollection = collection(firestore, "empresas", String(currentCompany), "parceiros");
+        
+        try {
+            if (editingPartner) {
+                // Update existing partner
+                const partnerDoc = doc(firestore, "empresas", String(currentCompany), "parceiros", editingPartner.id);
+                await updateDoc(partnerDoc, partnerData);
+                toast({
+                    title: "Parceiro Atualizado!",
+                    description: `O parceiro ${partnerData.name} foi atualizado com sucesso.`
+                });
+                logAudit(setAuditLogs, 'UPDATE', 'Parceiros', `Atualizou o parceiro "${partnerData.name}".`);
+            } else {
+                // Add new partner
+                await addDoc(partnersCollection, partnerData);
+                toast({
+                    title: "Parceiro Salvo!",
+                    description: `O parceiro ${partnerData.name} foi adicionado com sucesso.`
+                });
+                logAudit(setAuditLogs, 'CREATE', 'Parceiros', `Criou o parceiro "${partnerData.name}" (Doc: ${partnerData.document}).`);
+            }
+        } catch (error: any) {
+             toast({
+                variant: "destructive",
+                title: "Erro ao salvar parceiro",
+                description: error.message,
             });
-            logAudit(setAuditLogs, 'UPDATE', 'Parceiros', `Atualizou o parceiro "${partnerData.name}".`);
-            setEditingPartner(null);
-        } else {
-            // Add new partner
-            const newPartner = { ...partnerData, id: Date.now() };
-            setPartners(prev => [...prev, newPartner]);
-            toast({
-                title: "Parceiro Salvo!",
-                description: `O parceiro ${newPartner.name} foi adicionado com sucesso.`
-            });
-            logAudit(setAuditLogs, 'CREATE', 'Parceiros', `Criou o parceiro "${newPartner.name}" (Doc: ${newPartner.document}).`);
         }
+        
+        setEditingPartner(null);
         setIsDialogOpen(false);
     };
 
@@ -61,15 +83,24 @@ export default function ParceirosPage() {
         setItemToDelete(partner);
     };
 
-    const handleConfirmDelete = () => {
-        if (itemToDelete) {
-            setPartners(prev => prev.filter(p => p.id !== itemToDelete.id));
-            toast({
-                variant: "destructive",
-                title: "Parceiro Excluído!",
-                description: `O parceiro ${itemToDelete.name} foi removido.`
-            });
-            logAudit(setAuditLogs, 'DELETE', 'Parceiros', `Excluiu o parceiro "${itemToDelete.name}".`);
+    const handleConfirmDelete = async () => {
+        if (itemToDelete && currentCompany) {
+             try {
+                const partnerDoc = doc(firestore, "empresas", String(currentCompany), "parceiros", itemToDelete.id);
+                await deleteDoc(partnerDoc);
+                toast({
+                    variant: "destructive",
+                    title: "Parceiro Excluído!",
+                    description: `O parceiro ${itemToDelete.name} foi removido.`
+                });
+                logAudit(setAuditLogs, 'DELETE', 'Parceiros', `Excluiu o parceiro "${itemToDelete.name}".`);
+            } catch (error: any) {
+                toast({
+                    variant: "destructive",
+                    title: "Erro ao excluir parceiro",
+                    description: error.message,
+                });
+            }
             setItemToDelete(null);
         }
     };
@@ -149,6 +180,7 @@ export default function ParceirosPage() {
                                     onOpenChange={handleDialogChange}
                                     partner={editingPartner}
                                     isReadOnly={isReadOnly}
+                                    partners={partners || []}
                                 />
                             </Dialog>
                         </div>
@@ -167,7 +199,13 @@ export default function ParceirosPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredPartners.length > 0 ? (
+                                {isLoadingPartners ? (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="h-24 text-center">
+                                            <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
+                                        </TableCell>
+                                    </TableRow>
+                                ) : filteredPartners.length > 0 ? (
                                     filteredPartners.map(partner => (
                                         <TableRow key={partner.id}>
                                             <TableCell className="font-medium">{partner.name}</TableCell>
@@ -239,10 +277,14 @@ interface PartnerFormProps {
     onOpenChange: (open: boolean) => void;
     partner: Partner | null;
     isReadOnly: boolean;
+    partners: Partner[];
 }
 
-function PartnerForm({ onSave, onOpenChange, partner, isReadOnly }: PartnerFormProps) {
+function PartnerForm({ onSave, onOpenChange, partner, isReadOnly, partners }: PartnerFormProps) {
     const { toast } = useToast();
+    const { currentCompany } = useCompany();
+    const firestore = useFirestore();
+
     const [personType, setPersonType] = useState<PersonType>('JURIDICA');
     const [document, setDocument] = useState('');
     const [name, setName] = useState('');
