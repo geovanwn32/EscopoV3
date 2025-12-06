@@ -1,5 +1,4 @@
 
-
 export const NAV_TITLES: Record<string, string> = {
   '/dashboard': 'Dashboard',
   '/selecionar-empresa': 'Selecionar Empresa',
@@ -39,7 +38,6 @@ export const NAV_TITLES: Record<string, string> = {
   '/cadastros/tabela-ibge': 'Tabela IBGE',
   '/cadastros/historicos-contabeis': 'Históricos Contábeis',
   '/cadastros/indices': 'Índices Econômicos',
-  '/cadastros/usuarios': 'Usuários e Perfis',
   '/parceiros': 'Parceiros',
   '/funcionarios': 'Funcionários',
   '/socios': 'Sócios',

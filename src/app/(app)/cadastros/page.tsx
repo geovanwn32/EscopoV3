@@ -42,13 +42,6 @@ const allCadastroItens = [
         description: 'Gerencie os dados dos sócios da empresa.',
         color: "text-blue-600 bg-blue-100/80 group-hover:bg-blue-600 dark:bg-blue-900/40 dark:text-blue-400 dark:group-hover:bg-blue-500",
     },
-     {
-        href: '/cadastros/usuarios',
-        icon: <Users className="h-8 w-8" />,
-        label: 'Usuários e Perfis',
-        description: 'Gerencie usuários, perfis e permissões de acesso.',
-        color: "text-orange-600 bg-orange-100/80 group-hover:bg-orange-600 dark:bg-orange-900/40 dark:text-orange-400 dark:group-hover:bg-orange-500",
-    },
     {
         href: '/cadastros/cfop',
         icon: <FileText className="h-8 w-8" />,
