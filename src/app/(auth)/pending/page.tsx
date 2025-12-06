@@ -11,6 +11,7 @@ const plansDetails = {
     basico: { name: 'Básico', price: '39,00' },
     profissional: { name: 'Profissional', price: '79,00' },
     empresarial: { name: 'Empresarial', price: '149,00' },
+    Gratuito: { name: 'Gratuito', price: '0,00' },
 };
 type PlanID = keyof typeof plansDetails;
 
