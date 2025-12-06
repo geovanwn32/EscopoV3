@@ -150,6 +150,11 @@ function ImageEditDialog({ image, onOpenChange, onSave }: ImageEditDialogProps) 
         setFormData(image);
     }, [image]);
 
+    const isFixedId = useMemo(() => {
+        if (!image || !image.id) return false;
+        return PlaceHolderImages.some(fixedImage => fixedImage.id === image.id);
+    }, [image]);
+
     if (!formData) return null;
 
     const handleInputChange = (field: keyof ImagePlaceholder, value: string) => {
@@ -183,11 +188,6 @@ function ImageEditDialog({ image, onOpenChange, onSave }: ImageEditDialogProps) 
         }
         onSave(formData);
     };
-
-    const isFixedId = useMemo(() => {
-        if (!image || !image.id) return false;
-        return PlaceHolderImages.some(fixedImage => fixedImage.id === image.id);
-    }, [image]);
 
     return (
         <Dialog open={!!image} onOpenChange={onOpenChange}>
@@ -243,5 +243,3 @@ function ImageEditDialog({ image, onOpenChange, onSave }: ImageEditDialogProps) 
         </Dialog>
     )
 }
-
-    
