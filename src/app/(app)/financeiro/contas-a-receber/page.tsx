@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { MoreHorizontal, Plus, Search, Trash2, Pencil, CalendarIcon } from 'lucide-react';
+import { MoreHorizontal, Plus, Search, Trash2, Pencil, CalendarIcon, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
@@ -22,36 +22,67 @@ import { cn } from '@/lib/utils';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, doc, addDoc, updateDoc, deleteDoc, query } from 'firebase/firestore';
+
 
 export default function ContasAReceberPage() {
     const { toast } = useToast();
-    const { useScopedData } = useCompany();
-    const [partners] = useScopedData<Partner[]>('partners', []);
-    const [contas, setContas] = useScopedData<Conta[]>('financeiro-contas-a-receber', []);
+    const { currentCompany } = useCompany();
+    const firestore = useFirestore();
+
+    const partnersQuery = useMemoFirebase(() => {
+        if (!currentCompany) return null;
+        return query(collection(firestore, "empresas", String(currentCompany), "parceiros"));
+    }, [firestore, currentCompany]);
+
+    const contasQuery = useMemoFirebase(() => {
+        if (!currentCompany) return null;
+        return query(collection(firestore, "empresas", String(currentCompany), "lancamentos_financeiros"));
+    }, [firestore, currentCompany]);
+
+    const { data: partners } = useCollection<Partner>(partnersQuery as any);
+    const { data: allContas, isLoading: isLoadingContas } = useCollection<Conta>(contasQuery as any);
+
+    const contas = useMemo(() => allContas?.filter(c => c.tipo === 'receber') || [], [allContas]);
     
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<Conta | null>(null);
     const [editingItem, setEditingItem] = useState<Conta | null>(null);
 
-    const handleSave = (contaData: Omit<Conta, 'id'>) => {
-        if (editingItem) {
-            setContas(prev => prev.map(c => c.id === editingItem.id ? { ...editingItem, ...contaData } : c));
-            toast({ title: "Lançamento Atualizado!", description: "A conta a receber foi atualizada." });
-        } else {
-            const newConta: Conta = { ...contaData, id: Date.now() };
-            setContas(prev => [...prev, newConta]);
-            toast({ title: "Lançamento Adicionado!", description: "A nova conta a receber foi salva." });
+    const handleSave = async (contaData: Omit<Conta, 'id' | 'tipo'>) => {
+        if (!currentCompany) return;
+        const dataToSave = { ...contaData, tipo: 'receber' };
+
+        try {
+            if (editingItem) {
+                const contaDoc = doc(firestore, "empresas", String(currentCompany), "lancamentos_financeiros", editingItem.id);
+                await updateDoc(contaDoc, dataToSave);
+                toast({ title: "Lançamento Atualizado!", description: "A conta a receber foi atualizada." });
+            } else {
+                const contasCollection = collection(firestore, "empresas", String(currentCompany), "lancamentos_financeiros");
+                await addDoc(contasCollection, dataToSave);
+                toast({ title: "Lançamento Adicionado!", description: "A nova conta a receber foi salva." });
+            }
+        } catch (error: any) {
+             toast({ variant: "destructive", title: "Erro ao Salvar", description: error.message });
         }
+
         setIsDialogOpen(false);
         setEditingItem(null);
     };
 
     const handleDeleteClick = (conta: Conta) => setItemToDelete(conta);
 
-    const handleConfirmDelete = () => {
-        if (itemToDelete) {
-            setContas(prev => prev.filter(c => c.id !== itemToDelete.id));
-            toast({ variant: "destructive", title: "Lançamento Excluído!", description: `O lançamento foi removido.` });
+    const handleConfirmDelete = async () => {
+        if (itemToDelete && currentCompany) {
+            try {
+                const contaDoc = doc(firestore, "empresas", String(currentCompany), "lancamentos_financeiros", itemToDelete.id);
+                await deleteDoc(contaDoc);
+                toast({ variant: "destructive", title: "Lançamento Excluído!", description: `O lançamento foi removido.` });
+            } catch (error: any) {
+                toast({ variant: "destructive", title: "Erro ao Excluir", description: error.message });
+            }
             setItemToDelete(null);
         }
     };
@@ -61,9 +92,15 @@ export default function ContasAReceberPage() {
         setIsDialogOpen(true);
     };
 
-    const handleStatusChange = (id: number, newStatus: StatusConta) => {
-        setContas(prev => prev.map(c => c.id === id ? { ...c, status: newStatus } : c));
-        toast({ title: "Status Alterado!", description: "O status da conta foi atualizado." });
+    const handleStatusChange = async (id: string, newStatus: StatusConta) => {
+        if (!currentCompany) return;
+        try {
+            const contaDoc = doc(firestore, "empresas", String(currentCompany), "lancamentos_financeiros", id);
+            await updateDoc(contaDoc, { status: newStatus });
+            toast({ title: "Status Alterado!", description: "O status da conta foi atualizado." });
+        } catch (error: any) {
+            toast({ variant: "destructive", title: "Erro ao alterar status", description: error.message });
+        }
     };
 
     const getStatusBadgeVariant = (status: StatusConta) => {
@@ -81,24 +118,20 @@ export default function ContasAReceberPage() {
     
     useEffect(() => {
       // Logic to update status based on date
+      if (!currentCompany) return;
       const today = new Date();
       today.setHours(0,0,0,0); // Normalize today's date
 
-      const updatedContas = contas.map(c => {
+      contas.forEach(async (c) => {
         if (c.status === 'Pendente') {
           const dueDate = new Date(c.dueDate);
           if (dueDate < today) {
-            return { ...c, status: 'Atrasado' as StatusConta };
+            const contaDoc = doc(firestore, "empresas", String(currentCompany), "lancamentos_financeiros", c.id);
+            await updateDoc(contaDoc, { status: 'Atrasado' });
           }
         }
-        return c;
       });
-      // Avoid infinite loop by checking if an update is actually needed
-      if(JSON.stringify(updatedContas) !== JSON.stringify(contas)) {
-        setContas(updatedContas);
-      }
-
-    }, [contas, setContas]);
+    }, [contas, currentCompany, firestore]);
 
 
     return (
@@ -127,7 +160,7 @@ export default function ContasAReceberPage() {
                                 <ContaForm 
                                     onSave={handleSave} 
                                     onOpenChange={setIsDialogOpen}
-                                    partners={partners.filter(p => p.type === 'Cliente')}
+                                    partners={partners?.filter(p => p.type === 'Cliente') || []}
                                     conta={editingItem}
                                 />
                             </Dialog>
@@ -148,7 +181,13 @@ export default function ContasAReceberPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {sortedContas.length > 0 ? sortedContas.map(conta => (
+                                {isLoadingContas ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="h-24 text-center">
+                                            <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
+                                        </TableCell>
+                                    </TableRow>
+                                ) : sortedContas.length > 0 ? sortedContas.map(conta => (
                                     <TableRow key={conta.id}>
                                         <TableCell className="font-medium">{conta.partnerName}</TableCell>
                                         <TableCell className="text-muted-foreground">{conta.description}</TableCell>
@@ -213,7 +252,7 @@ export default function ContasAReceberPage() {
 }
 
 interface ContaFormProps {
-    onSave: (conta: Omit<Conta, 'id'>) => void;
+    onSave: (conta: Omit<Conta, 'id' | 'tipo'>) => void;
     onOpenChange: (open: boolean) => void;
     partners: Partner[];
     conta: Conta | null;

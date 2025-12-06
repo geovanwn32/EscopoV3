@@ -268,6 +268,7 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
         setFormData(prev => ({
             ...prev,
             [section]: {
+                // @ts-ignore
                 ...prev[section],
                 [field]: value,
             }

@@ -1,7 +1,8 @@
-export type StatusConta = 'Pendente' | 'Recebido' | 'Atrasado';
+export type StatusConta = 'Pendente' | 'Recebido' | 'Atrasado' | 'Pago';
 
 export interface Conta {
-    id: number;
+    id: string;
+    tipo: 'receber' | 'pagar';
     partnerName: string;
     description: string;
     amount: number;

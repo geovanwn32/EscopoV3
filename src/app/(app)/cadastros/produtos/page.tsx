@@ -33,10 +33,14 @@ export default function ProdutosPage() {
 
     const productsQuery = useMemoFirebase(() => {
         if (!currentCompany) return null;
-        return query(collection(firestore, "empresas", String(currentCompany), "produtos"));
+        // The collection path should be 'produtos_servicos' according to backend.json
+        return query(collection(firestore, "empresas", String(currentCompany), "produtos_servicos"));
     }, [firestore, currentCompany]);
 
-    const { data: products, isLoading: isLoadingProducts } = useCollection<Product>(productsQuery as any);
+    // We filter for "Produto" on the client-side
+    const { data: productsAndServices, isLoading: isLoadingProducts } = useCollection<Product | any>(productsQuery as any);
+    const products = useMemo(() => productsAndServices?.filter(item => item.tipo === 'Produto') || [], [productsAndServices]);
+
 
     const [unidadesDeMedida, setUnidadesDeMedida] = useState<UnidadeDeMedida[]>([]); // Assuming this might come from somewhere else
     
@@ -50,13 +54,13 @@ export default function ProdutosPage() {
 
         try {
             if (editingItem) {
-                const productDoc = doc(firestore, "empresas", String(currentCompany), "produtos", editingItem.id);
-                await updateDoc(productDoc, { ...editingItem, ...itemData });
+                const productDoc = doc(firestore, "empresas", String(currentCompany), "produtos_servicos", editingItem.id);
+                await updateDoc(productDoc, { ...itemData });
                 toast({ title: "Produto Atualizado!", description: "O produto foi atualizado com sucesso." });
             } else {
-                const newCode = ((products?.length || 0) + 1).toString();
-                const newItem: Omit<Product, 'id'> = { ...itemData, codigo: newCode };
-                const productsCollection = collection(firestore, "empresas", String(currentCompany), "produtos");
+                const newCode = `PROD-${((products?.length || 0) + 1).toString().padStart(4, '0')}`;
+                const newItem: Omit<Product, 'id'> = { ...itemData, codigo: newCode, tipo: 'Produto' };
+                const productsCollection = collection(firestore, "empresas", String(currentCompany), "produtos_servicos");
                 await addDoc(productsCollection, newItem);
                 toast({ title: "Produto Adicionado!", description: "O novo produto foi salvo no seu catálogo." });
             }
@@ -73,7 +77,7 @@ export default function ProdutosPage() {
     const handleConfirmDelete = async () => {
         if (itemToDelete && currentCompany) {
             try {
-                const productDoc = doc(firestore, "empresas", String(currentCompany), "produtos", itemToDelete.id);
+                const productDoc = doc(firestore, "empresas", String(currentCompany), "produtos_servicos", itemToDelete.id);
                 await deleteDoc(productDoc);
                 toast({ variant: "destructive", title: "Produto Excluído!", description: `O produto foi removido.` });
             } catch (error: any) {
@@ -209,7 +213,7 @@ export default function ProdutosPage() {
 }
 
 interface ItemFormProps {
-    onSave: (item: Omit<Product, 'id' | 'codigo'>) => void;
+    onSave: (item: Omit<Product, 'id' | 'codigo' | 'tipo'>) => void;
     onOpenChange: (open: boolean) => void;
     item: Product | null;
     unidadesDeMedida: UnidadeDeMedida[];
@@ -261,6 +265,7 @@ function ItemForm({ onSave, onOpenChange, item, unidadesDeMedida }: ItemFormProp
         setFormData(prev => ({
             ...prev,
             [tax]: {
+                // @ts-ignore
                 ...prev[tax],
                 [field]: value
             }

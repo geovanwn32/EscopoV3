@@ -2,7 +2,7 @@
 
 'use client';
 
-import { Settings, User, Briefcase, FileText, ArrowRight, MoreHorizontal, AlertTriangle, CheckCircle, ArrowRightCircle, ArrowDownRight, ArrowUpRight, Clock } from 'lucide-react';
+import { Settings, User, Briefcase, FileText, ArrowRight, MoreHorizontal, AlertTriangle, CheckCircle, ArrowRightCircle, ArrowDownRight, ArrowUpRight, Clock, Loader2 } from 'lucide-react';
 import { useCompany } from '@/hooks/use-company';
 import KpiCard from '@/components/dashboard/kpi-card';
 import ResultsChart from '@/components/dashboard/results-chart';
@@ -17,22 +17,33 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { addDays, isBefore, isToday } from 'date-fns';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query } from 'firebase/firestore';
 
-const defaultKpiSettings = [
-  { id: 'faturamento', title: 'Faturamento', enabled: true },
-  { id: 'despesas', title: 'Compras/Despesas', enabled: true },
-  { id: 'notas', title: 'Notas Emitidas', enabled: true },
-  { id: 'resultado', title: 'Resultado', enabled: true },
-];
 
 export default function DashboardPage() {
-  const { useScopedData } = useCompany();
+    const { currentCompany } = useCompany();
+    const firestore = useFirestore();
   
-  const [contasReceber] = useScopedData<Conta[]>('financeiro-contas-a-receber', []);
-  const [contasPagar] = useScopedData<Conta[]>('financeiro-contas-a-pagar', []);
-  const [notasSaida] = useScopedData<NotaFiscal[]>('fiscal-notasSaida', []);
-  const [notasServico] = useScopedData<NotaFiscal[]>('fiscal-notasServico', []);
-  const [period, setPeriod] = useState<"6" | "8" | "12">("8");
+    const contasQuery = useMemoFirebase(() => {
+        if (!currentCompany) return null;
+        return query(collection(firestore, "empresas", String(currentCompany), "lancamentos_financeiros"));
+    }, [firestore, currentCompany]);
+
+    const notasQuery = useMemoFirebase(() => {
+        if (!currentCompany) return null;
+        return query(collection(firestore, "empresas", String(currentCompany), "notas_fiscais"));
+    }, [firestore, currentCompany]);
+
+    const { data: allContas, isLoading: isLoadingContas } = useCollection<Conta>(contasQuery as any);
+    const { data: allNotas, isLoading: isLoadingNotas } = useCollection<NotaFiscal>(notasQuery as any);
+    
+    const contasReceber = useMemo(() => allContas?.filter(c => c.tipo === 'receber') || [], [allContas]);
+    const contasPagar = useMemo(() => allContas?.filter(c => c.tipo === 'pagar') || [], [allContas]);
+    const notasSaida = useMemo(() => allNotas?.filter(n => n.tipo === 'saida') || [], [allNotas]);
+    const notasServico = useMemo(() => allNotas?.filter(n => n.tipo === 'servico') || [], [allNotas]);
+    
+    const [period, setPeriod] = useState<"6" | "8" | "12">("8");
 
 
   const kpiData = useMemo(() => {
@@ -43,7 +54,7 @@ export default function DashboardPage() {
     const despesas = contasPagar
         .reduce((acc, c) => acc + c.amount, 0);
 
-    const notasEmitidas = notasSaida.length + notasServico.length;
+    const notasEmitidas = (notasSaida?.length || 0) + (notasServico?.length || 0);
     const resultado = faturamento - despesas;
     
     return { faturamento, despesas, notasEmitidas, resultado };
@@ -132,6 +143,22 @@ export default function DashboardPage() {
         return <Clock className="h-6 w-6 text-amber-500" />;
     }
   };
+
+  const isLoading = isLoadingContas || isLoadingNotas;
+
+  if (isLoading) {
+    return (
+        <div className="flex flex-col gap-6">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                {[...Array(4)].map((_, i) => <Card key={i} className="h-[108px] animate-pulse bg-muted/50"></Card>)}
+            </div>
+             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                <Card className="lg:col-span-1 h-[450px] animate-pulse bg-muted/50"></Card>
+                <Card className="lg:col-span-2 h-[450px] animate-pulse bg-muted/50"></Card>
+             </div>
+        </div>
+    )
+  }
 
 
   return (

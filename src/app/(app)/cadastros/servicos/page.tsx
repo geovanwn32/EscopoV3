@@ -25,30 +25,32 @@ export default function ServicosPage() {
     const { currentCompany } = useCompany();
     const firestore = useFirestore();
 
-    const servicesQuery = useMemoFirebase(() => {
+     const servicesQuery = useMemoFirebase(() => {
         if (!currentCompany) return null;
-        return query(collection(firestore, "empresas", String(currentCompany), "servicos"));
+        // The collection path should be 'produtos_servicos' according to backend.json
+        return query(collection(firestore, "empresas", String(currentCompany), "produtos_servicos"));
     }, [firestore, currentCompany]);
 
-    const { data: services, isLoading: isLoadingServices } = useCollection<Service>(servicesQuery as any);
+    const { data: productsAndServices, isLoading: isLoadingServices } = useCollection<Service | any>(servicesQuery as any);
+    const services = useMemo(() => productsAndServices?.filter(item => item.tipo === 'Serviço') || [], [productsAndServices]);
     
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<Service | null>(null);
     const [editingItem, setEditingItem] = useState<Service | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const handleSave = async (itemData: Omit<Service, 'id' | 'codigo'>) => {
+    const handleSave = async (itemData: Omit<Service, 'id' | 'codigo' | 'tipo'>) => {
         if (!currentCompany) return;
 
         try {
             if (editingItem) {
-                const serviceDoc = doc(firestore, "empresas", String(currentCompany), "servicos", editingItem.id);
-                await updateDoc(serviceDoc, { ...editingItem, ...itemData });
+                const serviceDoc = doc(firestore, "empresas", String(currentCompany), "produtos_servicos", editingItem.id);
+                await updateDoc(serviceDoc, { ...itemData });
                 toast({ title: "Serviço Atualizado!", description: "O serviço foi atualizado com sucesso." });
             } else {
-                const newCode = ((services?.length || 0) + 1).toString();
-                const newItem: Omit<Service, 'id'> = { ...itemData, codigo: newCode };
-                const servicesCollection = collection(firestore, "empresas", String(currentCompany), "servicos");
+                const newCode = `SERV-${((services?.length || 0) + 1).toString().padStart(4, '0')}`;
+                const newItem: Omit<Service, 'id'> = { ...itemData, codigo: newCode, tipo: 'Serviço' };
+                const servicesCollection = collection(firestore, "empresas", String(currentCompany), "produtos_servicos");
                 await addDoc(servicesCollection, newItem);
                 toast({ title: "Serviço Adicionado!", description: "O novo serviço foi salvo no seu catálogo." });
             }
@@ -65,7 +67,7 @@ export default function ServicosPage() {
     const handleConfirmDelete = async () => {
         if (itemToDelete && currentCompany) {
             try {
-                const serviceDoc = doc(firestore, "empresas", String(currentCompany), "servicos", itemToDelete.id);
+                const serviceDoc = doc(firestore, "empresas", String(currentCompany), "produtos_servicos", itemToDelete.id);
                 await deleteDoc(serviceDoc);
                 toast({ variant: "destructive", title: "Serviço Excluído!", description: `O serviço foi removido.` });
             } catch (error: any) {
@@ -241,6 +243,7 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
         setFormData(prev => ({
             ...prev,
             [tax]: {
+                // @ts-ignore
                 ...prev[tax],
                 [field]: value
             }
@@ -257,7 +260,7 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
             });
             return;
         }
-        onSave({ ...formData, tipo: 'Serviço' });
+        onSave({ ...formData });
     };
     
     return (

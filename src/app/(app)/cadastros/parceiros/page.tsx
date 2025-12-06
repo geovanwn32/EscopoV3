@@ -25,7 +25,7 @@ import { collection, doc, addDoc, updateDoc, deleteDoc, query } from 'firebase/f
 
 export default function ParceirosPage() {
     const { toast } = useToast();
-    const { currentCompany, useScopedData } = useCompany();
+    const { currentCompany } = useCompany();
     const firestore = useFirestore();
 
     const partnersQuery = useMemoFirebase(() => {
@@ -35,7 +35,7 @@ export default function ParceirosPage() {
 
     const { data: partners, isLoading: isLoadingPartners } = useCollection<Partner>(partnersQuery as any);
     
-    const [, setAuditLogs] = useScopedData<AuditLog[]>('audit-trail-logs', []);
+    const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]); // This should also go to Firestore
 
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -60,12 +60,12 @@ export default function ParceirosPage() {
             } else {
                 // Add new partner
                 const partnersCollection = collection(firestore, "empresas", String(currentCompany), "parceiros");
-                await addDoc(partnersCollection, { ...partnerData, empresaId: String(currentCompany) });
+                const newDocRef = await addDoc(partnersCollection, { ...partnerData, empresaId: String(currentCompany) });
                 toast({
                     title: "Parceiro Salvo!",
                     description: `O parceiro ${partnerData.name} foi adicionado com sucesso.`
                 });
-                logAudit(setAuditLogs, 'CREATE', 'Parceiros', `Criou o parceiro "${partnerData.name}" (Doc: ${partnerData.document}).`);
+                logAudit(setAuditLogs, 'CREATE', 'Parceiros', `Criou o parceiro "${partnerData.name}" (Doc ID: ${newDocRef.id}).`);
             }
         } catch (error: any) {
              toast({
@@ -180,7 +180,6 @@ export default function ParceirosPage() {
                                     onOpenChange={handleDialogChange}
                                     partner={editingPartner}
                                     isReadOnly={isReadOnly}
-                                    partners={partners || []}
                                 />
                             </Dialog>
                         </div>
@@ -277,10 +276,9 @@ interface PartnerFormProps {
     onOpenChange: (open: boolean) => void;
     partner: Partner | null;
     isReadOnly: boolean;
-    partners: Partner[];
 }
 
-function PartnerForm({ onSave, onOpenChange, partner, isReadOnly, partners }: PartnerFormProps) {
+function PartnerForm({ onSave, onOpenChange, partner, isReadOnly }: PartnerFormProps) {
     const { toast } = useToast();
     
     const [personType, setPersonType] = useState<PersonType>('JURIDICA');
@@ -551,5 +549,3 @@ function PartnerForm({ onSave, onOpenChange, partner, isReadOnly, partners }: Pa
         </DialogContent>
     );
 }
-
-    
