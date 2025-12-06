@@ -3,20 +3,21 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useLocalStorage } from '@/hooks/use-company';
 import { PlaceHolderImages, type ImagePlaceholder } from '@/lib/placeholder-images';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Search, PlusCircle, Upload, Pencil, Trash2 } from 'lucide-react';
+import { Search, PlusCircle, Upload, Pencil, Trash2, CheckCircle, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function GerenciadorDeMidiaPage() {
     const { toast } = useToast();
     const [images, setImages] = useLocalStorage<ImagePlaceholder[]>('placeholderImages', PlaceHolderImages);
+    const [loginBgId, setLoginBgId] = useLocalStorage<string>('loginBackgroundId', 'login-background-professional');
     const [searchTerm, setSearchTerm] = useState('');
     const [editingImage, setEditingImage] = useState<ImagePlaceholder | null>(null);
     const [imageToDelete, setImageToDelete] = useState<ImagePlaceholder | null>(null);
@@ -49,6 +50,14 @@ export default function GerenciadorDeMidiaPage() {
             setImageToDelete(null);
         }
     };
+
+    const handleApplyAsLoginBg = (imageId: string) => {
+        setLoginBgId(imageId);
+        toast({
+            title: "Imagem de Fundo Aplicada!",
+            description: `A imagem "${imageId}" foi definida como o fundo da página de login.`,
+        })
+    }
     
     return (
         <div className="space-y-6">
@@ -82,22 +91,39 @@ export default function GerenciadorDeMidiaPage() {
                     {filteredImages.length > 0 ? (
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                             {filteredImages.map(img => (
-                                <Card key={img.id} className="overflow-hidden group">
+                                <Card key={img.id} className="overflow-hidden group flex flex-col">
                                     <div className="relative aspect-video">
                                         <Image src={img.imageUrl} alt={img.description} fill className="object-cover transition-transform group-hover:scale-105" />
+                                         {loginBgId === img.id && (
+                                            <div className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-primary/80 px-2 py-1 text-xs font-semibold text-primary-foreground backdrop-blur-sm">
+                                                <ImageIcon className="h-3 w-3" /> Fundo do Login
+                                            </div>
+                                        )}
                                     </div>
                                     <CardHeader className="p-3">
                                         <CardTitle className="text-sm truncate">{img.id}</CardTitle>
                                         <CardDescription className="text-xs truncate">{img.description}</CardDescription>
                                     </CardHeader>
-                                    <CardContent className="p-3 pt-0 flex gap-2">
-                                        <Button size="sm" variant="outline" className="flex-1" onClick={() => setEditingImage(img)}>
-                                            <Pencil className="mr-2 h-3 w-3" /> Editar
+                                    <CardFooter className="p-3 pt-0 mt-auto flex flex-col gap-2">
+                                        <Button 
+                                            size="sm" 
+                                            variant={loginBgId === img.id ? "default" : "secondary"} 
+                                            className="w-full"
+                                            onClick={() => handleApplyAsLoginBg(img.id)}
+                                            disabled={loginBgId === img.id}
+                                        >
+                                            {loginBgId === img.id ? <CheckCircle className="mr-2 h-4 w-4" /> : <ImageIcon className="mr-2 h-4 w-4" />}
+                                            {loginBgId === img.id ? 'Aplicado' : 'Aplicar no Login'}
                                         </Button>
-                                         <Button size="sm" variant="destructive" className="flex-1" onClick={() => setImageToDelete(img)}>
-                                            <Trash2 className="mr-2 h-3 w-3" /> Excluir
-                                        </Button>
-                                    </CardContent>
+                                        <div className="flex w-full gap-2">
+                                            <Button size="sm" variant="outline" className="flex-1" onClick={() => setEditingImage(img)}>
+                                                <Pencil className="mr-2 h-3 w-3" /> Editar
+                                            </Button>
+                                            <Button size="sm" variant="destructive" className="flex-1" onClick={() => setImageToDelete(img)}>
+                                                <Trash2 className="mr-2 h-3 w-3" /> Excluir
+                                            </Button>
+                                        </div>
+                                    </CardFooter>
                                 </Card>
                             ))}
                         </div>
@@ -147,14 +173,19 @@ function ImageEditDialog({ image, allImages, onOpenChange, onSave }: ImageEditDi
     const [isUploading, setIsUploading] = useState(false);
     const { toast } = useToast();
 
-    const isEditing = useMemo(() => !!image?.id, [image]);
+    const isEditing = useMemo(() => {
+        if (!image || !allImages) return false;
+        // It's "editing" if the ID exists in the main list, even if it's the one being added
+        return allImages.some(img => img.id === image.id && image.id !== '');
+    }, [image, allImages]);
+
 
     useEffect(() => {
         setFormData(image);
     }, [image]);
-
-    if (!formData) return null;
     
+    if (!formData) return null;
+
     const handleIdChange = (id: string) => {
         if (isEditing) {
             const selectedImage = allImages.find(img => img.id === id);

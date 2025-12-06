@@ -6,10 +6,16 @@ import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { useLocalStorage } from '@/hooks/use-company';
+import { useMemo } from 'react';
 
 
 export default function LoginPage() {
-  const loginBg = PlaceHolderImages.find(p => p.id === 'login-background-professional');
+  const [loginBgId] = useLocalStorage<string>('loginBackgroundId', 'login-background-professional');
+  
+  const loginBg = useMemo(() => {
+    return PlaceHolderImages.find(p => p.id === loginBgId) || PlaceHolderImages.find(p => p.id === 'login-background-professional');
+  }, [loginBgId]);
   
   return (
     <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
@@ -21,6 +27,7 @@ export default function LoginPage() {
               fill
               className="absolute inset-0 object-cover"
               data-ai-hint={loginBg.imageHint}
+              priority
            />
          )}
          <div className="absolute inset-0 bg-blue-950/70" />
