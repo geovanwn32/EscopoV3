@@ -2,52 +2,91 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper Functions
+    // ======================================================
+    //  HELPER FUNCTIONS
+    // ======================================================
     function isSignedIn() {
       return request.auth != null;
     }
 
-    function isUserAdmin(userId) {
-        // Check a 'global-users' collection to see if the user has an 'isAdmin' flag.
-        return exists(/databases/$(database)/documents/global-users/$(userId)) &&
-               get(/databases/$(database)/documents/global-users/$(userId)).data.isAdmin == true;
-    }
-    
-    function isUserMaster(userId) {
-        return exists(/databases/$(database)/documents/global-users/$(userId)) &&
-               get(/databases/$(database)/documents/global-users/$(userId)).data.isMaster == true;
+    // Verifica se o usuário autenticado é um admin (flag no perfil global)
+    function isUserAdmin() {
+      return isSignedIn() &&
+             exists(/databases/$(database)/documents/global-users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/global-users/$(request.auth.uid)).data.isAdmin == true;
     }
 
-    // Global collection for user profiles and roles.
+    // Verifica se o usuário autenticado é o Master (flag no perfil global)
+    function isUserMaster() {
+      return isSignedIn() &&
+             exists(/databases/$(database)/documents/global-users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/global-users/$(request.auth.uid)).data.isMaster == true;
+    }
+
+    // Verifica se o usuário logado é membro da empresa especificada
+    function isCompanyMember(empresaId) {
+      return isSignedIn() &&
+             exists(/databases/$(database)/documents/global-users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/global-users/$(request.auth.uid)).data.allowedCompanyIds.hasAny([string(empresaId)]);
+    }
+
+    // ======================================================
+    //  GLOBAL USERS & ROLES
+    // ======================================================
     match /global-users/{userId} {
-      // Admins and the user themselves can read their own profile.
-      allow get: if isSignedIn() && (isUserAdmin(request.auth.uid) || request.auth.uid == userId);
-      // Only admins can list all users.
-      allow list: if isSignedIn() && isUserAdmin(request.auth.uid);
+      // Leitura: Um usuário pode ler seu próprio perfil, ou um admin pode ler qualquer perfil.
+      allow get: if isSignedIn() && (request.auth.uid == userId || isUserAdmin());
       
-      // Anyone can create a user profile upon sign-up (for pending status)
-      // but they can only create their own document.
+      // Listagem: Apenas administradores podem listar todos os usuários globais.
+      allow list: if isUserAdmin();
+      
+      // Criação: Qualquer usuário autenticado pode criar seu próprio documento de perfil (ex: durante o cadastro).
       allow create: if isSignedIn() && request.auth.uid == userId;
 
-      // Admins can update any user, users can only update their own profile.
-      // A user cannot make themselves an admin or master.
+      // Atualização:
+      // Admins podem atualizar qualquer perfil.
+      // Um usuário pode atualizar seu próprio perfil, mas não pode alterar suas próprias permissões (isAdmin, isMaster, status).
       allow update: if isSignedIn() && 
-                      (isUserAdmin(request.auth.uid) || request.auth.uid == userId) &&
-                      (isUserAdmin(request.auth.uid) || (
-                        request.resource.data.isAdmin == resource.data.isAdmin &&
-                        request.resource.data.isMaster == resource.data.isMaster
-                      ));
+                      (
+                        isUserAdmin() || 
+                        (
+                          request.auth.uid == userId &&
+                          request.resource.data.isAdmin == resource.data.isAdmin &&
+                          request.resource.data.isMaster == resource.data.isMaster &&
+                          request.resource.data.status == resource.data.status
+                        )
+                      );
       
-      // Only Master users can delete other users, but not themselves or another Master.
-      allow delete: if isSignedIn() && isUserMaster(request.auth.uid) && request.auth.uid != userId && resource.data.isMaster != true;
+      // Exclusão: Apenas um Master pode excluir outro usuário, mas não pode excluir a si mesmo nem outro Master.
+      allow delete: if isUserMaster() && request.auth.uid != userId && resource.data.isMaster != true;
     }
     
-    // Multi-tenant data, scoped by company
+    // ======================================================
+    //  MULTI-TENANT DATA (EMPRESAS)
+    // ======================================================
+    match /empresas/{empresaId} {
+      // Regra geral para documentos de empresa, se necessário.
+      // Por exemplo, apenas admins ou membros podem ler os dados da empresa.
+      allow read, write: if isCompanyMember(empresaId) || isUserAdmin();
+    }
+    
+    match /empresas/{empresaId}/usuarios/{usuarioId} {
+        // Leitura/escrita de um usuário específico da empresa
+        allow get, update, create, delete: if isCompanyMember(empresaId) || isUserAdmin();
+    }
+
+    match /empresas/{empresaId}/usuarios {
+        // PERMISSÃO DE LISTAGEM - Apenas admins podem listar todos os usuários de uma empresa.
+        // Esta é a correção principal para o seu erro.
+        allow list: if isUserAdmin();
+    }
+
+    // Regra Curinga para todas as outras subcoleções dentro de uma empresa.
     match /empresas/{empresaId}/{document=**} {
-      // The user must be authenticated and must be a member of the company.
-      // We check a user's allowed companies from their profile in 'global-users'.
-      allow read, write: if isSignedIn() &&
-                         get(/databases/$(database)/documents/global-users/$(request.auth.uid)).data.allowedCompanyIds.hasAny([empresaId]);
+      // Um usuário pode ler/escrever em qualquer subcoleção de uma empresa
+      // SE ele for um membro daquela empresa OU for um admin.
+      // A condição 'document != "usuarios"' evita conflito com as regras mais específicas acima.
+      allow read, write: if (document[0] != 'usuarios') && (isCompanyMember(empresaId) || isUserAdmin());
     }
   }
 }
