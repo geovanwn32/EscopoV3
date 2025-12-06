@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 
 
 export default function LoginPage() {
-  const loginBg = PlaceHolderImages.find(p => p.id === 'login-background');
+  const loginBg = PlaceHolderImages.find(p => p.id === 'login-background-professional');
   
   return (
     <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
@@ -22,7 +22,7 @@ export default function LoginPage() {
               data-ai-hint={loginBg.imageHint}
            />
          )}
-         <div className="absolute inset-0 bg-zinc-900/60" />
+         <div className="absolute inset-0 bg-blue-950/70" />
          <div className="relative z-20 flex items-center text-2xl font-bold font-headline">
             <Building2 className="h-8 w-8 mr-3" />
             EscopoV3
@@ -36,7 +36,7 @@ export default function LoginPage() {
           </blockquote>
         </div>
       </div>
-       <div className="relative flex items-center justify-center py-12 px-4 sm:px-0 animated-gradient">
+       <div className="relative flex flex-col items-center justify-center py-12 px-4 sm:px-0 animated-gradient">
             <Button asChild variant="ghost" className="absolute top-6 left-6 text-muted-foreground hover:text-foreground">
                 <Link href="/landing">
                     <ArrowLeft className="mr-2 h-4 w-4" />
@@ -44,6 +44,11 @@ export default function LoginPage() {
                 </Link>
             </Button>
           <LoginForm />
+           <div className="absolute bottom-6 text-center text-xs text-muted-foreground">
+                <Link href="#" className="underline underline-offset-2">Política de Privacidade</Link>
+                {' | '}
+                <Link href="#" className="underline underline-offset-2">Termos de Serviço</Link>
+            </div>
       </div>
     </div>
   );
