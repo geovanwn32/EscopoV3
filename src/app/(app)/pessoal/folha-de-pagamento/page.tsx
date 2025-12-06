@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -64,7 +65,7 @@ const meses = [
     { value: 10, 'label': 'Outubro' }, { value: 11, 'label': 'Novembro' }, { value: 12, 'label': 'Dezembro' }
 ];
 
-const anos = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i);
+const anos = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i);
 
 // --- FUNÇÕES DE CÁLCULO DE IMPOSTOS ---
 

@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -8,25 +9,32 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCompany } from '@/hooks/use-company';
 import { useToast } from '@/hooks/use-toast';
-import { Calculator, FileText, Loader2 } from 'lucide-react';
+import { Calculator, FileText, Loader2, ArrowLeft } from 'lucide-react';
 import { MoneyInput } from '@/components/ui/money-input';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import Link from 'next/link';
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 
 // Simplified Socio interface for this context
 interface Socio {
     id: number;
     nome: string;
     cpf: string;
+    cargo: string;
 }
 
-interface ResultadoProLabore {
+interface ResultadoRCI {
+    socioId: number;
+    socioNome: string;
     bruto: number;
     baseINSS: number;
     valorINSS: number;
     baseIRRF: number;
     valorIRRF: number;
     liquido: number;
+    mes: number;
+    ano: number;
 }
 
 const meses = [
@@ -36,7 +44,7 @@ const meses = [
     { value: 10, 'label': 'Outubro' }, { value: 11, 'label': 'Novembro' }, { value: 12, 'label': 'Dezembro' }
 ];
 
-const anos = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i);
+const anos = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i);
 
 // --- FUNÇÕES DE CÁLCULO DE IMPOSTOS ---
 
@@ -61,54 +69,67 @@ export default function RciPage() {
     const { toast } = useToast();
     const { useScopedData, companies, currentCompany } = useCompany();
     const [socios] = useScopedData<Socio[]>('cadastros-socios', []);
+    const [resultados, setResultados] = useScopedData<ResultadoRCI[]>('pessoal-rci-resultados', []);
+
 
     const [mes, setMes] = useState<number>(new Date().getMonth() + 1);
     const [ano, setAno] = useState<number>(new Date().getFullYear());
-    const [selectedSocioId, setSelectedSocioId] = useState<string | undefined>(undefined);
-    const [valorBruto, setValorBruto] = useState<number>(0);
-    const [resultado, setResultado] = useState<ResultadoProLabore | null>(null);
+    
+    const [socioValores, setSocioValores] = useState<Record<number, number>>({});
+    const [activeResultado, setActiveResultado] = useState<ResultadoRCI | null>(null);
+
     const [isLoading, setIsLoading] = useState(false);
     
     const activeCompany = useMemo(() => companies.find(c => c.id === currentCompany), [companies, currentCompany]);
 
+    const handleValorChange = (socioId: number, valor: number) => {
+        setSocioValores(prev => ({ ...prev, [socioId]: valor }));
+    }
+
     const handleCalcular = () => {
-        if (!selectedSocioId || valorBruto <= 0) {
-            toast({ variant: 'destructive', title: 'Campos inválidos', description: 'Selecione um sócio e informe um valor bruto maior que zero.' });
+        const sociosParaCalcular = Object.entries(socioValores).filter(([, valor]) => valor > 0);
+        if (sociosParaCalcular.length === 0) {
+            toast({ variant: 'destructive', title: 'Nenhum valor informado', description: 'Informe o valor do pró-labore para pelo menos um sócio.' });
             return;
         }
 
         setIsLoading(true);
         setTimeout(() => {
-            const baseINSS = valorBruto;
-            const valorINSS = getContribuicaoINSSProLabore(baseINSS);
+            const novosResultados = sociosParaCalcular.map(([socioIdStr, valorBruto]) => {
+                const socioId = Number(socioIdStr);
+                const socio = socios.find(s => s.id === socioId);
+                if (!socio) return null;
 
-            const baseIRRF = valorBruto - valorINSS;
-            const valorIRRF = getContribuicaoIRRF(baseIRRF);
+                const baseINSS = valorBruto;
+                const valorINSS = getContribuicaoINSSProLabore(baseINSS);
+                const baseIRRF = valorBruto - valorINSS;
+                const valorIRRF = getContribuicaoIRRF(baseIRRF);
+                const totalDescontos = valorINSS + valorIRRF;
+                const liquido = valorBruto - totalDescontos;
 
-            const totalDescontos = valorINSS + valorIRRF;
-            const liquido = valorBruto - totalDescontos;
-
-            setResultado({
-                bruto: valorBruto,
-                baseINSS,
-                valorINSS,
-                baseIRRF,
-                valorIRRF,
-                liquido,
-            });
-
+                return {
+                    socioId,
+                    socioNome: socio.nome,
+                    bruto: valorBruto,
+                    baseINSS,
+                    valorINSS,
+                    baseIRRF,
+                    valorIRRF,
+                    liquido,
+                    mes,
+                    ano,
+                };
+            }).filter((r): r is ResultadoRCI => r !== null);
+            
+            setResultados(prev => [...prev, ...novosResultados]);
+            setActiveResultado(novosResultados[0] || null); // Show first result
             setIsLoading(false);
-            toast({ title: 'Cálculo Realizado!', description: 'O pró-labore foi calculado com sucesso.' });
+            toast({ title: 'Cálculo Realizado!', description: `${novosResultados.length} pró-labore(s) calculado(s) com sucesso.` });
         }, 500);
     };
     
-    const gerarReciboPDF = () => {
-        if (!resultado || !selectedSocioId) {
-            toast({ variant: 'destructive', title: 'Nenhum cálculo para gerar.' });
-            return;
-        }
-
-        const socio = socios.find(s => s.id === Number(selectedSocioId));
+    const gerarReciboPDF = (resultado: ResultadoRCI) => {
+        const socio = socios.find(s => s.id === resultado.socioId);
         if (!socio) {
              toast({ variant: 'destructive', title: 'Sócio não encontrado.' });
             return;
@@ -122,7 +143,7 @@ export default function RciPage() {
         doc.text('Recibo de Pagamento de Pró-Labore', 105, 20, { align: 'center' });
         doc.setFontSize(12);
         doc.setFont('helvetica', 'normal');
-        doc.text(`Competência: ${meses.find(m => m.value === mes)?.label}/${ano}`, 105, 28, { align: 'center' });
+        doc.text(`Competência: ${meses.find(m => m.value === resultado.mes)?.label}/${resultado.ano}`, 105, 28, { align: 'center' });
         
         // Dados da Empresa e Sócio
         autoTable(doc, {
@@ -180,91 +201,114 @@ export default function RciPage() {
         doc.text(socio.nome, 105, signatureY + 5, { align: 'center' });
         doc.text('Assinatura do Sócio', 105, signatureY + 10, { align: 'center' });
 
-        doc.save(`Recibo_ProLabore_${socio.nome.split(' ')[0]}_${mes}_${ano}.pdf`);
+        doc.save(`Recibo_ProLabore_${socio.nome.split(' ')[0]}_${resultado.mes}_${resultado.ano}.pdf`);
         toast({ title: "Recibo Gerado!", description: "O arquivo PDF com o recibo foi baixado." });
     };
 
     return (
         <div className="space-y-6">
-            <div className="space-y-1">
-                <h1 className="text-3xl font-bold tracking-tight font-headline">RCI (Pró-labore)</h1>
-                <p className="text-muted-foreground">Calcule o pró-labore dos sócios da empresa.</p>
+            <div className="flex items-center gap-4">
+                 <Link href="/pessoal">
+                    <Button variant="outline" size="icon" className="h-8 w-8">
+                        <ArrowLeft className="h-4 w-4" />
+                        <span className="sr-only">Voltar</span>
+                    </Button>
+                </Link>
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-bold tracking-tight font-headline">RCI (Pró-labore)</h1>
+                    <p className="text-muted-foreground">Calcule o pró-labore dos sócios da empresa.</p>
+                </div>
             </div>
             
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Calculadora de Pró-Labore</CardTitle>
-                            <CardDescription>Selecione o sócio, o período e o valor para calcular os descontos e o valor líquido.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="mes">Mês</Label>
-                                    <Select value={String(mes)} onValueChange={(v) => setMes(Number(v))}><SelectTrigger id="mes"><SelectValue /></SelectTrigger><SelectContent>{meses.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>)}</SelectContent></Select>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="ano">Ano</Label>
-                                    <Select value={String(ano)} onValueChange={(v) => setAno(Number(v))}><SelectTrigger id="ano"><SelectValue /></SelectTrigger><SelectContent>{anos.map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}</SelectContent></Select>
-                                </div>
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="socio">Sócio</Label>
-                                <Select value={selectedSocioId} onValueChange={setSelectedSocioId}>
-                                    <SelectTrigger id="socio"><SelectValue placeholder="Selecione um sócio..."/></SelectTrigger>
-                                    <SelectContent>
-                                        {socios.length > 0 ? socios.map(s => <SelectItem key={s.id} value={String(s.id)}>{s.nome}</SelectItem>) : <p className='p-4 text-sm text-muted-foreground'>Nenhum sócio cadastrado.</p>}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="valor-bruto">Valor do Pró-Labore (Bruto)</Label>
-                                <MoneyInput id="valor-bruto" value={valorBruto} onValueChange={setValorBruto} />
-                            </div>
-                        </CardContent>
-                        <CardFooter className="flex justify-end">
-                            <Button onClick={handleCalcular} disabled={isLoading}>
-                                {isLoading ? <Loader2 className='mr-2 h-4 w-4 animate-spin' /> : <Calculator className="mr-2 h-4 w-4" />}
-                                Calcular
-                            </Button>
-                        </CardFooter>
-                    </Card>
-                </div>
+             <Card>
+                <CardHeader>
+                    <CardTitle>1. Seleção de Competência e Sócios</CardTitle>
+                    <CardDescription>Escolha o período, os sócios e defina o valor do pró-labore para cada um.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="mes">Mês</Label>
+                            <Select value={String(mes)} onValueChange={(v) => setMes(Number(v))}><SelectTrigger id="mes"><SelectValue /></SelectTrigger><SelectContent>{meses.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>)}</SelectContent></Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="ano">Ano</Label>
+                            <Select value={String(ano)} onValueChange={(v) => setAno(Number(v))}><SelectTrigger id="ano"><SelectValue /></SelectTrigger><SelectContent>{anos.map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}</SelectContent></Select>
+                        </div>
+                    </div>
+                     <div className="rounded-md border">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Nome do Sócio</TableHead>
+                                    <TableHead>Cargo</TableHead>
+                                    <TableHead className="w-[250px]">Valor do Pró-labore</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {socios.length > 0 ? socios.map(s => (
+                                    <TableRow key={s.id}>
+                                        <TableCell className="font-medium">{s.nome}</TableCell>
+                                        <TableCell>{s.cargo}</TableCell>
+                                        <TableCell>
+                                            <MoneyInput id={`valor-${s.id}`} value={socioValores[s.id] || 0} onValueChange={(v) => handleValorChange(s.id, v)} />
+                                        </TableCell>
+                                    </TableRow>
+                                )) : <TableRow><TableCell colSpan={3} className="text-center h-24">Nenhum sócio cadastrado</TableCell></TableRow>}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </CardContent>
+                <CardFooter className="flex justify-end">
+                    <Button onClick={handleCalcular} disabled={isLoading}>
+                        {isLoading ? <Loader2 className='mr-2 h-4 w-4 animate-spin' /> : <Calculator className="mr-2 h-4 w-4" />}
+                        Calcular Pró-labore
+                    </Button>
+                </CardFooter>
+            </Card>
                 
-                {resultado && (
-                     <Card>
-                        <CardHeader>
-                            <CardTitle>Resultado do Cálculo</CardTitle>
-                            <CardDescription>Resumo dos valores calculados.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                             <div className="flex justify-between items-center text-sm">
-                                <span className="text-muted-foreground">Valor Bruto:</span>
-                                <span className="font-medium font-mono">{resultado.bruto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                            </div>
-                             <div className="flex justify-between items-center text-sm">
-                                <span className="text-muted-foreground">INSS (11%):</span>
-                                <span className="font-medium font-mono text-red-500">(-{resultado.valorINSS.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})</span>
-                            </div>
-                             <div className="flex justify-between items-center text-sm">
-                                <span className="text-muted-foreground">IRRF:</span>
-                                <span className="font-medium font-mono text-red-500">(-{resultado.valorIRRF.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})</span>
-                            </div>
-                            <div className="border-t my-2"></div>
-                            <div className="flex justify-between items-center text-lg">
-                                <span className="font-semibold">Valor Líquido a Pagar:</span>
-                                <span className="font-bold font-mono text-emerald-600">{resultado.liquido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                            </div>
-                        </CardContent>
-                        <CardFooter>
-                             <Button variant="outline" className='w-full' onClick={gerarReciboPDF}>
-                                <FileText className='mr-2 h-4 w-4'/> Gerar Recibo (PDF)
-                            </Button>
-                        </CardFooter>
-                    </Card>
-                )}
-            </div>
+            {resultados.length > 0 && (
+                <Card>
+                <CardHeader>
+                    <CardTitle>2. Resultados dos Cálculos</CardTitle>
+                    <CardDescription>Resumo dos cálculos de pró-labore realizados.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="rounded-md border">
+                    <Table>
+                        <TableHeader>
+                        <TableRow>
+                            <TableHead>Sócio</TableHead>
+                            <TableHead>Competência</TableHead>
+                            <TableHead className="text-right">Valor Bruto</TableHead>
+                            <TableHead className="text-right">INSS</TableHead>
+                            <TableHead className="text-right">IRRF</TableHead>
+                            <TableHead className="text-right">Valor Líquido</TableHead>
+                            <TableHead className="w-[120px] text-center">Ações</TableHead>
+                        </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {resultados.map(res => (
+                                <TableRow key={`${res.socioId}-${res.mes}-${res.ano}`}>
+                                <TableCell className="font-medium">{res.socioNome}</TableCell>
+                                <TableCell>{String(res.mes).padStart(2, '0')}/{res.ano}</TableCell>
+                                <TableCell className="text-right font-mono">{res.bruto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</TableCell>
+                                <TableCell className="text-right font-mono text-red-500">{res.valorINSS.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</TableCell>
+                                <TableCell className="text-right font-mono text-red-500">{res.valorIRRF.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</TableCell>
+                                <TableCell className="text-right font-mono text-emerald-600 font-bold">{res.liquido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</TableCell>
+                                <TableCell className="text-center">
+                                    <Button variant="outline" size="sm" onClick={() => gerarReciboPDF(res)}>
+                                        <FileText className="mr-2 h-4 w-4" /> Recibo
+                                    </Button>
+                                </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                    </div>
+                </CardContent>
+                </Card>
+            )}
         </div>
     );
   }
