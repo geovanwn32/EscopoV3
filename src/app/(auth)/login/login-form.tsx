@@ -1,70 +1,31 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
-import { Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuth } from '@/firebase';
-import { signInWithGoogle, signUpWithEmail, signInWithEmail } from '@/firebase/auth/auth';
-import { useToast } from "@/hooks/use-toast";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useCompany } from '@/hooks/use-company';
-import { setPersistence, browserSessionPersistence, browserLocalPersistence } from "firebase/auth";
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import Link from 'next/link';
+import { Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/firebase';
+import { sendPasswordResetEmail } from 'firebase/auth';
+import { signInWithGoogle, signInWithEmail } from '@/firebase/auth/auth';
+import { setPersistence, browserSessionPersistence, browserLocalPersistence } from "firebase/auth";
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Checkbox } from '@/components/ui/checkbox';
 
-interface User {
-  id: number;
-  uid?: string;
-  name: string;
-  email: string;
-  isAdmin: boolean;
-  isMaster?: boolean;
-  permissions: any;
-  allowedCompanyIds: number[];
-  password?: string;
-  status: 'Ativo' | 'Inativo' | 'Pendente';
-  creationDate?: string; // ISO string
-  dataExpiracaoLicenca?: string; // ISO string
-  planoId?: 'Gratuito' | 'Basico' | 'Profissional' | 'Empresarial';
-  statusLicenca?: 'Ativa' | 'Inadimplente' | 'Cancelada' | 'Expirada';
-  photoURL?: string;
-}
 
-// Define Zod schemas
 const loginSchema = z.object({
   email: z.string().email({ message: "Por favor, insira um e-mail válido." }),
   password: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres." }),
   remember: z.boolean().optional(),
 });
-
-const signUpSchema = z.object({
-  fullName: z.string().min(3, { message: "O nome completo é obrigatório." }),
-  email: z.string().email({ message: "Por favor, insira um e-mail válido." }),
-  password: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres." }),
-  confirmPassword: z.string(),
-  phone: z.string().optional(),
-  planoId: z.enum(["Gratuito", "Basico", "Profissional", "Empresarial"]),
-  termos: z.literal<boolean>(true, {
-    errorMap: () => ({ message: "Você deve aceitar os termos e condições." }),
-  }),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "As senhas não coincidem",
-  path: ["confirmPassword"],
-});
-
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
@@ -82,72 +43,28 @@ export default function LoginForm() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const auth = useAuth();
-  const { useScopedData } = useCompany();
-  const [, setUsers] = useScopedData<User[]>('global-users', []);
-
 
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    const plan = searchParams.get('plano');
-    if (plan) {
-      setIsSignUp(true);
-    }
-  }, [searchParams]);
-
-  const loginForm = useForm<z.infer<typeof loginSchema>>({
+  const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "", remember: false },
   });
-
-  const signupForm = useForm<z.infer<typeof signUpSchema>>({
-    resolver: zodResolver(signUpSchema),
-    defaultValues: { fullName: "", email: "", password: "", confirmPassword: "", phone: "", planoId: "Basico", termos: false },
-  });
-
-  useEffect(() => {
-    const plan = searchParams.get('plano') as 'Gratuito' | 'Basico' | 'Profissional' | 'Empresarial' | null;
-    if (plan && ['Gratuito', 'Basico', 'Profissional', 'Empresarial'].includes(plan)) {
-      signupForm.setValue('planoId', plan);
-    }
-  }, [searchParams, signupForm]);
 
   const handleLogin: SubmitHandler<z.infer<typeof loginSchema>> = async (data) => {
     setIsLoading(true);
     try {
       const persistence = data.remember ? browserLocalPersistence : browserSessionPersistence;
       await setPersistence(auth, persistence);
-        
-      const userCredential = await signInWithEmail(auth, data.email, data.password);
-      const user = userCredential.user;
-      
-      let userProfile;
-      setUsers(prevUsers => {
-          const foundUser = prevUsers.find(u => u.uid === user.uid);
-          if (foundUser) {
-              userProfile = foundUser;
-          }
-          return prevUsers;
+
+      await signInWithEmail(auth, data.email, data.password);
+      toast({
+        title: "Login bem-sucedido!",
+        description: "Você será redirecionado para a seleção de empresa.",
       });
-
-      if (userProfile) {
-          sessionStorage.setItem('user-profile', JSON.stringify(userProfile));
-          toast({
-              title: "Login bem-sucedido!",
-              description: "Você será redirecionado para a seleção de empresa.",
-          });
-          router.push('/selecionar-empresa');
-      } else {
-          toast({
-              variant: "destructive",
-              title: "Perfil não encontrado",
-              description: "Nenhum perfil local encontrado para este usuário.",
-          });
-          auth.signOut();
-      }
-
+      router.push('/selecionar-empresa');
     } catch (error: any) {
       console.error("Login failed:", error);
       let errorMessage = "Ocorreu um erro desconhecido.";
@@ -164,120 +81,18 @@ export default function LoginForm() {
     }
   };
 
-  const handleSignUp: SubmitHandler<z.infer<typeof signUpSchema>> = async (data) => {
-    setIsLoading(true);
-    try {
-      const userCredential = await signUpWithEmail(auth, data.email, data.password);
-      const user = userCredential.user;
-
-      const newUser: User = {
-        id: Date.now(),
-        uid: user.uid,
-        name: data.fullName,
-        email: data.email,
-        isAdmin: false,
-        isMaster: false,
-        permissions: {},
-        allowedCompanyIds: [],
-        status: 'Pendente',
-        creationDate: new Date().toISOString(),
-        planoId: data.planoId,
-        statusLicenca: 'Ativa'
-      };
-
-      setUsers(prev => [...prev, newUser]);
-
-      // Do not log in the user, wait for admin approval
-      await auth.signOut();
-
-      toast({
-        title: "Solicitação de Cadastro Enviada!",
-        description: "Sua conta foi criada e está pendente de aprovação por um administrador.",
-      });
-
-      // Clear session storage and redirect
-      sessionStorage.clear();
-      router.push('/pending');
-      
-
-    } catch (error: any) {
-      console.error("Signup failed:", error);
-      let errorMessage = "Não foi possível criar sua conta. Por favor, tente novamente.";
-      if (error.code === 'auth/email-already-in-use') {
-        errorMessage = "Este e-mail já está em uso. Tente fazer login ou use outro e-mail.";
-      }
-      toast({
-        variant: "destructive",
-        title: "Falha no cadastro",
-        description: errorMessage,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
-      const user = await signInWithGoogle(auth);
-      if (user) {
-
-        let userProfile: User | undefined;
-        setUsers(prevUsers => {
-          const foundUser = prevUsers.find(u => u.email === user.email);
-          if (foundUser) {
-            userProfile = {...foundUser, uid: user.uid };
-            // Update UID if it's missing
-            return prevUsers.map(u => u.id === foundUser.id ? { ...u, uid: user.uid } : u);
-          } else {
-             // If user doesn't exist, create a new pending user
-             const plan = searchParams.get('plano') || 'Gratuito';
-             userProfile = {
-                id: Date.now(),
-                uid: user.uid,
-                name: user.displayName || 'Usuário Google',
-                email: user.email!,
-                isAdmin: false,
-                isMaster: false,
-                permissions: {},
-                allowedCompanyIds: [],
-                status: 'Pendente',
-                creationDate: new Date().toISOString(),
-                planoId: plan as any,
-                statusLicenca: 'Ativa',
-                photoURL: user.photoURL || undefined
-             }
-             return [...prevUsers, userProfile]
-          }
+      const userCredential = await signInWithGoogle(auth);
+      if (userCredential) {
+        toast({
+          title: "Login com Google bem-sucedido!",
+          description: "Você será redirecionado em breve.",
         });
-
-        // After state update logic, decide where to go
-        setTimeout(() => {
-          if (userProfile && userProfile.status === 'Pendente') {
-            toast({
-              title: "Solicitação de Cadastro Enviada!",
-              description: "Sua conta está pendente de aprovação por um administrador.",
-            });
-            auth.signOut(); // Log out user to wait for approval
-            router.push('/pending');
-          } else if (userProfile) {
-            sessionStorage.setItem('user-profile', JSON.stringify(userProfile));
-            toast({
-              title: "Login com Google bem-sucedido!",
-              description: "Você será redirecionado para a seleção de empresa.",
-            });
-            router.push('/selecionar-empresa');
-          } else {
-            // This case should ideally not happen if the logic above is correct
-            toast({
-              variant: 'destructive',
-              title: "Erro de Perfil",
-              description: "Não foi possível encontrar ou criar seu perfil. Tente novamente.",
-            });
-             auth.signOut();
-          }
-        }, 100);
-
+        router.push('/selecionar-perfil');
+      } else {
+        throw new Error('Falha no login com Google.');
       }
     } catch (error: any) {
       console.error("Google Sign-In failed:", error);
@@ -292,129 +107,9 @@ export default function LoginForm() {
   };
 
   if (isSignUp) {
-    return (
-      <div className="grid gap-6 w-full max-w-md">
-        <div className="grid gap-2 text-center">
-          <h1 className="text-3xl font-bold">Criar uma conta</h1>
-          <p className="text-balance text-muted-foreground">
-            Insira seus dados para começar a usar o EscopoV3
-          </p>
-        </div>
-        <Form {...signupForm}>
-          <form onSubmit={signupForm.handleSubmit(handleSignUp)} className="grid gap-4">
-            <FormField
-              control={signupForm.control}
-              name="fullName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome Completo</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Seu nome completo" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={signupForm.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input type="email" placeholder="seu@email.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={signupForm.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Senha</FormLabel>
-                   <FormControl>
-                    <div className="relative">
-                      <Input type={showPassword ? "text" : "password"} {...field} placeholder="••••••••" />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400">
-                        {showPassword ? <EyeOff /> : <Eye />}
-                      </button>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={signupForm.control}
-              name="confirmPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Confirmar Senha</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-                control={signupForm.control}
-                name="planoId"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Plano Escolhido</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Selecione um plano" />
-                        </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            <SelectItem value="Gratuito">Gratuito</SelectItem>
-                            <SelectItem value="Basico">Básico - R$39/mês</SelectItem>
-                            <SelectItem value="Profissional">Profissional - R$79/mês</SelectItem>
-                            <SelectItem value="Empresarial">Empresarial - R$149/mês</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <FormMessage />
-                    </FormItem>
-                )}
-            />
-            <FormField
-              control={signupForm.control}
-              name="termos"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel>
-                      Eu aceito os <a href="/termos" className="underline">termos e condições</a>
-                    </FormLabel>
-                     <FormMessage />
-                  </div>
-                </FormItem>
-              )}
-            />
-            <Button type="submit" className="w-full font-semibold" disabled={isLoading}>
-              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Criar Conta'}
-            </Button>
-          </form>
-        </Form>
-        <div className="mt-4 text-center text-sm">
-          Já possui uma conta?{" "}
-          <button onClick={() => setIsSignUp(false)} className="underline font-semibold" disabled={isLoading}>
-            Entrar
-          </button>
-        </div>
-      </div>
-    );
+    // Redirect to signup page if user clicks "Crie uma agora"
+    router.push('/signup' + (searchParams.get('plano') ? `?plano=${searchParams.get('plano')}`: ''));
+    return null; // Render nothing while redirecting
   }
 
   return (
@@ -425,10 +120,10 @@ export default function LoginForm() {
             Insira seu email para acessar sua conta
             </p>
         </div>
-      <Form {...loginForm}>
-        <form onSubmit={loginForm.handleSubmit(handleLogin)} className="grid gap-4">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleLogin)} className="grid gap-4">
           <FormField
-            control={loginForm.control}
+            control={form.control}
             name="email"
             render={({ field }) => (
               <FormItem>
@@ -444,7 +139,7 @@ export default function LoginForm() {
             )}
           />
           <FormField
-            control={loginForm.control}
+            control={form.control}
             name="password"
             render={({ field }) => (
               <FormItem>
@@ -471,7 +166,7 @@ export default function LoginForm() {
             )}
           />
           <FormField
-            control={loginForm.control}
+            control={form.control}
             name="remember"
             render={({ field }) => (
                 <FormItem className="flex items-center space-x-2">
@@ -503,3 +198,5 @@ export default function LoginForm() {
     </div>
   );
 }
+
+    
