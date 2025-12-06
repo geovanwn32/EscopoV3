@@ -9,8 +9,9 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import Autoplay from "embla-carousel-autoplay";
-import { Tooltip, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { TooltipContent } from '@radix-ui/react-tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import Image from 'next/image';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 
 const features = [
@@ -145,6 +146,7 @@ const faqs = [
 ]
 
 export default function LandingPage() {
+    const heroBg = PlaceHolderImages.find(p => p.id === 'login-background-professional');
   return (
     <div className="w-full bg-background text-foreground animated-gradient">
       {/* Header */}
@@ -165,37 +167,52 @@ export default function LandingPage() {
         </div>
       </header>
 
-      <main className="container mx-auto max-w-7xl px-4">
+      <main>
         {/* Hero Section */}
-        <section className="py-20 text-center sm:py-32">
-            <h1 className="text-4xl font-bold tracking-tight md:text-6xl">
-                Automatize sua Rotina Contábil com 
-                <br />
-                <span className='text-primary'>Inteligência Artificial.</span>
-            </h1>
-            <p className="mt-6 max-w-2xl mx-auto text-lg text-muted-foreground">
-                Do financeiro ao fiscal, automatize tarefas, ganhe precisão com nossa IA e tenha uma visão completa do seu negócio. Simplifique a complexidade, otimize seu tempo.
-            </p>
-             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Button size="lg" asChild className='bg-accent text-accent-foreground hover:bg-accent/90'>
-                    <Link href="/login?plano=profissional">Comece a Otimizar Agora</Link>
-                </Button>
-                 <Button size="lg" variant="outline" asChild>
-                    <Link href="#demonstracao">
-                        <PlayCircle className="mr-2 h-5 w-5" />
-                        Ver Demonstração
-                    </Link>
-                </Button>
-            </div>
-             <div className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                <ShieldCheck className="h-4 w-4 text-emerald-500" />
-                <span>Teste gratuito por 7 dias. Sem cartão de crédito.</span>
+        <section className="relative py-20 text-center sm:py-32 overflow-hidden">
+            {heroBg && (
+                <>
+                    <Image
+                        src={heroBg.imageUrl}
+                        alt={heroBg.description}
+                        fill
+                        className="absolute inset-0 object-cover z-0"
+                        data-ai-hint={heroBg.imageHint}
+                        priority
+                    />
+                    <div className="absolute inset-0 bg-blue-950/70 z-10" />
+                </>
+            )}
+            <div className="relative z-20 container mx-auto max-w-7xl px-4">
+                <h1 className="text-4xl font-bold tracking-tight md:text-6xl text-white">
+                    Automatize sua Rotina Contábil com 
+                    <br />
+                    <span className='text-accent'>Inteligência Artificial.</span>
+                </h1>
+                <p className="mt-6 max-w-2xl mx-auto text-lg text-slate-300">
+                    Do financeiro ao fiscal, automatize tarefas, ganhe precisão com nossa IA e tenha uma visão completa do seu negócio. Simplifique a complexidade, otimize seu tempo.
+                </p>
+                <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <Button size="lg" asChild className='bg-accent text-accent-foreground hover:bg-accent/90'>
+                        <Link href="/login?plano=profissional">Comece a Otimizar Agora</Link>
+                    </Button>
+                    <Button size="lg" variant="outline" asChild className='bg-transparent text-white border-white hover:bg-white hover:text-primary'>
+                        <Link href="#demonstracao">
+                            <PlayCircle className="mr-2 h-5 w-5" />
+                            Ver Demonstração
+                        </Link>
+                    </Button>
+                </div>
+                <div className="mt-4 flex items-center justify-center gap-2 text-sm text-slate-300">
+                    <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                    <span>Teste gratuito por 7 dias. Sem cartão de crédito.</span>
+                </div>
             </div>
         </section>
 
         {/* Trusted By Section */}
-        <section className="py-8">
-            <div className="text-center">
+        <section className="py-8 bg-muted/30">
+            <div className="container mx-auto max-w-7xl px-4 text-center">
                 <p className="font-semibold text-muted-foreground">Utilizado por centenas de empresas inovadoras</p>
                 <div className="mt-6 flex flex-wrap justify-center items-center gap-x-8 gap-y-4 text-muted-foreground">
                     <span className="flex items-center gap-2 text-lg font-bold"><Building2 className='h-5 w-5'/> Empresa A</span>
@@ -207,173 +224,175 @@ export default function LandingPage() {
             </div>
         </section>
 
-        {/* Features Section */}
-        <section className="py-16">
-            <div className="text-center">
-                <h2 className="text-3xl font-bold tracking-tight">Funcionalidades Principais</h2>
-                <p className="mt-2 text-lg text-muted-foreground">Tudo o que você precisa para gerenciar suas obrigações fiscais de forma simples e eficiente.</p>
-            </div>
-            <div className="mt-12 grid gap-8 md:grid-cols-3">
-                {features.map(feature => (
-                    <Card key={feature.title} className='bg-card/50 dark:bg-card/80 transition-transform duration-300 hover:-translate-y-2 hover:shadow-xl'>
-                        <CardHeader className="items-center">
-                            <div className="p-4 bg-primary/10 rounded-full mb-2">
-                                {feature.icon}
-                            </div>
-                            <CardTitle>{feature.title}</CardTitle>
-                        </CardHeader>
-                        <CardContent className="text-center text-muted-foreground">
-                            {feature.description}
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
-        </section>
-        
-        {/* Testimonials Section */}
-        <section className="py-16">
-             <div className="text-center">
-                <h2 className="text-3xl font-bold tracking-tight">O Que Nossos Clientes Dizem</h2>
-                <p className="mt-2 text-lg text-muted-foreground">Confiança e resultados que falam por si.</p>
-            </div>
-            <Carousel
-                opts={{
-                    align: "start",
-                    loop: true,
-                }}
-                plugins={[
-                    Autoplay({
-                      delay: 5000,
-                    }),
-                  ]}
-                className="w-full mt-12"
-            >
-                <CarouselContent>
-                    {testimonials.map((testimonial, index) => (
-                    <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
-                        <div className="p-1">
-                            <Card className="flex flex-col bg-muted/30 h-full">
-                                <CardContent className="pt-6 flex-1">
-                                    <div className="flex text-amber-400 mb-2">
-                                        {[...Array(5)].map((_, i) => <Star key={i} className="h-5 w-5 fill-current" />)}
-                                    </div>
-                                    <blockquote className="italic text-muted-foreground">“{testimonial.quote}”</blockquote>
-                                </CardContent>
-                                <CardFooter className="mt-4 flex items-center gap-4">
-                                    <Avatar>
-                                        <AvatarImage src={testimonial.avatar} alt={testimonial.name} />
-                                        <AvatarFallback>{testimonial.name.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                        <p className="font-semibold">{testimonial.name}</p>
-                                        <p className="text-sm text-muted-foreground">{testimonial.company}</p>
-                                    </div>
-                                </CardFooter>
-                            </Card>
-                        </div>
-                    </CarouselItem>
+        <div className="container mx-auto max-w-7xl px-4">
+            {/* Features Section */}
+            <section className="py-16">
+                <div className="text-center">
+                    <h2 className="text-3xl font-bold tracking-tight">Funcionalidades Principais</h2>
+                    <p className="mt-2 text-lg text-muted-foreground">Tudo o que você precisa para gerenciar suas obrigações fiscais de forma simples e eficiente.</p>
+                </div>
+                <div className="mt-12 grid gap-8 md:grid-cols-3">
+                    {features.map(feature => (
+                        <Card key={feature.title} className='bg-card/50 dark:bg-card/80 transition-transform duration-300 hover:-translate-y-2 hover:shadow-xl'>
+                            <CardHeader className="items-center">
+                                <div className="p-4 bg-primary/10 rounded-full mb-2">
+                                    {feature.icon}
+                                </div>
+                                <CardTitle>{feature.title}</CardTitle>
+                            </CardHeader>
+                            <CardContent className="text-center text-muted-foreground">
+                                {feature.description}
+                            </CardContent>
+                        </Card>
                     ))}
-                </CarouselContent>
-            </Carousel>
-        </section>
-
-        {/* Pricing Section */}
-        <section className="py-16">
-            <div className="text-center">
-                <h2 className="text-3xl font-bold tracking-tight">Nossos Planos</h2>
-                <p className="mt-2 text-lg text-muted-foreground">Escolha o plano que melhor se adapta às necessidades do seu negócio.</p>
-            </div>
-            <div className="mt-12 grid gap-8 md:grid-cols-3 items-start">
-                <TooltipProvider>
-                {plans.map(plan => (
-                    <Card key={plan.name} className={cn(
-                        'flex flex-col transition-all duration-300 hover:shadow-xl',
-                        plan.isFeatured ? 'border-primary ring-2 ring-primary scale-105 bg-card' : 'bg-muted/30 hover:-translate-y-1'
-                    )}>
-                        <CardHeader>
-                            <CardTitle className="flex justify-between items-baseline">
-                                <span>{plan.name}</span>
-                                {plan.isFeatured && <span className="text-xs font-semibold text-primary">Ideal</span>}
-                            </CardTitle>
-                            <CardDescription>{plan.description}</CardDescription>
-                            <div className="pt-4">
-                                <span className="text-4xl font-bold">R$ {plan.price}</span>
-                                <span className="text-sm text-muted-foreground">/mês</span>
+                </div>
+            </section>
+            
+            {/* Testimonials Section */}
+            <section className="py-16">
+                <div className="text-center">
+                    <h2 className="text-3xl font-bold tracking-tight">O Que Nossos Clientes Dizem</h2>
+                    <p className="mt-2 text-lg text-muted-foreground">Confiança e resultados que falam por si.</p>
+                </div>
+                <Carousel
+                    opts={{
+                        align: "start",
+                        loop: true,
+                    }}
+                    plugins={[
+                        Autoplay({
+                        delay: 5000,
+                        }),
+                    ]}
+                    className="w-full mt-12"
+                >
+                    <CarouselContent>
+                        {testimonials.map((testimonial, index) => (
+                        <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
+                            <div className="p-1">
+                                <Card className="flex flex-col bg-muted/30 h-full">
+                                    <CardContent className="pt-6 flex-1">
+                                        <div className="flex text-amber-400 mb-2">
+                                            {[...Array(5)].map((_, i) => <Star key={i} className="h-5 w-5 fill-current" />)}
+                                        </div>
+                                        <blockquote className="italic text-muted-foreground">“{testimonial.quote}”</blockquote>
+                                    </CardContent>
+                                    <CardFooter className="mt-4 flex items-center gap-4">
+                                        <Avatar>
+                                            <AvatarImage src={testimonial.avatar} alt={testimonial.name} />
+                                            <AvatarFallback>{testimonial.name.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <p className="font-semibold">{testimonial.name}</p>
+                                            <p className="text-sm text-muted-foreground">{testimonial.company}</p>
+                                        </div>
+                                    </CardFooter>
+                                </Card>
                             </div>
-                        </CardHeader>
-                        <CardContent className="flex-1">
-                            <ul className="space-y-3">
-                                {plan.features.map(feature => (
-                                     <Tooltip key={feature}>
-                                        <TooltipTrigger asChild>
-                                            <li className="flex items-start gap-2 cursor-help">
-                                                <Check className="h-5 w-5 mt-1 text-emerald-500" />
-                                                <span className="text-muted-foreground border-b border-dashed border-muted-foreground/50">{feature}</span>
-                                            </li>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p className='max-w-xs'>{(planFeaturesTooltips as any)[feature] || 'Funcionalidade padrão'}</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                ))}
-                            </ul>
-                        </CardContent>
-                        <CardFooter>
-                            <Button asChild className={cn('w-full', plan.isFeatured && 'bg-accent text-accent-foreground hover:bg-accent/90')} variant={plan.isFeatured ? 'default' : 'outline'}>
-                                <Link href={`/login?plano=${plan.id}`}>{plan.cta}</Link>
-                            </Button>
-                        </CardFooter>
-                    </Card>
-                ))}
-                </TooltipProvider>
-            </div>
-        </section>
-        
-        {/* FAQ Section */}
-        <section className="py-16 max-w-3xl mx-auto">
-             <div className="text-center">
-                <h2 className="text-3xl font-bold tracking-tight">Perguntas Frequentes</h2>
-                <p className="mt-2 text-lg text-muted-foreground">Tirando suas principais dúvidas sobre o EscopoV3.</p>
-            </div>
-            <Accordion type="single" collapsible className="w-full mt-12">
-                {faqs.map((faq, index) => (
-                    <AccordionItem key={index} value={`item-${index}`}>
-                        <AccordionTrigger className="text-left text-lg hover:no-underline">{faq.question}</AccordionTrigger>
-                        <AccordionContent className="text-base text-muted-foreground">
-                            {faq.answer}
-                        </AccordionContent>
-                    </AccordionItem>
-                ))}
-            </Accordion>
-        </section>
+                        </CarouselItem>
+                        ))}
+                    </CarouselContent>
+                </Carousel>
+            </section>
 
-        {/* Contact Section */}
-        <section className="py-16">
-            <div className="text-center">
-                <h2 className="text-3xl font-bold tracking-tight">Entre em Contato</h2>
-                <p className="mt-2 text-lg text-muted-foreground">Escolha a melhor forma de falar com nossa equipe.</p>
-            </div>
-            <div className="mt-12 grid gap-8 sm:grid-cols-2 max-w-2xl mx-auto">
-                <a href="https://wa.me/5562998554529" target="_blank" rel="noopener noreferrer" className='transition-transform hover:-translate-y-1'>
-                    <Card className="p-6 flex items-center gap-4 bg-muted/30 hover:shadow-md cursor-pointer">
-                        <Phone className="h-8 w-8 text-primary" />
-                        <div>
-                            <h3 className="font-semibold">WhatsApp</h3>
-                            <p className="text-sm text-muted-foreground">Converse em tempo real</p>
-                        </div>
-                    </Card>
-                </a>
-                <a href="mailto:geovanisilvadeoliveira447@gmail.com" className='transition-transform hover:-translate-y-1'>
-                    <Card className="p-6 flex items-center gap-4 bg-muted/30 hover:shadow-md cursor-pointer">
-                        <Mail className="h-8 w-8 text-primary" />
-                        <div>
-                            <h3 className="font-semibold">Email</h3>
-                            <p className="text-sm text-muted-foreground">Receba uma resposta detalhada</p>
-                        </div>
-                    </Card>
-                </a>
-            </div>
-        </section>
+            {/* Pricing Section */}
+            <section className="py-16">
+                <div className="text-center">
+                    <h2 className="text-3xl font-bold tracking-tight">Nossos Planos</h2>
+                    <p className="mt-2 text-lg text-muted-foreground">Escolha o plano que melhor se adapta às necessidades do seu negócio.</p>
+                </div>
+                <div className="mt-12 grid gap-8 md:grid-cols-3 items-start">
+                    <TooltipProvider>
+                    {plans.map(plan => (
+                        <Card key={plan.name} className={cn(
+                            'flex flex-col transition-all duration-300 hover:shadow-xl',
+                            plan.isFeatured ? 'border-primary ring-2 ring-primary scale-105 bg-card' : 'bg-muted/30 hover:-translate-y-1'
+                        )}>
+                            <CardHeader>
+                                <CardTitle className="flex justify-between items-baseline">
+                                    <span>{plan.name}</span>
+                                    {plan.isFeatured && <span className="text-xs font-semibold text-primary">Ideal</span>}
+                                </CardTitle>
+                                <CardDescription>{plan.description}</CardDescription>
+                                <div className="pt-4">
+                                    <span className="text-4xl font-bold">R$ {plan.price}</span>
+                                    <span className="text-sm text-muted-foreground">/mês</span>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="flex-1">
+                                <ul className="space-y-3">
+                                    {plan.features.map(feature => (
+                                        <Tooltip key={feature}>
+                                            <TooltipTrigger asChild>
+                                                <li className="flex items-start gap-2 cursor-help">
+                                                    <Check className="h-5 w-5 mt-1 text-emerald-500" />
+                                                    <span className="text-muted-foreground border-b border-dashed border-muted-foreground/50">{feature}</span>
+                                                </li>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p className='max-w-xs'>{(planFeaturesTooltips as any)[feature] || 'Funcionalidade padrão'}</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    ))}
+                                </ul>
+                            </CardContent>
+                            <CardFooter>
+                                <Button asChild className={cn('w-full', plan.isFeatured && 'bg-accent text-accent-foreground hover:bg-accent/90')} variant={plan.isFeatured ? 'default' : 'outline'}>
+                                    <Link href={`/login?plano=${plan.id}`}>{plan.cta}</Link>
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    ))}
+                    </TooltipProvider>
+                </div>
+            </section>
+            
+            {/* FAQ Section */}
+            <section className="py-16 max-w-3xl mx-auto">
+                <div className="text-center">
+                    <h2 className="text-3xl font-bold tracking-tight">Perguntas Frequentes</h2>
+                    <p className="mt-2 text-lg text-muted-foreground">Tirando suas principais dúvidas sobre o EscopoV3.</p>
+                </div>
+                <Accordion type="single" collapsible className="w-full mt-12">
+                    {faqs.map((faq, index) => (
+                        <AccordionItem key={index} value={`item-${index}`}>
+                            <AccordionTrigger className="text-left text-lg hover:no-underline">{faq.question}</AccordionTrigger>
+                            <AccordionContent className="text-base text-muted-foreground">
+                                {faq.answer}
+                            </AccordionContent>
+                        </AccordionItem>
+                    ))}
+                </Accordion>
+            </section>
+
+            {/* Contact Section */}
+            <section className="py-16">
+                <div className="text-center">
+                    <h2 className="text-3xl font-bold tracking-tight">Entre em Contato</h2>
+                    <p className="mt-2 text-lg text-muted-foreground">Escolha a melhor forma de falar com nossa equipe.</p>
+                </div>
+                <div className="mt-12 grid gap-8 sm:grid-cols-2 max-w-2xl mx-auto">
+                    <a href="https://wa.me/5562998554529" target="_blank" rel="noopener noreferrer" className='transition-transform hover:-translate-y-1'>
+                        <Card className="p-6 flex items-center gap-4 bg-muted/30 hover:shadow-md cursor-pointer">
+                            <Phone className="h-8 w-8 text-primary" />
+                            <div>
+                                <h3 className="font-semibold">WhatsApp</h3>
+                                <p className="text-sm text-muted-foreground">Converse em tempo real</p>
+                            </div>
+                        </Card>
+                    </a>
+                    <a href="mailto:geovanisilvadeoliveira447@gmail.com" className='transition-transform hover:-translate-y-1'>
+                        <Card className="p-6 flex items-center gap-4 bg-muted/30 hover:shadow-md cursor-pointer">
+                            <Mail className="h-8 w-8 text-primary" />
+                            <div>
+                                <h3 className="font-semibold">Email</h3>
+                                <p className="text-sm text-muted-foreground">Receba uma resposta detalhada</p>
+                            </div>
+                        </Card>
+                    </a>
+                </div>
+            </section>
+        </div>
       </main>
 
       {/* Footer */}
