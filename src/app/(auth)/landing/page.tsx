@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,7 @@ const features = [
     {
         icon: <FileText className="h-8 w-8 text-primary" />,
         title: 'Fiscal e Contábil Integrado',
-        description: 'Emita NF-e/NFS-e, importe XMLs e veja tudo se integrar ao seu plano de contas e relatórios, simplificando a conformidade.',
+        description: 'Importe XMLs, gerencie documentos fiscais e veja tudo se integrar ao seu plano de contas e relatórios, simplificando a conformidade.',
     },
     {
         icon: <Users className="h-8 w-8 text-primary" />,
@@ -365,3 +366,5 @@ export default function LandingPage() {
     </div>
   );
 }
+
+    
