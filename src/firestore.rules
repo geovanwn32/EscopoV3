@@ -19,6 +19,11 @@ service cloud.firestore {
         get(/databases/$(database)/documents/global-users/$(request.auth.uid)).data.isMaster == true;
     }
 
+    function isCompanyAdmin(empresaId) {
+      // Retorna true se a empresa for a ADM principal
+      return string(empresaId) == '1764646068539';
+    }
+
     // ======================================================
     //  GLOBAL USERS (SEGURANÇA MÁXIMA)
     // ======================================================
@@ -63,6 +68,17 @@ service cloud.firestore {
     // ======================================================
     //  MULTIEMPRESA (ISOLAMENTO REAL)
     // ======================================================
+    match /empresas/{empresaId}/usuarios/{usuarioId} {
+        function isCompanyMember() {
+          return isSignedIn() &&
+            exists(/databases/$(database)/documents/global-users/$(request.auth.uid)) &&
+            get(/databases/$(database)/documents/global-users/$(request.auth.uid)).data.allowedCompanyIds.hasAny([string(empresaId)]);
+        }
+        
+        // Permite acesso se o usuário for membro da empresa OU se for um admin da empresa ADM
+        allow read, write: if isCompanyMember() || (userIsAdmin() && isCompanyAdmin(empresaId));
+    }
+
     match /empresas/{empresaId}/{document=**} {
       // Regra de acesso baseada na associação do usuário à empresa
       function isCompanyMember() {
@@ -71,9 +87,10 @@ service cloud.firestore {
           get(/databases/$(database)/documents/global-users/$(request.auth.uid)).data.allowedCompanyIds.hasAny([string(empresaId)]);
       }
 
-      allow read, write: if isCompanyMember() || userIsAdmin();
+      // Evita sobreposição com a regra mais específica de /usuarios
+      if (document != 'usuarios') {
+         allow read, write: if isCompanyMember() || userIsAdmin();
+      }
     }
   }
 }
-
-    

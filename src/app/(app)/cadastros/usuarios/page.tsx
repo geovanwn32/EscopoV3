@@ -251,6 +251,10 @@ export default function UsuariosPage() {
             default: return 'outline';
         }
     };
+    
+    // O ID da empresa administradora
+    const adminCompanyId = 1764646068539;
+    const isUserOnAdminCompany = currentCompanyId === adminCompanyId;
 
     return (
         <div className="space-y-6">
@@ -267,7 +271,7 @@ export default function UsuariosPage() {
                 </div>
             </div>
 
-            {activeProfile.isAdmin || activeProfile.isMaster ? (
+            {isUserOnAdminCompany || activeProfile.isAdmin || activeProfile.isMaster ? (
                 <Card>
                     <CardHeader>
                         <div className="flex items-center justify-between">
