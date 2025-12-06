@@ -11,10 +11,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useCompany } from '@/hooks/use-company';
 import { Funcionario } from '@/types/pessoal';
 import { useToast } from '@/hooks/use-toast';
-import { Calculator, Plus, Trash2, Loader2, FileText, BookCopy } from 'lucide-react';
+import { Calculator, Plus, Trash2, Loader2, FileText, BookCopy, ChevronsUpDown, Check } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import type { Rubrica } from '../../rubricas/page';
 import Link from 'next/link';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { cn } from '@/lib/utils';
 
 
 interface Lancamento {
@@ -304,11 +307,12 @@ interface LancadorDeRubricaProps {
 }
 
 function LancadorDeRubrica({ onAddLancamento, rubricas }: LancadorDeRubricaProps) {
-    const [selectedRubricaId, setSelectedRubricaId] = useState<string>('');
-
+    const [open, setOpen] = useState(false)
+    const [value, setValue] = useState("")
+ 
     const handleAddClick = () => {
-        if(selectedRubricaId) {
-            onAddLancamento(Number(selectedRubricaId), 'coletivo');
+        if(value) {
+            onAddLancamento(Number(value), 'coletivo');
         }
     }
 
@@ -316,14 +320,50 @@ function LancadorDeRubrica({ onAddLancamento, rubricas }: LancadorDeRubricaProps
         <div className='flex gap-4 items-end'>
             <div className='space-y-2 flex-grow'>
                 <Label>Adicionar Rubrica Coletivamente</Label>
-                <Select value={selectedRubricaId} onValueChange={setSelectedRubricaId}>
-                    <SelectTrigger><SelectValue placeholder="Selecione uma rubrica..."/></SelectTrigger>
-                    <SelectContent>
-                        {rubricas.map(r => (
-                            <SelectItem key={r.id} value={String(r.id)}>{r.codigo} - {r.descricao} ({r.tipo})</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                <Popover open={open} onOpenChange={setOpen}>
+                    <PopoverTrigger asChild>
+                        <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={open}
+                        className="w-full justify-between"
+                        >
+                        {value
+                            ? rubricas.find((rubrica) => String(rubrica.id) === value)?.descricao
+                            : "Selecione uma rubrica..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                        <Command>
+                            <CommandInput placeholder="Buscar rubrica por nome ou código..." />
+                            <CommandEmpty>Nenhuma rubrica encontrada.</CommandEmpty>
+                            <CommandList>
+                                <CommandGroup>
+                                {rubricas.map((rubrica) => (
+                                    <CommandItem
+                                    key={rubrica.id}
+                                    value={`${rubrica.codigo} - ${rubrica.descricao}`}
+                                    onSelect={() => {
+                                        setValue(String(rubrica.id))
+                                        setOpen(false)
+                                        onAddLancamento(rubrica.id, 'coletivo');
+                                    }}
+                                    >
+                                    <Check
+                                        className={cn(
+                                        "mr-2 h-4 w-4",
+                                        value === String(rubrica.id) ? "opacity-100" : "opacity-0"
+                                        )}
+                                    />
+                                    {rubrica.codigo} - {rubrica.descricao} ({rubrica.tipo})
+                                    </CommandItem>
+                                ))}
+                                </CommandGroup>
+                            </CommandList>
+                        </Command>
+                    </PopoverContent>
+                </Popover>
             </div>
              <Button asChild variant="outline" type="button">
                 <Link href="/rubricas" target="_blank">
