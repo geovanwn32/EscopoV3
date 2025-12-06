@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -9,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { setPersistence, browserLocalPersistence, browserSessionPersistence } from "firebase/auth";
 import { useAuth } from '@/firebase/provider';
@@ -87,6 +89,7 @@ export default function LoginForm() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [step, setStep] = useState(1);
   
   useEffect(() => {
@@ -191,7 +194,7 @@ export default function LoginForm() {
   };
 
   const handleGoogleSignIn = async () => {
-    setIsLoading(true);
+    setIsGoogleLoading(true);
     try {
       const userCredential = await signInWithGoogle(auth);
       if (userCredential) {
@@ -211,7 +214,7 @@ export default function LoginForm() {
         description: error.message || "Não foi possível fazer login com o Google.",
       });
     } finally {
-      setIsLoading(false);
+      setIsGoogleLoading(false);
     }
   };
   
@@ -430,8 +433,8 @@ export default function LoginForm() {
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Entrar
           </Button>
-          <Button variant="outline" className="w-full" type="button" onClick={handleGoogleSignIn} disabled={isLoading}>
-            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-4 w-4" />}
+          <Button variant="outline" className="w-full" type="button" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
+            {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-4 w-4" />}
             Entrar com o Google
           </Button>
         </form>
