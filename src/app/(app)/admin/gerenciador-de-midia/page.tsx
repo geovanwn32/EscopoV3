@@ -147,11 +147,11 @@ function ImageEditDialog({ image, allImages, onOpenChange, onSave }: ImageEditDi
     const [isUploading, setIsUploading] = useState(false);
     const { toast } = useToast();
 
+    const isEditing = useMemo(() => !!image?.id, [image]);
+
     useEffect(() => {
         setFormData(image);
     }, [image]);
-
-    const isEditing = useMemo(() => !!image?.id, [image]);
 
     if (!formData) return null;
     
