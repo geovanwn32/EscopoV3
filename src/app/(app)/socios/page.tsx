@@ -1,7 +1,7 @@
 
 'use client';
 import { useState, useMemo, useEffect } from 'react';
-import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft, CalendarIcon } from 'lucide-react';
+import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -13,17 +13,15 @@ import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useCompany } from '@/hooks/use-company';
 import Link from 'next/link';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MoneyInput } from '@/components/ui/money-input';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, doc, addDoc, updateDoc, deleteDoc, query } from 'firebase/firestore';
 
 interface Socio {
-    id: number;
+    id: string;
     // Dados Pessoais
     nome: string;
     cpf: string;
@@ -59,22 +57,35 @@ interface Socio {
 
 export default function SociosPage() {
     const { toast } = useToast();
-    const { useScopedData } = useCompany();
-    const [socios, setSocios] = useScopedData<Socio[]>('cadastros-socios', []);
+    const { currentCompany } = useCompany();
+    const firestore = useFirestore();
+    
+    const sociosQuery = useMemoFirebase(() => {
+        if (!currentCompany) return null;
+        return query(collection(firestore, "empresas", String(currentCompany), "socios"));
+    }, [firestore, currentCompany]);
+
+    const { data: socios, isLoading: isLoadingSocios } = useCollection<Socio>(sociosQuery as any);
     
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<Socio | null>(null);
     const [editingItem, setEditingItem] = useState<Socio | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const handleSave = (itemData: Omit<Socio, 'id'>) => {
-        if (editingItem) {
-            setSocios(prev => prev.map(i => i.id === editingItem.id ? { ...editingItem, ...itemData } : i));
-            toast({ title: "Sócio Atualizado!", description: "Os dados do sócio foram atualizados." });
-        } else {
-            const newItem: Socio = { ...itemData, id: Date.now() };
-            setSocios(prev => [...prev, newItem]);
-            toast({ title: "Sócio Adicionado!", description: "O novo sócio foi cadastrado." });
+    const handleSave = async (itemData: Omit<Socio, 'id'>) => {
+        if (!currentCompany) return;
+        try {
+            if (editingItem) {
+                const socioDoc = doc(firestore, "empresas", String(currentCompany), "socios", editingItem.id);
+                await updateDoc(socioDoc, { ...itemData });
+                toast({ title: "Sócio Atualizado!", description: "Os dados do sócio foram atualizados." });
+            } else {
+                const sociosCollection = collection(firestore, "empresas", String(currentCompany), "socios");
+                await addDoc(sociosCollection, itemData);
+                toast({ title: "Sócio Adicionado!", description: "O novo sócio foi cadastrado." });
+            }
+        } catch(error: any) {
+            toast({ variant: "destructive", title: "Erro ao Salvar", description: error.message });
         }
         setIsDialogOpen(false);
         setEditingItem(null);
@@ -82,10 +93,15 @@ export default function SociosPage() {
 
     const handleDeleteClick = (item: Socio) => setItemToDelete(item);
 
-    const handleConfirmDelete = () => {
-        if (itemToDelete) {
-            setSocios(prev => prev.filter(i => i.id !== itemToDelete.id));
-            toast({ variant: "destructive", title: "Sócio Excluído!", description: `O sócio foi removido.` });
+    const handleConfirmDelete = async () => {
+        if (itemToDelete && currentCompany) {
+            try {
+                const socioDoc = doc(firestore, "empresas", String(currentCompany), "socios", itemToDelete.id);
+                await deleteDoc(socioDoc);
+                toast({ variant: "destructive", title: "Sócio Excluído!", description: `O sócio foi removido.` });
+            } catch (error: any) {
+                toast({ variant: "destructive", title: "Erro ao Excluir", description: error.message });
+            }
             setItemToDelete(null);
         }
     };
@@ -96,6 +112,7 @@ export default function SociosPage() {
     };
 
     const filteredItems = useMemo(() => {
+        if (!socios) return [];
         return socios.filter(item =>
             item.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
             item.cpf.toLowerCase().includes(searchTerm.toLowerCase())
@@ -122,7 +139,7 @@ export default function SociosPage() {
                     <div className="flex items-center justify-between">
                         <div>
                             <CardTitle>Sócios Cadastrados</CardTitle>
-                            <CardDescription>{socios.length} sócios encontrados.</CardDescription>
+                            <CardDescription>{socios?.length || 0} sócios encontrados.</CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
                              <div className="relative flex-grow">
@@ -156,7 +173,13 @@ export default function SociosPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredItems.length > 0 ? filteredItems.map(item => (
+                                {isLoadingSocios ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="h-24 text-center">
+                                            <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
+                                        </TableCell>
+                                    </TableRow>
+                                ) : filteredItems.length > 0 ? filteredItems.map(item => (
                                     <TableRow key={item.id}>
                                         <TableCell className="font-medium">{item.nome}</TableCell>
                                         <TableCell className="font-mono">{item.cpf}</TableCell>

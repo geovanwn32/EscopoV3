@@ -1,7 +1,7 @@
 
 'use client';
 import { useState, useMemo, useEffect } from 'react';
-import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft, CalendarIcon, X, Loader2 } from 'lucide-react';
+import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -15,45 +15,62 @@ import { useCompany } from '@/hooks/use-company';
 import Link from 'next/link';
 import { Funcionario, Dependente, AnotacaoCarteira } from '@/types/pessoal';
 import { MoneyInput } from '@/components/ui/money-input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, doc, addDoc, updateDoc, deleteDoc, query } from 'firebase/firestore';
 
 
 export default function FuncionariosPage() {
     const { toast } = useToast();
-    const { useScopedData } = useCompany();
-    const [funcionarios, setFuncionarios] = useScopedData<Funcionario[]>('cadastros-funcionarios', []);
+    const { currentCompany } = useCompany();
+    const firestore = useFirestore();
+
+    const funcionariosQuery = useMemoFirebase(() => {
+        if (!currentCompany) return null;
+        return query(collection(firestore, "empresas", String(currentCompany), "funcionarios"));
+    }, [firestore, currentCompany]);
+
+    const { data: funcionarios, isLoading: isLoadingFuncionarios } = useCollection<Funcionario>(funcionariosQuery as any);
     
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<Funcionario | null>(null);
     const [editingItem, setEditingItem] = useState<Funcionario | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const handleSave = (itemData: Omit<Funcionario, 'id'>) => {
-        if (editingItem) {
-            setFuncionarios(prev => prev.map(i => i.id === editingItem.id ? { ...editingItem, ...itemData } : i));
-            toast({ title: "Funcionário Atualizado!", description: "Os dados do funcionário foram atualizados." });
-        } else {
-            const newItem: Funcionario = { ...itemData, id: Date.now() };
-            setFuncionarios(prev => [...prev, newItem]);
-            toast({ title: "Funcionário Adicionado!", description: "O novo funcionário foi cadastrado." });
+    const handleSave = async (itemData: Omit<Funcionario, 'id'>) => {
+        if (!currentCompany) return;
+        try {
+            if (editingItem) {
+                const funcionarioDoc = doc(firestore, "empresas", String(currentCompany), "funcionarios", editingItem.id);
+                await updateDoc(funcionarioDoc, { ...itemData });
+                toast({ title: "Funcionário Atualizado!", description: "Os dados do funcionário foram atualizados." });
+            } else {
+                const funcionariosCollection = collection(firestore, "empresas", String(currentCompany), "funcionarios");
+                await addDoc(funcionariosCollection, itemData);
+                toast({ title: "Funcionário Adicionado!", description: "O novo funcionário foi cadastrado." });
+            }
+        } catch (error: any) {
+             toast({ variant: "destructive", title: "Erro ao Salvar", description: error.message });
         }
+        
         setIsDialogOpen(false);
         setEditingItem(null);
     };
 
     const handleDeleteClick = (item: Funcionario) => setItemToDelete(item);
 
-    const handleConfirmDelete = () => {
-        if (itemToDelete) {
-            setFuncionarios(prev => prev.filter(i => i.id !== itemToDelete.id));
-            toast({ variant: "destructive", title: "Funcionário Excluído!", description: `O funcionário foi removido.` });
+    const handleConfirmDelete = async () => {
+        if (itemToDelete && currentCompany) {
+            try {
+                const funcionarioDoc = doc(firestore, "empresas", String(currentCompany), "funcionarios", itemToDelete.id);
+                await deleteDoc(funcionarioDoc);
+                toast({ variant: "destructive", title: "Funcionário Excluído!", description: `O funcionário foi removido.` });
+            } catch (error: any) {
+                toast({ variant: "destructive", title: "Erro ao Excluir", description: error.message });
+            }
             setItemToDelete(null);
         }
     };
@@ -64,6 +81,7 @@ export default function FuncionariosPage() {
     };
 
     const filteredItems = useMemo(() => {
+        if (!funcionarios) return [];
         return funcionarios.filter(item =>
             item.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
             item.cargo.toLowerCase().includes(searchTerm.toLowerCase())
@@ -90,7 +108,7 @@ export default function FuncionariosPage() {
                     <div className="flex items-center justify-between">
                         <div>
                             <CardTitle>Funcionários Cadastrados</CardTitle>
-                            <CardDescription>{funcionarios.length} funcionários encontrados.</CardDescription>
+                            <CardDescription>{funcionarios?.length || 0} funcionários encontrados.</CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
                              <div className="relative flex-grow">
@@ -123,7 +141,13 @@ export default function FuncionariosPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredItems.length > 0 ? filteredItems.map(item => (
+                                {isLoadingFuncionarios ? (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="h-24 text-center">
+                                            <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
+                                        </TableCell>
+                                    </TableRow>
+                                ) : filteredItems.length > 0 ? filteredItems.map(item => (
                                     <TableRow key={item.id}>
                                         <TableCell className="font-medium">{item.nome}</TableCell>
                                         <TableCell>{item.cargo}</TableCell>
@@ -253,18 +277,18 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
     const addDependente = () => {
         setFormData(prev => ({
             ...prev,
-            dependentes: [...(prev.dependentes || []), { id: Date.now(), nome: '', cpf: '', dataNascimento: '' }]
+            dependentes: [...(prev.dependentes || []), { id: String(Date.now()), nome: '', cpf: '', dataNascimento: '' }]
         }));
     };
 
-    const removeDependente = (id: number) => {
+    const removeDependente = (id: string) => {
         setFormData(prev => ({
             ...prev,
             dependentes: prev.dependentes?.filter(d => d.id !== id)
         }));
     };
 
-    const handleDependenteChange = (id: number, field: keyof Omit<Dependente, 'id'>, value: string) => {
+    const handleDependenteChange = (id: string, field: keyof Omit<Dependente, 'id'>, value: string) => {
         setFormData(prev => ({
             ...prev,
             dependentes: prev.dependentes?.map(d => d.id === id ? { ...d, [field]: value } : d)
@@ -274,18 +298,18 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
     const addAnotacao = () => {
         setFormData(prev => ({
             ...prev,
-            anotacoesCarteira: [...(prev.anotacoesCarteira || []), { id: Date.now(), data: new Date().toISOString(), descricao: '' }]
+            anotacoesCarteira: [...(prev.anotacoesCarteira || []), { id: String(Date.now()), data: new Date().toISOString(), descricao: '' }]
         }));
     };
 
-    const removeAnotacao = (id: number) => {
+    const removeAnotacao = (id: string) => {
         setFormData(prev => ({
             ...prev,
             anotacoesCarteira: prev.anotacoesCarteira?.filter(a => a.id !== id)
         }));
     };
 
-    const handleAnotacaoChange = (id: number, field: keyof Omit<AnotacaoCarteira, 'id'>, value: string) => {
+    const handleAnotacaoChange = (id: string, field: keyof Omit<AnotacaoCarteira, 'id'>, value: string) => {
         setFormData(prev => ({
             ...prev,
             anotacoesCarteira: prev.anotacoesCarteira?.map(a => a.id === id ? { ...a, [field]: value } : a)

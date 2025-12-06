@@ -1,8 +1,9 @@
 
 
 
+
 export interface ProductItem {
-    id: number;
+    id: string;
     name: string;
     quantity: number;
     price: number;
@@ -10,21 +11,21 @@ export interface ProductItem {
 }
 
 export interface ServiceItem {
-    id: number;
+    id: string;
     name: string;
     value: number;
 }
 
 export interface NotaFiscal {
-    id: number;
+    id: string;
     tipo: 'entrada' | 'saida' | 'servico';
     dados: any; // Could be more specific, e.g., NotaProdutoDados | NotaServicoDados
     items: ProductItem[] | ServiceItem[];
-    sourceXmlId?: number; // Armazena o ID do arquivo XML de origem
+    sourceXmlId?: string; // Armazena o ID do arquivo XML de origem
 }
 
 export interface Product {
-    id: number;
+    id: string;
     tipo: 'Produto';
     codigo: string;
     descricao: string;
@@ -54,7 +55,7 @@ export interface Product {
 }
 
 export interface Service {
-    id: number;
+    id: string;
     tipo: 'Serviço';
     codigo: string;
     descricao: string;
