@@ -1,11 +1,11 @@
 
 'use client';
 import { useState, useMemo, useEffect } from 'react';
-import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft } from 'lucide-react';
+import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft, FileDown, FileText, Sheet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -86,6 +86,13 @@ export default function RubricasPage() {
             default: return 'outline';
         }
     }
+    
+    const handleExport = (format: 'pdf' | 'excel') => {
+        toast({
+            title: `Exportação para ${format.toUpperCase()}`,
+            description: 'Esta funcionalidade está em desenvolvimento e será implementada em breve.',
+        });
+    }
 
     return (
         <div className="space-y-6">
@@ -114,6 +121,15 @@ export default function RubricasPage() {
                                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                                 <Input placeholder="Buscar por código ou descrição..." className="pl-9 w-full sm:w-64" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                             </div>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline"><FileDown className="mr-2 h-4 w-4" /> Exportar</Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem onSelect={() => handleExport('pdf')}><FileText className="mr-2 h-4 w-4" />Exportar para PDF</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleExport('excel')}><Sheet className="mr-2 h-4 w-4" />Exportar para Excel</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                             <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) setEditingItem(null); }}>
                                 <DialogTrigger asChild>
                                     <Button><Plus className="mr-2 h-4 w-4" /> Nova Rubrica</Button>
@@ -326,4 +342,3 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
         </DialogContent>
     );
 }
-
