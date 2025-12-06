@@ -3,7 +3,6 @@ import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useToast } from '@/hooks/use-toast';
 import { useLocalStorage } from '@/hooks/use-company';
 import { Badge } from '@/components/ui/badge';
 import { Check, X, Calendar as CalendarIcon, Shield, User as UserIcon, RefreshCw, Search, MoreHorizontal, Pencil, Trash2, Crown, Building, Briefcase, Upload } from 'lucide-react';
@@ -24,6 +23,7 @@ import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useUser } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useToast } from '@/hooks/use-toast';
 
 
 const modules = [
@@ -151,6 +151,25 @@ export default function AdminPage() {
 
     const handleDeleteUser = () => {
         if (!userToDelete) return;
+        
+        if (userToDelete.isMaster) {
+             toast({
+                variant: 'destructive',
+                title: 'Ação não permitida',
+                description: 'Não é possível excluir o perfil Master.',
+            });
+            setUserToDelete(null);
+            return;
+        }
+        if (userToDelete.isAdmin && users.filter(u => u.isAdmin).length <= 1) {
+             toast({
+                variant: 'destructive',
+                title: 'Ação não permitida',
+                description: 'Não é possível excluir o único perfil de administrador.',
+            });
+            setUserToDelete(null);
+            return;
+        }
 
         setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
         toast({
@@ -502,7 +521,8 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
 
                     <Separator />
 
-                    {activeProfile.isAdmin && isEditingSelf && (
+                    {activeProfile.isMaster && (
+                        <>
                         <div className="space-y-2 flex items-center justify-between rounded-lg border p-3 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-900">
                             <div className='space-y-0.5'>
                                 <Label htmlFor="isMasterSwitch" className='flex items-center text-amber-900 dark:text-amber-300'><Crown className='mr-2 h-4 w-4' />Perfil Master</Label>
@@ -514,11 +534,9 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
                                 id="isMasterSwitch"
                                 checked={formData.isMaster}
                                 onCheckedChange={(checked) => handleInputChange('isMaster', checked)}
-                                disabled={otherMasterExists}
+                                disabled={isEditingSelf && !otherMasterExists}
                             />
                         </div>
-                    )}
-                    {activeProfile.isMaster && (
                         <div className="space-y-2 flex items-center justify-between rounded-lg border p-3">
                             <div className='space-y-0.5'>
                                 <Label htmlFor="isAdmin" className='flex items-center'><Shield className='mr-2 h-4 w-4 text-primary' />Perfil de Administrador</Label>
@@ -530,9 +548,10 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
                                 id="isAdmin"
                                 checked={formData.isAdmin}
                                 onCheckedChange={(checked) => handleInputChange('isAdmin', checked)}
-                                disabled={item?.isMaster || (item?.isAdmin && !otherAdminExists)}
+                                disabled={item?.isMaster || (isEditingSelf && !otherAdminExists)}
                             />
                         </div>
+                        </>
                     )}
                     <div className="space-y-2 flex items-center justify-between rounded-lg border p-3">
                         <div className='space-y-0.5'>
@@ -558,3 +577,5 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
         </Dialog>
     );
 }
+
+    

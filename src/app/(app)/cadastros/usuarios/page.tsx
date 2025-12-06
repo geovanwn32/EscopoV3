@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useCompany } from '@/hooks/use-company';
+import { useCompany, useLocalStorage } from '@/hooks/use-company';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -52,9 +52,9 @@ interface User {
 
 export default function UsuariosPage() {
     const { toast } = useToast();
-    const { useScopedData, companies, currentCompany } = useCompany();
-    const [users, setUsers] = useScopedData<User[]>('global-users', []);
-    const [, setAuditLogs] = useScopedData<AuditLog[]>('audit-trail-logs', []);
+    const { companies, currentCompany } = useCompany();
+    const [users, setUsers] = useLocalStorage<User[]>('global-users', []);
+    const [, setAuditLogs] = useLocalStorage<AuditLog[]>('audit-trail-logs', []);
     
     const { user: firebaseUser } = useUser();
     
@@ -498,7 +498,7 @@ function ItemForm({ onSave, onOpenChange, item, users, activeProfile }: ItemForm
                         id="status"
                         checked={formData.status === 'Ativo'}
                         onCheckedChange={(checked) => handleInputChange('status', checked ? 'Ativo' : 'Inativo')}
-                        disabled={isEditingSelf && (formData.isAdmin || formData.isMaster)}
+                        disabled={isEditingSelf && (formData.isAdmin || !!formData.isMaster)}
                     />
                 </div>
                 
@@ -582,5 +582,7 @@ function MyProfileCard({ profile, onSave }: MyProfileCardProps) {
         </Card>
     );
 }
+
+    
 
     

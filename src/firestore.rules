@@ -1,4 +1,3 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -8,46 +7,73 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isUserAdmin(userId) {
-        // Check a 'global-users' collection to see if the user has an 'isAdmin' flag.
-        return exists(/databases/$(database)/documents/global-users/$(userId)) &&
-               get(/databases/$(database)/documents/global-users/$(userId)).data.isAdmin == true;
-    }
-    
-    function isUserMaster(userId) {
-        return exists(/databases/$(database)/documents/global-users/$(userId)) &&
-               get(/databases/$(database)/documents/global-users/$(userId)).data.isMaster == true;
+    function userIsAdmin() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/global-users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/global-users/$(request.auth.uid)).data.isAdmin == true;
     }
 
-    // Global collection for user profiles and roles.
+    function userIsMaster() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/global-users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/global-users/$(request.auth.uid)).data.isMaster == true;
+    }
+
+    // ======================================================
+    //  GLOBAL USERS (SEGURANÇA MÁXIMA)
+    // ======================================================
     match /global-users/{userId} {
-      // Admins and the user themselves can read their own profile.
-      allow get: if isSignedIn() && (isUserAdmin(request.auth.uid) || request.auth.uid == userId);
-      // Only admins can list all users.
-      allow list: if isSignedIn() && isUserAdmin(request.auth.uid);
-      
-      // Users can create their own profile upon sign-up.
+
+      // Usuário pode ler apenas o próprio documento 
+      // Admin pode ler qualquer um
+      allow get: if isSignedIn() && 
+                 (request.auth.uid == userId || userIsAdmin());
+
+      // Somente ADMIN pode listar todos
+      allow list: if isSignedIn() && userIsAdmin();
+
+      // Criar: somente o próprio usuário no momento do cadastro
       allow create: if isSignedIn() && request.auth.uid == userId;
 
-      // Admins can update any user, users can only update their own profile.
-      // A user cannot make themselves an admin or master.
-      allow update: if isSignedIn() && 
-                      (isUserAdmin(request.auth.uid) || request.auth.uid == userId) &&
-                      (isUserAdmin(request.auth.uid) || (
+      // Atualização segura:
+      // Usuário só pode editar os próprios campos NÃO críticos
+      allow update: if isSignedIn() &&
+                    (
+                      // Admin pode editar tudo
+                      userIsAdmin() ||
+
+                      // Usuário comum só edita o próprio doc
+                      (
+                        request.auth.uid == userId &&
+                        // não pode se fazer admin
                         request.resource.data.isAdmin == resource.data.isAdmin &&
-                        request.resource.data.isMaster == resource.data.isMaster
-                      ));
-      
-      // Only Master users can delete other users, but not themselves or another Master.
-      allow delete: if isSignedIn() && isUserMaster(request.auth.uid) && request.auth.uid != userId && resource.data.isMaster != true;
+                        request.resource.data.isMaster == resource.data.isMaster &&
+                        // não pode se aprovar sozinho
+                        request.resource.data.status == resource.data.status
+                      )
+                    );
+
+      // Somente o MASTER pode deletar
+      allow delete: if isSignedIn() &&
+                    userIsMaster() &&
+                    request.auth.uid != userId &&
+                    resource.data.isMaster != true;
     }
-    
-    // Multi-tenant data, scoped by company
+
+    // ======================================================
+    //  MULTIEMPRESA (ISOLAMENTO REAL)
+    // ======================================================
     match /empresas/{empresaId}/{document=**} {
-      // The user must be authenticated and must be a member of the company.
-      // We check a user's allowed companies from their profile in 'global-users'.
-      allow read, write: if isSignedIn() &&
-                         get(/databases/$(database)/documents/global-users/$(request.auth.uid)).data.allowedCompanyIds.hasAny([empresaId]);
+      // Regra de acesso baseada na associação do usuário à empresa
+      function isCompanyMember() {
+        return isSignedIn() &&
+          exists(/databases/$(database)/documents/global-users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/global-users/$(request.auth.uid)).data.allowedCompanyIds.hasAny([string(empresaId)]);
+      }
+
+      allow read, write: if isCompanyMember() || userIsAdmin();
     }
   }
 }
+
+    
