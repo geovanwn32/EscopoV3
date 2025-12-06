@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -19,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
-import { useCompany } from '@/hooks/use-company';
+import { useCompany, useLocalStorage } from '@/hooks/use-company';
 import { Label } from '@/components/ui/label';
 
 
@@ -77,8 +76,7 @@ export default function LoginForm() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const auth = useAuth();
-  const { useScopedData } = useCompany();
-  const [, setUsers] = useScopedData<User[]>('global-users', []);
+  const [users, setUsers] = useLocalStorage<User[]>('global-users', []);
 
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);

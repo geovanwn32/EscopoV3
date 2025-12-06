@@ -559,4 +559,3 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
         </Dialog>
     );
 }
-    

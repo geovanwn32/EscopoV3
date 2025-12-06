@@ -148,6 +148,13 @@ service cloud.firestore {
 
       allow delete: if resource != null && isCompanyAdmin(empresaId);
     }
+    
+    match /global-users/{userId} {
+        allow read: if request.auth != null && (get(/databases/$(database)/documents/global-users/$(request.auth.uid)).data.isAdmin == true || get(/databases/$(database)/documents/global-users/$(request.auth.uid)).data.isMaster == true);
+        allow list: if request.auth != null && (get(/databases/$(database)/documents/global-users/$(request.auth.uid)).data.isAdmin == true || get(/databases/$(database)/documents/global-users/$(request.auth.uid)).data.isMaster == true);
+        allow create, update, delete: if false; 
+    }
+
 
     /**
      * @description Generic rule for all data subcollections within a company.
