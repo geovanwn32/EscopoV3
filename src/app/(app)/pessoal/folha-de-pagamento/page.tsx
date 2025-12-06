@@ -135,7 +135,7 @@ export default function FolhaDePagamentoPage() {
                     return rubrica?.tipo === 'Provento' ? acc + l.valor : acc;
                 }, 0);
 
-                const totalDescontos = lancamentosFunc.reduce((acc, l) => {
+                const outrosDescontos = lancamentosFunc.reduce((acc, l) => {
                     const rubrica = rubricasPadrao.find(r => r.id === l.rubricaId);
                     return rubrica?.tipo === 'Desconto' ? acc + l.valor : acc;
                 }, 0);
@@ -145,13 +145,15 @@ export default function FolhaDePagamentoPage() {
                 const valorINSS = baseINSS * 0.08; // 8% Fixo (simplificado)
                 const baseIRRF = totalProventos - valorINSS;
                 const valorIRRF = baseIRRF > 2826.65 ? (baseIRRF * 0.075) - 142.80 : 0; // 7.5% (simplificado)
+                
+                const totalDescontos = outrosDescontos + valorINSS + valorIRRF;
 
                 return {
                     funcionarioId: funcId,
                     nome: funcionario.nome,
                     totalProventos,
-                    totalDescontos: totalDescontos + valorINSS + valorIRRF,
-                    salarioLiquido: totalProventos - (totalDescontos + valorINSS + valorIRRF),
+                    totalDescontos,
+                    salarioLiquido: totalProventos - totalDescontos,
                     baseINSS,
                     valorINSS,
                     baseIRRF,
@@ -341,3 +343,5 @@ function LancadorDeRubrica({ onAddLancamento }: { onAddLancamento: (id: number, 
         </div>
     )
 }
+
+    
