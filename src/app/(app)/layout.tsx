@@ -11,6 +11,7 @@ import { CompanyProvider, useCompany } from '@/hooks/use-company';
 import { AuditLog, logAudit } from '@/lib/audit-log';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { seedData } from '@/lib/seed';
 
 
 function AppLayoutContent({ children }: { children: React.ReactNode }) {
@@ -22,6 +23,13 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
   const { open: isSidebarOpen } = useSidebar();
   const isMobile = useIsMobile();
+
+  useEffect(() => {
+    // Expose seed function to window for easy access from console
+    if (typeof window !== 'undefined') {
+      (window as any).seedData = seedData;
+    }
+  }, []);
 
   useEffect(() => {
     if (isLoaded) {
