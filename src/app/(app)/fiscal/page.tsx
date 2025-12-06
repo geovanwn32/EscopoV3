@@ -22,7 +22,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Partner } from "@/types/partner";
-import { useCompany } from "@/hooks/use-company";
+import { useCompany } from '@/hooks/use-company';
 import { NotaFiscal, ProductItem, ServiceItem } from "@/types/fiscal";
 import { AuditLog, logAudit } from "@/lib/audit-log";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -127,7 +127,7 @@ export default function FiscalPage() {
     const [sourceXmlId, setSourceXmlId] = useState<number | undefined>(undefined);
 
     const [searchTerm, setSearchTerm] = useState('');
-    const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
+    const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1576,3 +1576,6 @@ function LancamentoDialog({ onOpenChange, tipoNota, initialData, onSave, isReadO
     );
 }
 
+
+
+    
