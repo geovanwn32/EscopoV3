@@ -51,6 +51,7 @@ const signUpSchema = z.object({
 
 interface User {
   id: number;
+  uid?: string;
   name: string;
   email: string;
   isAdmin: boolean;
@@ -63,6 +64,7 @@ interface User {
   dataExpiracaoLicenca?: string; // ISO string
   planoId?: 'Gratuito' | 'Basico' | 'Profissional' | 'Empresarial';
   statusLicenca?: 'Ativa' | 'Inadimplente' | 'Cancelada' | 'Expirada';
+  photoURL?: string;
 }
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
