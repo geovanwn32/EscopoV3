@@ -13,13 +13,9 @@ import { Funcionario } from '@/types/pessoal';
 import { useToast } from '@/hooks/use-toast';
 import { Calculator, Plus, Trash2, Loader2, FileText, BookCopy } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import type { Rubrica } from '../../rubricas/page';
+import Link from 'next/link';
 
-interface Rubrica {
-  id: number;
-  codigo: string;
-  descricao: string;
-  tipo: 'Provento' | 'Desconto' | 'Informativa';
-}
 
 interface Lancamento {
   id: number;
@@ -329,8 +325,10 @@ function LancadorDeRubrica({ onAddLancamento, rubricas }: LancadorDeRubricaProps
                     </SelectContent>
                 </Select>
             </div>
-            <Button onClick={handleAddClick} variant="outline" type='button'>
-                <Plus className='mr-2 h-4 w-4'/> Adicionar
+             <Button asChild variant="outline" type="button">
+                <Link href="/rubricas" target="_blank">
+                    <Plus className='mr-2 h-4 w-4'/> Gerenciar Rubricas
+                </Link>
             </Button>
         </div>
     )
