@@ -1,11 +1,11 @@
 
 'use client';
-import { useState, useMemo, useEffect } from 'react';
-import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft, FileDown, FileText, Sheet } from 'lucide-react';
+import { useState, useMemo, useEffect, Suspense } from 'react';
+import dynamic from 'next/dynamic';
+import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -18,6 +18,12 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 
+const ExportButtons = dynamic(() => import('./ExportButtons'), {
+    ssr: false,
+    loading: () => <Button variant="outline" disabled><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Exportar</Button>
+});
+
+
 interface Incidencias {
     inss: boolean;
     irrf: boolean;
@@ -25,7 +31,7 @@ interface Incidencias {
     contribuicaoSindical: boolean;
 }
 
-interface Rubrica {
+export interface Rubrica {
     id: number;
     codigo: string;
     descricao: string;
@@ -87,66 +93,6 @@ export default function RubricasPage() {
         }
     }
     
-    const handleExportPdf = async () => {
-        const { default: jsPDF } = await import('jspdf');
-        const { default: autoTable } = await import('jspdf-autotable');
-
-        const doc = new jsPDF();
-        doc.text("Relatório de Rubricas", 14, 16);
-        
-        const tableColumn = ["Código", "Descrição", "Tipo", "Incidências"];
-        const tableRows: any[] = [];
-
-        filteredItems.forEach(item => {
-            const incidencias = Object.entries(item.incidencias)
-                .filter(([, value]) => value)
-                .map(([key]) => {
-                    if (key === 'inss') return 'INSS';
-                    if (key === 'irrf') return 'IRRF';
-                    if (key === 'fgts') return 'FGTS';
-                    if (key === 'contribuicaoSindical') return 'Sindical';
-                    return '';
-                }).join(', ');
-
-            const row = [
-                item.codigo,
-                item.descricao,
-                item.tipo,
-                incidencias,
-            ];
-            tableRows.push(row);
-        });
-
-        autoTable(doc, {
-            head: [tableColumn],
-            body: tableRows,
-            startY: 20,
-        });
-        
-        doc.save('relatorio_rubricas.pdf');
-        toast({ title: "PDF Gerado!", description: "O relatório de rubricas foi baixado." });
-    };
-
-    const handleExportExcel = async () => {
-        const XLSX = await import('xlsx');
-        const worksheetData = filteredItems.map(item => ({
-            'Código': item.codigo,
-            'Descrição': item.descricao,
-            'Tipo': item.tipo,
-            'INSS': item.incidencias.inss ? 'Sim' : 'Não',
-            'IRRF': item.incidencias.irrf ? 'Sim' : 'Não',
-            'FGTS': item.incidencias.fgts ? 'Sim' : 'Não',
-            'Contrib. Sindical': item.incidencias.contribuicaoSindical ? 'Sim' : 'Não',
-        }));
-
-        const worksheet = XLSX.utils.json_to_sheet(worksheetData);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Rubricas");
-        XLSX.writeFile(workbook, "relatorio_rubricas.xlsx");
-        toast({ title: "Excel Gerado!", description: "O relatório de rubricas foi baixado." });
-    };
-
-
     return (
         <div className="space-y-6">
              <div className="flex items-center gap-4">
@@ -174,15 +120,9 @@ export default function RubricasPage() {
                                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                                 <Input placeholder="Buscar por código ou descrição..." className="pl-9 w-full sm:w-64" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                             </div>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline"><FileDown className="mr-2 h-4 w-4" /> Exportar</Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                    <DropdownMenuItem onSelect={handleExportPdf}><FileText className="mr-2 h-4 w-4" />Exportar para PDF</DropdownMenuItem>
-                                    <DropdownMenuItem onSelect={handleExportExcel}><Sheet className="mr-2 h-4 w-4" />Exportar para Excel</DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                            <Suspense fallback={<Button variant="outline" disabled><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Exportar</Button>}>
+                                <ExportButtons data={filteredItems} />
+                            </Suspense>
                             <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) setEditingItem(null); }}>
                                 <DialogTrigger asChild>
                                     <Button><Plus className="mr-2 h-4 w-4" /> Nova Rubrica</Button>
@@ -395,3 +335,4 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
         </DialogContent>
     );
 }
+    
