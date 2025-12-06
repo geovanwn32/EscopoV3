@@ -5,7 +5,6 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/firebase';
@@ -16,16 +15,33 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { logAudit } from '@/lib/audit-log';
 import { useCompany } from '@/hooks/use-company';
+import { setPersistence, browserSessionPersistence, browserLocalPersistence } from "firebase/auth";
+import Link from 'next/link';
 
+interface User {
+  id: number;
+  uid?: string;
+  name: string;
+  email: string;
+  isAdmin: boolean;
+  isMaster?: boolean;
+  permissions: any;
+  allowedCompanyIds: number[];
+  password?: string;
+  status: 'Ativo' | 'Inativo' | 'Pendente';
+  creationDate?: string; // ISO string
+  dataExpiracaoLicenca?: string; // ISO string
+  planoId?: 'Gratuito' | 'Basico' | 'Profissional' | 'Empresarial';
+  statusLicenca?: 'Ativa' | 'Inadimplente' | 'Cancelada' | 'Expirada';
+  photoURL?: string;
+}
 
 // Define Zod schemas
 const loginSchema = z.object({
@@ -49,23 +65,6 @@ const signUpSchema = z.object({
   path: ["confirmPassword"],
 });
 
-interface User {
-  id: number;
-  uid?: string;
-  name: string;
-  email: string;
-  isAdmin: boolean;
-  isMaster?: boolean;
-  permissions: any;
-  allowedCompanyIds: number[];
-  password?: string;
-  status: 'Ativo' | 'Inativo' | 'Pendente';
-  creationDate?: string; // ISO string
-  dataExpiracaoLicenca?: string; // ISO string
-  planoId?: 'Gratuito' | 'Basico' | 'Profissional' | 'Empresarial';
-  statusLicenca?: 'Ativa' | 'Inadimplente' | 'Cancelada' | 'Expirada';
-  photoURL?: string;
-}
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
@@ -85,7 +84,6 @@ export default function LoginForm() {
   const auth = useAuth();
   const { useScopedData } = useCompany();
   const [, setUsers] = useScopedData<User[]>('global-users', []);
-  const [, setAuditLogs] = useScopedData<AuditLog[]>('audit-trail-logs', []);
 
 
   const [isSignUp, setIsSignUp] = useState(false);
@@ -119,6 +117,9 @@ export default function LoginForm() {
   const handleLogin: SubmitHandler<z.infer<typeof loginSchema>> = async (data) => {
     setIsLoading(true);
     try {
+      const persistence = data.remember ? browserLocalPersistence : browserSessionPersistence;
+      await setPersistence(auth, persistence);
+        
       const userCredential = await signInWithEmail(auth, data.email, data.password);
       const user = userCredential.user;
       
@@ -150,7 +151,7 @@ export default function LoginForm() {
     } catch (error: any) {
       console.error("Login failed:", error);
       let errorMessage = "Ocorreu um erro desconhecido.";
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
         errorMessage = "Credenciais inválidas. Verifique seu e-mail e senha.";
       }
       toast({
@@ -396,6 +397,7 @@ export default function LoginForm() {
                     <FormLabel>
                       Eu aceito os <a href="/termos" className="underline">termos e condições</a>
                     </FormLabel>
+                     <FormMessage />
                   </div>
                 </FormItem>
               )}
@@ -448,19 +450,12 @@ export default function LoginForm() {
               <FormItem>
                 <div className="flex items-center">
                   <FormLabel>Senha</FormLabel>
-                  <a
-                    href="#"
+                  <Link
+                    href="/forgot-password"
                     className="ml-auto inline-block text-sm underline"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      toast({
-                        title: 'Funcionalidade em desenvolvimento',
-                        description: 'A recuperação de senha ainda não foi implementada.',
-                      });
-                    }}
                   >
                     Esqueceu sua senha?
-                  </a>
+                  </Link>
                 </div>
                 <FormControl>
                   <div className="relative">

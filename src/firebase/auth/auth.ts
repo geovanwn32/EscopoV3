@@ -1,5 +1,5 @@
 
-import { getAuth, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, Auth } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, Auth, sendPasswordResetEmail as firebaseSendPasswordResetEmail } from 'firebase/auth';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { firebaseConfig } from '../config';
 
@@ -8,7 +8,7 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
-export const signInWithGoogle = async () => {
+export const signInWithGoogle = async (auth: Auth) => {
   try {
     const result = await signInWithPopup(auth, provider);
     return result.user;
@@ -24,4 +24,8 @@ export const signUpWithEmail = async (auth: Auth, email: string, password: strin
 
 export const signInWithEmail = async (auth: Auth, email: string, password: string) => {
     return signInWithEmailAndPassword(auth, email, password);
+};
+
+export const sendPasswordResetEmail = async (auth: Auth, email: string) => {
+    return firebaseSendPasswordResetEmail(auth, email);
 };
