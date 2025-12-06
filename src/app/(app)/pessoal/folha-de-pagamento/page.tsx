@@ -18,7 +18,7 @@ interface Rubrica {
   id: number;
   codigo: string;
   descricao: string;
-  tipo: 'Provento' | 'Desconto';
+  tipo: 'Provento' | 'Desconto' | 'Informativa';
 }
 
 interface Lancamento {
@@ -52,20 +52,11 @@ const meses = [
 const anos = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i);
 
 
-const rubricasPadrao: Rubrica[] = [
-    { id: 1, codigo: '101', descricao: 'Salário Base', tipo: 'Provento' },
-    { id: 2, codigo: '102', descricao: 'Horas Extras 50%', tipo: 'Provento' },
-    { id: 3, codigo: '103', descricao: 'Comissões', tipo: 'Provento' },
-    { id: 4, codigo: '201', descricao: 'INSS', tipo: 'Desconto' },
-    { id: 5, codigo: '202', descricao: 'IRRF', tipo: 'Desconto' },
-    { id: 6, codigo: '203', descricao: 'Faltas (dias)', tipo: 'Desconto' },
-    { id: 7, codigo: '204', descricao: 'Adiantamento Salarial', tipo: 'Desconto' },
-];
-
 export default function FolhaDePagamentoPage() {
     const { toast } = useToast();
     const { useScopedData } = useCompany();
     const [funcionarios] = useScopedData<Funcionario[]>('cadastros-funcionarios', []);
+    const [rubricas] = useScopedData<Rubrica[]>('cadastros-rubricas', []);
     
     const [mes, setMes] = useState<number>(new Date().getMonth() + 1);
     const [ano, setAno] = useState<number>(new Date().getFullYear());
@@ -85,7 +76,6 @@ export default function FolhaDePagamentoPage() {
     const handleAddLancamento = (rubricaId: number, tipo: 'coletivo' | 'individual', funcionarioId?: number) => {
         if (!rubricaId) return;
         
-        const newLancamentos: Lancamento[] = [];
         const targetFuncionarios = tipo === 'coletivo' ? selectedFuncionarios : (funcionarioId ? [funcionarioId] : []);
         
         if(targetFuncionarios.length === 0) {
@@ -93,15 +83,12 @@ export default function FolhaDePagamentoPage() {
             return;
         }
 
-        targetFuncionarios.forEach(funcId => {
-            const newLancamento: Lancamento = {
-                id: Date.now() + Math.random(),
-                funcionarioId: funcId,
-                rubricaId: rubricaId,
-                valor: 0,
-            };
-            newLancamentos.push(newLancamento);
-        });
+        const newLancamentos = targetFuncionarios.map(funcId => ({
+            id: Date.now() + Math.random(),
+            funcionarioId: funcId,
+            rubricaId: rubricaId,
+            valor: 0,
+        }));
 
         setLancamentos(prev => [...prev, ...newLancamentos]);
     };
@@ -131,12 +118,12 @@ export default function FolhaDePagamentoPage() {
                 const lancamentosFunc = lancamentos.filter(l => l.funcionarioId === funcId);
 
                 const totalProventos = salarioBase + lancamentosFunc.reduce((acc, l) => {
-                    const rubrica = rubricasPadrao.find(r => r.id === l.rubricaId);
+                    const rubrica = rubricas.find(r => r.id === l.rubricaId);
                     return rubrica?.tipo === 'Provento' ? acc + l.valor : acc;
                 }, 0);
 
                 const outrosDescontos = lancamentosFunc.reduce((acc, l) => {
-                    const rubrica = rubricasPadrao.find(r => r.id === l.rubricaId);
+                    const rubrica = rubricas.find(r => r.id === l.rubricaId);
                     return rubrica?.tipo === 'Desconto' ? acc + l.valor : acc;
                 }, 0);
                 
@@ -231,7 +218,7 @@ export default function FolhaDePagamentoPage() {
                     <CardDescription>Adicione eventos como horas extras, comissões, faltas ou adiantamentos.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                     <LancadorDeRubrica onAddLancamento={handleAddLancamento} />
+                     <LancadorDeRubrica onAddLancamento={handleAddLancamento} rubricas={rubricas} />
                      <Separator className='my-6'/>
                      <h4 className='text-md font-medium'>Lançamentos Realizados</h4>
                      <div className="rounded-md border max-h-72 overflow-y-auto">
@@ -249,7 +236,7 @@ export default function FolhaDePagamentoPage() {
                             <TableBody>
                                 {lancamentos.map(l => {
                                     const func = funcionarios.find(f => f.id === l.funcionarioId);
-                                    const rubrica = rubricasPadrao.find(r => r.id === l.rubricaId);
+                                    const rubrica = rubricas.find(r => r.id === l.rubricaId);
                                     return (
                                         <TableRow key={l.id}>
                                             <TableCell>{func?.nome}</TableCell>
@@ -315,7 +302,12 @@ export default function FolhaDePagamentoPage() {
     );
 }
 
-function LancadorDeRubrica({ onAddLancamento }: { onAddLancamento: (id: number, tipo: 'coletivo' | 'individual', funcId?: number) => void }) {
+interface LancadorDeRubricaProps {
+    onAddLancamento: (id: number, tipo: 'coletivo' | 'individual', funcId?: number) => void;
+    rubricas: Rubrica[];
+}
+
+function LancadorDeRubrica({ onAddLancamento, rubricas }: LancadorDeRubricaProps) {
     const [selectedRubricaId, setSelectedRubricaId] = useState<string>('');
 
     const handleAddClick = () => {
@@ -331,7 +323,7 @@ function LancadorDeRubrica({ onAddLancamento }: { onAddLancamento: (id: number, 
                 <Select value={selectedRubricaId} onValueChange={setSelectedRubricaId}>
                     <SelectTrigger><SelectValue placeholder="Selecione uma rubrica..."/></SelectTrigger>
                     <SelectContent>
-                        {rubricasPadrao.map(r => (
+                        {rubricas.map(r => (
                             <SelectItem key={r.id} value={String(r.id)}>{r.codigo} - {r.descricao} ({r.tipo})</SelectItem>
                         ))}
                     </SelectContent>
@@ -343,5 +335,3 @@ function LancadorDeRubrica({ onAddLancamento }: { onAddLancamento: (id: number, 
         </div>
     )
 }
-
-    
