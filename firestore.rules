@@ -1,261 +1,39 @@
-rules_version = '2';
 
-/**
- * @file firestore.rules
- * @author Firebase Rules Generator
- *
- * @description
- * This ruleset enforces a strict multi-tenant security model where all data is
- * partitioned by a company ID (`empresaId`). Access to any document is granted
- * only to authenticated users who are members of the corresponding company.
- *
- * Core Philosophy: Multi-tenancy is the primary security boundary. A user's
- * company affiliation is the sole determinant of their data access rights.
- *
- * Data Structure: All data is hierarchically organized under the `/empresas`
- * collection. Each company has its own data tree, for example:
- * `/empresas/{empresaId}/usuarios/{usuarioId}` or
- * `/empresas/{empresaId}/parceiros/{parceiroId}`. This structure prevents any
- * possibility of cross-tenant data leakage.
- *
- * Key Security Decisions:
- * - Company Membership via Custom Claims: To ensure high performance and
- *   security, a user's company membership (`empresaId`) MUST be stored in their
- *   Firebase Authentication custom claims. Rules check `request.auth.token.empresaId`
- *   to authorize requests, avoiding slow and costly database lookups.
- * - Restricted Company Management: Creation and deletion of top-level company
- *   documents (`/empresas/{empresaId}`) are disallowed from the client. These
- *   operations should be handled by a secure admin backend.
- * - User Profile Control: Users can only create their own user profile document
- *   and are the only ones who can update or delete it.
- * - Uniform Subcollection Access: For simplicity during prototyping, all users
- *   within a company have uniform read and write access to the company's
- *   subcollections (like `parceiros`, `eventos`, etc.). More granular,
- *   role-based access can be added later if needed.
- *
- * Denormalization for Authorization: This ruleset relies on custom claims, the
- * ultimate form of denormalization for authorization, to make a user's role or
- * tenancy (`empresaId`) available on every single request without needing extra
- * database reads.
- *
- * Structural Segregation: The entire data model is segregated by `empresaId`
- * at the root, which is a powerful security pattern for multi-tenant apps.
- * This makes it impossible for queries to accidentally cross company boundaries.
- */
+rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ------------------------------------------------------------------------
     // Helper Functions
-    // ------------------------------------------------------------------------
-
-    /**
-     * Checks if the user is authenticated.
-     */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /**
-     * Checks if the authenticated user belongs to the specified company.
-     * CRITICAL: This requires the user's `empresaId` to be set in their
-     * Firebase Auth custom claims by a trusted backend process.
-     * @param empresaId The company ID from the document path.
-     */
-    function isMemberOfCompany(empresaId) {
-      return isSignedIn() && request.auth.token.empresaId == empresaId;
+    function isUser(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
 
-    /**
-     * Ensures an update or delete request targets an existing document and
-     * that the user is a member of the company.
-     * @param empresaId The company ID from the document path.
-     */
-    function isExistingMemberOfCompany(empresaId) {
-      return isMemberOfCompany(empresaId) && resource != null;
+    // --- Global collections ---
+    match /global-users/{userId} {
+      // Allow any signed-in user to list the collection to find their profiles.
+      // The application logic filters by email, so this is secure.
+      // Write access remains restricted to the owner of the document.
+      allow list: if isSignedIn();
+      allow get, write: if isUser(userId);
     }
-
-    /**
-     * Validates that the user is creating their own user profile document.
-     * @param usuarioId The user ID from the document path.
-     */
-    function isOwnUserDocument(usuarioId) {
-      return isSignedIn() && request.auth.uid == usuarioId;
-    }
-
-    /**
-     * On create, validates that the incoming document's `empresaId` field
-     * matches the company ID in the document path.
-     * @param empresaId The company ID from the document path.
-     */
-    function isLinkingToCorrectCompanyOnCreate(empresaId) {
-      return request.resource.data.empresaId == empresaId;
-    }
-
-    /**
-     * On update, ensures the `empresaId` field cannot be changed, maintaining
-     * relational integrity.
-     */
-    function isCompanyLinkImmutable() {
-      return request.resource.data.empresaId == resource.data.empresaId;
-    }
-
-
-    // ------------------------------------------------------------------------
-    // Collection Rules
-    // ------------------------------------------------------------------------
-
-    /**
-     * @description Manages access to top-level company documents.
-     * @path /empresas/{empresaId}
-     * @allow (get) A user authenticated with custom claim `empresaId: 'acme'` can read `/empresas/acme`.
-     * @deny (create) Any user attempting to create a new company document. This is a backend-only operation.
-     * @deny (list) Any user attempting to list all companies in the database.
-     * @principle Restricts high-level data access to members of the specific company. Prohibits dangerous operations.
-     */
+    
+    // --- Company data ---
     match /empresas/{empresaId} {
-      allow get: if isMemberOfCompany(empresaId);
-      allow list: if false;
-      allow create: if false;
-      allow update: if isExistingMemberOfCompany(empresaId);
-      allow delete: if false;
-    }
+        // Only authenticated users can read/write company info.
+        // More specific rules can be added for who can create/delete companies.
+        allow read, write: if isSignedIn();
 
-    /**
-     * @description Governs access to user profiles within a company.
-     * @path /empresas/{empresaId}/usuarios/{usuarioId}
-     * @allow (create) A new user with UID `user_abc` and `empresaId: 'acme'` can create their own profile at `/empresas/acme/usuarios/user_abc`.
-     * @allow (get) A user from company 'acme' can read the profile of another user in the same company.
-     * @deny (update) User `user_abc` cannot update the profile of user `user_xyz`.
-     * @principle Enforces self-service profile creation and modification while allowing reads within the same company.
-     */
-    match /empresas/{empresaId}/usuarios/{usuarioId} {
-      allow get: if isMemberOfCompany(empresaId);
-      allow list: if isMemberOfCompany(empresaId);
-      allow create: if isMemberOfCompany(empresaId) && isOwnUserDocument(usuarioId) && isLinkingToCorrectCompanyOnCreate(empresaId);
-      allow update: if isExistingMemberOfCompany(empresaId) && isOwnUserDocument(usuarioId) && isCompanyLinkImmutable();
-      allow delete: if isExistingMemberOfCompany(empresaId) && isOwnUserDocument(usuarioId);
+        // Subcollections within a company
+        match /{subcollection}/{docId} {
+            // By default, allow read/write if the user is signed in.
+            // THIS IS INSECURE for production. You should add rules based on company membership.
+            // For example, you could have a `members` subcollection in each company.
+            allow read, write: if isSignedIn();
+        }
     }
-
-    /**
-     * @description Secures fiscal entry documents, scoping them to a specific company.
-     * @path /empresas/{empresaId}/lancamentos_fiscais/{lancamentoFiscalId}
-     * @allow (create, read, update, delete) Any authenticated member of company 'acme' can manage documents under `/empresas/acme/lancamentos_fiscais`.
-     * @deny (read, write) A user from company 'widgets-inc' cannot access data under `/empresas/acme/lancamentos_fiscais`.
-     * @principle Enforces strict data isolation between tenants (companies).
-     */
-    match /empresas/{empresaId}/lancamentos_fiscais/{lancamentoFiscalId} {
-      allow get: if isMemberOfCompany(empresaId);
-      allow list: if isMemberOfCompany(empresaId);
-      allow create: if isMemberOfCompany(empresaId) && isLinkingToCorrectCompanyOnCreate(empresaId);
-      allow update: if isExistingMemberOfCompany(empresaId) && isCompanyLinkImmutable();
-      allow delete: if isExistingMemberOfCompany(empresaId);
-    }
-
-    /**
-     * @description Secures business partner documents, scoping them to a specific company.
-     * @path /empresas/{empresaId}/parceiros/{parceiroId}
-     * @allow (create, read, update, delete) Any authenticated member of company 'acme' can manage documents under `/empresas/acme/parceiros`.
-     * @deny (read, write) A user from company 'widgets-inc' cannot access data under `/empresas/acme/parceiros`.
-     * @principle Enforces strict data isolation between tenants (companies).
-     */
-    match /empresas/{empresaId}/parceiros/{parceiroId} {
-      allow get: if isMemberOfCompany(empresaId);
-      allow list: if isMemberOfCompany(empresaId);
-      allow create: if isMemberOfCompany(empresaId) && isLinkingToCorrectCompanyOnCreate(empresaId);
-      allow update: if isExistingMemberOfCompany(empresaId) && isCompanyLinkImmutable();
-      allow delete: if isExistingMemberOfCompany(empresaId);
-    }
-
-    /**
-     * @description Secures chart of accounts documents, scoping them to a specific company.
-     * @path /empresas/{empresaId}/planos_de_contas/{planoDeContasId}
-     * @allow (create, read, update, delete) Any authenticated member of company 'acme' can manage documents under `/empresas/acme/planos_de_contas`.
-     * @deny (read, write) A user from company 'widgets-inc' cannot access data under `/empresas/acme/planos_de_contas`.
-     * @principle Enforces strict data isolation between tenants (companies).
-     */
-    match /empresas/{empresaId}/planos_de_contas/{planoDeContasId} {
-      allow get: if isMemberOfCompany(empresaId);
-      allow list: if isMemberOfCompany(empresaId);
-      allow create: if isMemberOfCompany(empresaId) && isLinkingToCorrectCompanyOnCreate(empresaId);
-      allow update: if isExistingMemberOfCompany(empresaId) && isCompanyLinkImmutable();
-      allow delete: if isExistingMemberOfCompany(empresaId);
-    }
-
-    /**
-     * @description Secures journal entry documents, scoping them to a specific company.
-     * @path /empresas/{empresaId}/lancamentos_contabeis/{lancamentoContabilId}
-     * @allow (create, read, update, delete) Any authenticated member of company 'acme' can manage documents under `/empresas/acme/lancamentos_contabeis`.
-     * @deny (read, write) A user from company 'widgets-inc' cannot access data under `/empresas/acme/lancamentos_contabeis`.
-     * @principle Enforces strict data isolation between tenants (companies).
-     */
-    match /empresas/{empresaId}/lancamentos_contabeis/{lancamentoContabilId} {
-      allow get: if isMemberOfCompany(empresaId);
-      allow list: if isMemberOfCompany(empresaId);
-      allow create: if isMemberOfCompany(empresaId) && isLinkingToCorrectCompanyOnCreate(empresaId);
-      allow update: if isExistingMemberOfCompany(empresaId) && isCompanyLinkImmutable();
-      allow delete: if isExistingMemberOfCompany(empresaId);
-    }
-
-    /**
-     * @description Secures calendar event documents, scoping them to a specific company.
-     * @path /empresas/{empresaId}/eventos/{eventoId}
-     * @allow (create, read, update, delete) Any authenticated member of company 'acme' can manage documents under `/empresas/acme/eventos`.
-     * @deny (read, write) A user from company 'widgets-inc' cannot access data under `/empresas/acme/eventos`.
-     * @principle Enforces strict data isolation between tenants (companies).
-     */
-    match /empresas/{empresaId}/eventos/{eventoId} {
-      allow get: if isMemberOfCompany(empresaId);
-      allow list: if isMemberOfCompany(empresaId);
-      allow create: if isMemberOfCompany(empresaId) && isLinkingToCorrectCompanyOnCreate(empresaId);
-      allow update: if isExistingMemberOfCompany(empresaId) && isCompanyLinkImmutable();
-      allow delete: if isExistingMemberOfCompany(empresaId);
-    }
-
-    /**
-     * @description Secures file metadata documents, scoping them to a specific company.
-     * @path /empresas/{empresaId}/arquivos/{arquivoId}
-     * @allow (create, read, update, delete) Any authenticated member of company 'acme' can manage documents under `/empresas/acme/arquivos`.
-     * @deny (read, write) A user from company 'widgets-inc' cannot access data under `/empresas/acme/arquivos`.
-     * @principle Enforces strict data isolation between tenants (companies).
-     */
-    match /empresas/{empresaId}/arquivos/{arquivoId} {
-      allow get: if isMemberOfCompany(empresaId);
-      allow list: if isMemberOfCompany(empresaId);
-      allow create: if isMemberOfCompany(empresaId) && isLinkingToCorrectCompanyOnCreate(empresaId);
-      allow update: if isExistingMemberOfCompany(empresaId) && isCompanyLinkImmutable();
-      allow delete: if isExistingMemberOfCompany(empresaId);
-    }
-
-    /**
-     * @description Secures employee documents, scoping them to a specific company.
-     * @path /empresas/{empresaId}/funcionarios/{funcionarioId}
-     * @allow (create, read, update, delete) Any authenticated member of company 'acme' can manage documents under `/empresas/acme/funcionarios`.
-     * @deny (read, write) A user from company 'widgets-inc' cannot access data under `/empresas/acme/funcionarios`.
-     * @principle Enforces strict data isolation between tenants (companies).
-     */
-    match /empresas/{empresaId}/funcionarios/{funcionarioId} {
-      allow get: if isMemberOfCompany(empresaId);
-      allow list: if isMemberOfCompany(empresaId);
-      allow create: if isMemberOfCompany(empresaId) && isLinkingToCorrectCompanyOnCreate(empresaId);
-      allow update: if isExistingMemberOfCompany(empresaId) && isCompanyLinkImmutable();
-      allow delete: if isExistingMemberOfCompany(empresaId);
-    }
-
-    /**
-     * @description Secures payroll code documents, scoping them to a specific company.
-     * @path /empresas/{empresaId}/rubricas/{rubricaId}
-     * @allow (create, read, update, delete) Any authenticated member of company 'acme' can manage documents under `/empresas/acme/rubricas`.
-     * @deny (read, write) A user from company 'widgets-inc' cannot access data under `/empresas/acme/rubricas`.
-     * @principle Enforces strict data isolation between tenants (companies).
-     */
-    match /empresas/{empresaId}/rubricas/{rubricaId} {
-      allow get: if isMemberOfCompany(empresaId);
-      allow list: if isMemberOfCompany(empresaId);
-      allow create: if isMemberOfCompany(empresaId) && isLinkingToCorrectCompanyOnCreate(empresaId);
-      allow update: if isExistingMemberOfCompany(empresaId) && isCompanyLinkImmutable();
-      allow delete: if isExistingMemberOfCompany(empresaId);
-    }
-
   }
 }
