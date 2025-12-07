@@ -3,8 +3,8 @@ export type AuditLogAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'IMPORT'
 
 export interface AuditLog {
   id: string;
-  timestamp: string; // Changed from Date to string
-  user: string; // For now, we'll hardcode a user name
+  timestamp: string;
+  user: string;
   action: AuditLogAction;
   module: string;
   details: string;
@@ -12,10 +12,11 @@ export interface AuditLog {
 
 // This is a simplified client-side logger. In a real app, this would be an API call.
 export const logAudit = (
-    setter: (value: AuditLog[] | ((prev: AuditLog[]) => AuditLog[])) => void,
+    setter: (value: AuditLog[]) => void,
     action: AuditLogAction,
     module: string,
-    details: string
+    details: string,
+    currentLogs: AuditLog[]
 ) => {
     let userName = 'Sistema'; // Default user
     if (typeof window !== 'undefined') {
@@ -33,11 +34,11 @@ export const logAudit = (
 
     const newLog: AuditLog = {
         id: crypto.randomUUID(),
-        timestamp: new Date().toISOString(), // Convert Date object to ISO string
+        timestamp: new Date().toISOString(),
         user: userName,
         action,
         module,
         details,
     };
-    setter(prevLogs => [newLog, ...prevLogs]);
+    setter([newLog, ...currentLogs]);
 };

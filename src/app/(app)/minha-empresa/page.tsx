@@ -24,7 +24,7 @@ export default function MinhaEmpresaPage() {
   const { currentCompany, companies, updateCompany, switchCompany, useScopedData } = useCompany();
   const { toast } = useToast();
   const router = useRouter();
-  const [, setAuditLogs] = useScopedData<AuditLog[]>('audit-trail-logs', []);
+  const [auditLogs, setAuditLogs] = useScopedData<AuditLog[]>('audit-trail-logs', []);
 
 
   const [companyData, setCompanyData] = useState({
@@ -193,7 +193,7 @@ export default function MinhaEmpresaPage() {
     };
     
     updateCompany(currentCompany, updatedCompany);
-    logAudit(setAuditLogs, 'UPDATE', 'Minha Empresa', 'Atualizou os dados cadastrais da empresa.');
+    logAudit(setAuditLogs, 'UPDATE', 'Minha Empresa', 'Atualizou os dados cadastrais da empresa.', auditLogs);
 
 
     setTimeout(() => {
