@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -9,7 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/firebase';
+import { useAuth, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, addDoc, query, where, getDocs, setDoc, doc } from 'firebase/firestore';
 import { setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -18,19 +20,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
-import { useLocalStorage } from '@/hooks/use-company';
 import { Label } from '@/components/ui/label';
 
 
 interface User {
-    id: number;
+    id: string; // Firestore uses string IDs
     uid: string;
     name: string;
     email: string;
     isAdmin: boolean;
     isMaster?: boolean;
     permissions: any;
-    allowedCompanyIds: number[];
+    allowedCompanyIds: string[]; // Firestore uses string IDs
     password?: string;
     status: 'Ativo' | 'Inativo' | 'Pendente';
     creationDate?: string;
@@ -77,7 +78,7 @@ export default function LoginForm() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const auth = useAuth();
-  const [users, setUsers] = useLocalStorage<User[]>('global-users', []);
+  const firestore = useFirestore();
 
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -143,8 +144,7 @@ export default function LoginForm() {
       const userCredential = await signUpWithEmail(auth, data.email, data.password);
       const user = userCredential.user;
 
-      const newUser: User = {
-        id: Date.now(),
+      const newUser: Omit<User, 'id'> = {
         uid: user.uid,
         name: data.fullName,
         email: data.email,
@@ -159,7 +159,7 @@ export default function LoginForm() {
         statusLicenca: 'Ativa'
       };
 
-      setUsers(prev => [...prev, newUser]);
+      await addDoc(collection(firestore, "global-users"), newUser);
       
       await auth.signOut();
       

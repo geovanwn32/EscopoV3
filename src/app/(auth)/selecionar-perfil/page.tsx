@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Shield, KeyRound, Loader2, ArrowLeft, PlusCircle, Trash2, LogOut, Pencil } from 'lucide-react';
-import { useCompany, useLocalStorage } from '@/hooks/use-company';
+import { useCompany } from '@/hooks/use-company';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -14,10 +14,12 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, where, addDoc, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+
 
 interface UserProfile {
-    id: number;
+    id: string;
     uid: string;
     name: string;
     email: string;
@@ -31,8 +33,16 @@ interface UserProfile {
 export default function SelecionarPerfilPage() {
     const router = useRouter();
     const auth = useAuth();
+    const firestore = useFirestore();
     const { user: firebaseUser } = useUser();
-    const [users, setUsers] = useLocalStorage<UserProfile[]>('global-users', []);
+    
+    const usersQuery = useMemoFirebase(() => {
+        if (!firebaseUser?.email) return null;
+        return query(collection(firestore, "global-users"), where("email", "==", firebaseUser.email));
+    }, [firestore, firebaseUser?.email]);
+
+    const { data: users, isLoading: isLoadingUsers } = useCollection<UserProfile>(usersQuery as any);
+    
     const { toast } = useToast();
 
     const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
@@ -43,20 +53,19 @@ export default function SelecionarPerfilPage() {
     const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
 
     const availableProfiles = useMemo(() => {
-        if (!firebaseUser) return [];
-        return users.filter(u => u.email === firebaseUser.email && u.status !== 'Pendente');
-    }, [users, firebaseUser]);
+        if (!users) return [];
+        return users.filter(u => u.status !== 'Pendente');
+    }, [users]);
     
-    // This effect will find the master user and set their password.
     useEffect(() => {
-        const masterUser = users.find(u => u.isMaster);
-        if (masterUser && masterUser.password !== '123456') {
-            const updatedUsers = users.map(u => 
-                u.id === masterUser.id ? { ...u, password: '123456' } : u
-            );
-            setUsers(updatedUsers);
+        if (users && users.some(u => u.isMaster && u.password !== '123456')) {
+            const masterUser = users.find(u => u.isMaster && u.password !== '123456');
+            if(masterUser) {
+                const userDocRef = doc(firestore, "global-users", masterUser.id);
+                updateDoc(userDocRef, { password: '123456' });
+            }
         }
-    }, [users, setUsers]);
+    }, [users, firestore]);
 
 
     const handleProfileSelect = (user: UserProfile) => {
@@ -71,7 +80,6 @@ export default function SelecionarPerfilPage() {
         if (user.password) {
             setSelectedUser(user);
         } else {
-             // If for some reason a user has no password, let them in but log it.
             console.warn(`User ${user.name} has no password set. Logging in directly.`);
             sessionStorage.setItem('user-profile', JSON.stringify(user));
             router.push('/selecionar-empresa');
@@ -106,15 +114,14 @@ export default function SelecionarPerfilPage() {
         setIsLoading(false);
     }
     
-    const handleSaveNewUser = (userData: Omit<UserProfile, 'id' | 'isAdmin' | 'isMaster' | 'status' | 'uid' | 'photoURL'>) => {
+    const handleSaveNewUser = async (userData: Omit<UserProfile, 'id' | 'isAdmin' | 'isMaster' | 'status' | 'uid' | 'photoURL'>) => {
         if (!firebaseUser) {
             toast({ variant: 'destructive', title: "Erro", description: "Você precisa estar autenticado para criar um perfil." });
             return;
         }
         
-        const isFirstUser = users.length === 0;
-        const newUser: UserProfile = {
-            id: Date.now(),
+        const isFirstUser = !users || users.length === 0;
+        const newUser: Omit<UserProfile, 'id'> = {
             uid: firebaseUser.uid,
             ...userData,
             isAdmin: isFirstUser,
@@ -122,17 +129,20 @@ export default function SelecionarPerfilPage() {
             status: 'Ativo',
             photoURL: firebaseUser.photoURL || '',
         };
-        setUsers(prev => [...prev, newUser]);
+
+        await addDoc(collection(firestore, "global-users"), newUser);
+        
         setIsAddUserOpen(false);
         toast({ title: "Perfil Adicionado", description: "O novo perfil foi criado. Agora você pode fazer login com ele." });
     };
 
-    const handleUpdateUserName = (userId: number, newName: string) => {
+    const handleUpdateUserName = async (userId: string, newName: string) => {
         if (!newName) {
             toast({ variant: 'destructive', title: "Nome inválido", description: "O nome não pode ser vazio." });
             return;
         }
-        setUsers(prev => prev.map(u => u.id === userId ? { ...u, name: newName } : u));
+        const userDocRef = doc(firestore, "global-users", userId);
+        await updateDoc(userDocRef, { name: newName });
         setUserToEdit(null);
         toast({ title: "Perfil Atualizado", description: `O nome do perfil foi alterado para ${newName}.` });
     };
@@ -146,8 +156,8 @@ export default function SelecionarPerfilPage() {
             });
             return;
         }
-        const adminUsers = users.filter(u => u.isAdmin && !u.isMaster);
-        const masterExists = users.some(u => u.isMaster);
+        const adminUsers = users?.filter(u => u.isAdmin && !u.isMaster) || [];
+        const masterExists = users?.some(u => u.isMaster);
 
         if (user.isAdmin && masterExists && adminUsers.length <= 1) {
             toast({
@@ -160,9 +170,9 @@ export default function SelecionarPerfilPage() {
         setUserToDelete(user);
     };
 
-    const handleConfirmDelete = () => {
+    const handleConfirmDelete = async () => {
         if (userToDelete) {
-            setUsers(prevUsers => prevUsers.filter(user => user.id !== userToDelete.id));
+            await deleteDoc(doc(firestore, "global-users", userToDelete.id));
             toast({
                 variant: 'destructive',
                 title: 'Perfil Excluído',
@@ -177,9 +187,6 @@ export default function SelecionarPerfilPage() {
         sessionStorage.clear();
         router.push('/login');
     };
-    
-    useEffect(() => {
-    }, [router]);
 
     return (
         <div className="flex min-h-screen w-full items-center justify-center p-4 lg:p-8 animated-gradient">
@@ -195,7 +202,11 @@ export default function SelecionarPerfilPage() {
                     </p>
                 </div>
                 
-                {availableProfiles.length > 0 ? (
+                {isLoadingUsers ? (
+                     <div className="flex justify-center items-center h-64">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                ) : availableProfiles.length > 0 ? (
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 justify-center">
                     {availableProfiles.map((user) => (
                         <Card
@@ -306,7 +317,7 @@ export default function SelecionarPerfilPage() {
                 open={isAddUserOpen} 
                 onOpenChange={setIsAddUserOpen}
                 onSave={handleSaveNewUser}
-                isFirstUser={users.length === 0}
+                isFirstUser={!users || users.length === 0}
             />
 
             <EditUserDialog
@@ -402,7 +413,7 @@ function AddUserDialog({ open, onOpenChange, onSave, isFirstUser }: AddUserDialo
 interface EditUserDialogProps {
     user: UserProfile | null;
     onOpenChange: () => void;
-    onSave: (userId: number, newName: string) => void;
+    onSave: (userId: string, newName: string) => void;
 }
 
 function EditUserDialog({ user, onOpenChange, onSave }: EditUserDialogProps) {

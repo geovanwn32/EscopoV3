@@ -1,248 +1,193 @@
-
 "use client";
 
 import { useRouter } from 'next/navigation';
-import { createContext, useCallback, useContext, useEffect, useState, ReactNode, useRef } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
+import { initializeFirebase } from '@/firebase';
+import {
+    collection,
+    doc,
+    setDoc,
+    addDoc,
+    deleteDoc,
+    onSnapshot,
+    query,
+    getDoc,
+} from 'firebase/firestore';
+import { useUser } from '@/firebase';
 
-// Define the shape of a company and its data
 interface CompanyData {
     [key: string]: any;
 }
 
 export interface Company {
-    id: number;
+    id: string;
     name: string;
     data?: CompanyData;
 }
 
-// Define the context shape
 interface CompanyContextType {
     companies: Company[];
-    currentCompany: number | null;
+    currentCompany: string | null;
     isLoaded: boolean;
-    switchCompany: (companyId: number, navigate?: boolean) => void;
-    addCompany: (name: string, data?: CompanyData) => void;
-    updateCompany: (companyId: number, companyData: Company) => void;
-    deleteCompany: (companyId: number) => void;
-    useScopedData: <T>(key: string, defaultValue: T) => [T, (value: T | ((prev: T) => T)) => void];
+    switchCompany: (companyId: string, navigate?: boolean) => void;
+    addCompany: (name: string, data?: CompanyData) => Promise<string | undefined>;
+    updateCompany: (companyId: string, companyData: Partial<Company>) => Promise<void>;
+    deleteCompany: (companyId: string) => Promise<void>;
+    useScopedData: <T>(key: string, defaultValue: T) => [T, (value: T) => Promise<void>];
 }
 
 const CompanyContext = createContext<CompanyContextType | undefined>(undefined);
 
-const LS_COMPANIES_KEY = 'companies';
-const LS_CURRENT_COMPANY_KEY = 'currentCompany';
-
-// This is a global storage hook, not scoped to a company.
-// Should only be used for data that is truly global (e.g., the list of users).
-export function useLocalStorage<T>(key: string, defaultValue: T): [T, (value: T | ((prev: T) => T)) => void] {
-    const defaultValueRef = useRef(defaultValue);
-
-    const [data, setData] = useState<T>(() => {
-        if (typeof window === 'undefined') return defaultValueRef.current;
-        try {
-            const item = localStorage.getItem(key);
-            return item ? JSON.parse(item) : defaultValueRef.current;
-        } catch (error) {
-            console.error(`Error reading ${key} from localStorage`, error);
-            return defaultValueRef.current;
-        }
-    });
-
-    const setStoredData = useCallback((value: T | ((prev: T) => T)) => {
-        if (typeof window !== 'undefined') {
-            setData(prevData => {
-                const newValue = value instanceof Function ? value(prevData) : value;
-                try {
-                    localStorage.setItem(key, JSON.stringify(newValue));
-                } catch (error) {
-                    console.error(`Error writing ${key} to localStorage`, error);
-                }
-                return newValue;
-            });
-        }
-    }, [key]);
-
-    // This effect ensures that the state is updated if the localStorage is changed in another tab.
-    useEffect(() => {
-        const handleStorageChange = (event: StorageEvent) => {
-            if (event.key === key) {
-                try {
-                    setData(event.newValue ? JSON.parse(event.newValue) : defaultValueRef.current);
-                } catch (error) {
-                    console.error(`Error parsing updated ${key} from storage event`, error);
-                }
-            }
-        };
-
-        window.addEventListener('storage', handleStorageChange);
-        return () => window.removeEventListener('storage', handleStorageChange);
-    }, [key]);
-
-    return [data, setStoredData];
-};
-
-
 export const CompanyProvider = ({ children }: { children: ReactNode }) => {
     const router = useRouter();
-    const [companies, setCompanies] = useLocalStorage<Company[]>(LS_COMPANIES_KEY, []);
-    const [currentCompany, setCurrentCompany] = useState<number | null>(null);
+    const { firestore } = initializeFirebase();
+    const { user } = useUser();
+
+    const [companies, setCompanies] = useState<Company[]>([]);
+    const [currentCompany, setCurrentCompany] = useState<string | null>(null);
     const [isLoaded, setIsLoaded] = useState(false);
 
+    // ---------------------------
+    // 1 — CARREGAR EMPRESAS DO FIRESTORE
+    // ---------------------------
     useEffect(() => {
-        try {
-            const storedCurrentCompany = localStorage.getItem(LS_CURRENT_COMPANY_KEY);
-            let companyId = storedCurrentCompany ? JSON.parse(storedCurrentCompany) : null;
-            
-            if (companyId && !companies.some((c: Company) => c.id === companyId)) {
-                companyId = companies.length > 0 ? companies[0].id : null;
-            }
-            if (!companyId && companies.length > 0) {
-                 companyId = companies[0].id;
-            }
-            
-            setCurrentCompany(companyId);
-            if (companyId) {
-                localStorage.setItem(LS_CURRENT_COMPANY_KEY, JSON.stringify(companyId));
-            } else {
-                 localStorage.removeItem(LS_CURRENT_COMPANY_KEY);
+        if (!user) return;
+
+        const q = query(collection(firestore, `users/${user.uid}/companies`));
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const list: Company[] = snapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+            })) as Company[];
+
+            setCompanies(list);
+
+            const lastCompanyId = localStorage.getItem('currentCompany');
+            if (lastCompanyId && list.some(c => c.id === lastCompanyId)) {
+                setCurrentCompany(lastCompanyId);
+            } else if (!currentCompany && list.length > 0) {
+                setCurrentCompany(list[0].id);
+            } else if (list.length === 0) {
+                setCurrentCompany(null);
             }
 
-        } catch (error) {
-            console.error("Failed to load company data from localStorage", error);
-            setCurrentCompany(null);
-        }
-        setIsLoaded(true);
-    }, [companies]);
+            setIsLoaded(true);
+        }, (error) => {
+            console.error("Erro ao carregar empresas:", error);
+            setIsLoaded(true);
+        });
 
+        return () => unsubscribe();
+    }, [user, firestore]);
 
-    const switchCompany = useCallback((companyId: number, navigate = true) => {
+    // ---------------------------
+    // 2 — MUDA EMPRESA ATUAL
+    // ---------------------------
+    const switchCompany = useCallback((companyId: string, navigate = true) => {
         setCurrentCompany(companyId);
-        try {
-            localStorage.setItem(LS_CURRENT_COMPANY_KEY, JSON.stringify(companyId));
-            if (navigate) {
-                 if (window.location.pathname !== '/dashboard') {
-                    router.push('/dashboard');
-                }
-            }
-        } catch (error) {
-            console.error("Failed to save current company to localStorage", error);
+        localStorage.setItem('currentCompany', companyId);
+        if (navigate && window.location.pathname !== '/dashboard') {
+            router.push('/dashboard');
         }
     }, [router]);
 
-    const addCompany = useCallback((name: string, data?: CompanyData) => {
-        const newCompanyId = Date.now();
-        const newCompany: Company = {
-            id: newCompanyId,
-            name: name,
-            data: data || {},
+    // ---------------------------
+    // 3 — CRIAR EMPRESA
+    // ---------------------------
+    const addCompany = useCallback(async (name: string, data: CompanyData = {}) => {
+        if (!user) return;
+
+        const companyPayload = {
+            name,
+            data,
+            createdAt: new Date().toISOString(),
         };
-        setCompanies(prev => {
-            const updatedCompanies = [...prev, newCompany];
-            if (prev.length === 0) {
-                setCurrentCompany(newCompanyId);
-                localStorage.setItem(LS_CURRENT_COMPANY_KEY, JSON.stringify(newCompanyId));
-            }
-            return updatedCompanies;
-        });
-        switchCompany(newCompanyId, false);
-    }, [setCompanies, switchCompany]);
 
-    const updateCompany = useCallback((companyId: number, companyData: Company) => {
-        setCompanies(prev => prev.map(c => c.id === companyId ? companyData : c));
-    }, [setCompanies]);
+        const docRef = await addDoc(
+            collection(firestore, `users/${user.uid}/companies`),
+            companyPayload
+        );
 
-    const deleteCompany = useCallback((companyId: number) => {
-        let nextCompanyId: number | null = null;
-        let needsRedirect = false;
+        setCurrentCompany(docRef.id);
+        localStorage.setItem('currentCompany', docRef.id);
+        return docRef.id;
+    }, [user, firestore]);
 
-        setCompanies(prevCompanies => {
-            const remainingCompanies = prevCompanies.filter(c => c.id !== companyId);
-            
-            if (currentCompany === companyId) {
-                if (remainingCompanies.length > 0) {
-                    nextCompanyId = remainingCompanies[0].id;
-                } else {
-                    nextCompanyId = null;
-                    needsRedirect = true;
-                }
-            }
-            return remainingCompanies;
-        });
-        
-        Object.keys(localStorage).forEach(key => {
-            if (key.startsWith(`company-${companyId}-`)) {
-                localStorage.removeItem(key);
-            }
-        });
+    // ---------------------------
+    // 4 — ATUALIZAR EMPRESA
+    // ---------------------------
+    const updateCompany = useCallback(async (companyId: string, companyData: Partial<Company>) => {
+        if (!user) return;
+
+        const docRef = doc(firestore, `users/${user.uid}/companies/${companyId}`);
+        await setDoc(docRef, companyData, { merge: true });
+    }, [user, firestore]);
+
+    // ---------------------------
+    // 5 — DELETAR EMPRESA
+    // ---------------------------
+    const deleteCompany = useCallback(async (companyId: string) => {
+        if (!user) return;
+
+        await deleteDoc(doc(firestore, `users/${user.uid}/companies/${companyId}`));
 
         if (currentCompany === companyId) {
-            setCurrentCompany(nextCompanyId);
-            if (nextCompanyId) {
-                localStorage.setItem(LS_CURRENT_COMPANY_KEY, JSON.stringify(nextCompanyId));
+            const remaining = companies.filter((c) => c.id !== companyId);
+            const newCurrentId = remaining[0]?.id || null;
+            setCurrentCompany(newCurrentId);
+            if (newCurrentId) {
+                 localStorage.setItem('currentCompany', newCurrentId);
             } else {
-                localStorage.removeItem(LS_CURRENT_COMPANY_KEY);
+                 localStorage.removeItem('currentCompany');
+            }
+           
+            if (remaining.length === 0) {
+                 router.push("/selecionar-empresa");
             }
         }
+    }, [user, currentCompany, companies, firestore, router]);
 
-        if (needsRedirect) {
-            router.push('/selecionar-empresa');
-        }
-    }, [currentCompany, router, setCompanies]);
-
-
-    const useScopedData = <T,>(key: string, defaultValue: T): [T, (value: T | ((prev: T) => T)) => void] => {
-        if (typeof window === 'undefined') {
-            return [defaultValue, () => {}];
-        }
-
-        const scopedKey = `company-${currentCompany}-${key}`;
-        const defaultValueRef = useRef(defaultValue);
-
-        const [data, setData] = useState<T>(() => {
-            if (!currentCompany) return defaultValueRef.current;
-            try {
-                const item = localStorage.getItem(scopedKey);
-                return item ? JSON.parse(item) : defaultValueRef.current;
-            } catch (error) {
-                console.error(`Error reading ${scopedKey} from localStorage`, error);
-                return defaultValueRef.current;
-            }
-        });
+    // ---------------------------
+    // 6 — useScopedData → subcoleção scopedData
+    // ---------------------------
+    const useScopedData = <T,>(key: string, defaultValue: T): [T, (value: T) => Promise<void>] => {
+        const [data, setData] = useState<T>(defaultValue);
 
         useEffect(() => {
-            if (isLoaded && currentCompany) {
-                 try {
-                    const item = localStorage.getItem(scopedKey);
-                    const value = item ? JSON.parse(item) : defaultValueRef.current;
-                    setData(value);
-                } catch (error) {
-                    console.error(`Error re-reading ${scopedKey} from localStorage on company switch`, error);
-                    setData(defaultValueRef.current);
+            if (!user || !currentCompany) return;
+
+            const ref = doc(
+                firestore,
+                `users/${user.uid}/companies/${currentCompany}/scopedData/${key}`
+            );
+
+            const unsub = onSnapshot(ref, (snapshot) => {
+                if (snapshot.exists()) {
+                    setData(snapshot.data().value as T);
+                } else {
+                    setData(defaultValue);
                 }
-            } else if (!currentCompany) {
-                setData(defaultValueRef.current);
-            }
-        }, [currentCompany, isLoaded, scopedKey]);
+            });
 
-        const setScopedData = useCallback((value: T | ((prev: T) => T)) => {
-            if (currentCompany) {
-                setData(prevData => {
-                    const newValue = value instanceof Function ? value(prevData) : value;
-                    try {
-                        localStorage.setItem(scopedKey, JSON.stringify(newValue));
-                    } catch (error) {
-                        console.error(`Error writing ${scopedKey} to localStorage`, error);
-                    }
-                    return newValue;
-                });
-            }
-        }, [currentCompany, scopedKey]);
+            return () => unsub();
+        }, [user, currentCompany, key]);
 
-        return [data, setScopedData];
+        const updateValue = async (value: T) => {
+            if (!user || !currentCompany) return;
+
+            const ref = doc(
+                firestore,
+                `users/${user.uid}/companies/${currentCompany}/scopedData/${key}`
+            );
+
+            await setDoc(ref, { value }, { merge: true });
+        };
+
+        return [data, updateValue];
     };
 
-
-    const contextValue = {
+    const contextValue: CompanyContextType = {
         companies,
         currentCompany,
         isLoaded,
@@ -250,7 +195,7 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
         addCompany,
         updateCompany,
         deleteCompany,
-        useScopedData
+        useScopedData,
     };
 
     return (
@@ -262,7 +207,7 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
 
 export const useCompany = () => {
     const context = useContext(CompanyContext);
-    if (context === undefined) {
+    if (!context) {
         throw new Error('useCompany must be used within a CompanyProvider');
     }
     return context;
