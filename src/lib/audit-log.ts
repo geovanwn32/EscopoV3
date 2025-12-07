@@ -1,10 +1,9 @@
 
-
 export type AuditLogAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'IMPORT' | 'LOGOUT';
 
 export interface AuditLog {
   id: string;
-  timestamp: Date;
+  timestamp: string; // Changed from Date to string
   user: string; // For now, we'll hardcode a user name
   action: AuditLogAction;
   module: string;
@@ -34,7 +33,7 @@ export const logAudit = (
 
     const newLog: AuditLog = {
         id: crypto.randomUUID(),
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(), // Convert Date object to ISO string
         user: userName,
         action,
         module,
