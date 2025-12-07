@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useRouter } from 'next/navigation';
@@ -11,7 +12,6 @@ import {
     deleteDoc,
     onSnapshot,
     query,
-    getDoc,
 } from 'firebase/firestore';
 import { useUser } from '@/firebase';
 
@@ -47,13 +47,10 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
     const [currentCompany, setCurrentCompany] = useState<string | null>(null);
     const [isLoaded, setIsLoaded] = useState(false);
 
-    // ---------------------------
-    // 1 — CARREGAR EMPRESAS DO FIRESTORE
-    // ---------------------------
     useEffect(() => {
         if (!user) return;
 
-        const q = query(collection(firestore, `users/${user.uid}/companies`));
+        const q = query(collection(firestore, `empresas`));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const list: Company[] = snapshot.docs.map((doc) => ({
@@ -81,9 +78,6 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
         return () => unsubscribe();
     }, [user, firestore]);
 
-    // ---------------------------
-    // 2 — MUDA EMPRESA ATUAL
-    // ---------------------------
     const switchCompany = useCallback((companyId: string, navigate = true) => {
         setCurrentCompany(companyId);
         localStorage.setItem('currentCompany', companyId);
@@ -92,9 +86,6 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
         }
     }, [router]);
 
-    // ---------------------------
-    // 3 — CRIAR EMPRESA
-    // ---------------------------
     const addCompany = useCallback(async (name: string, data: CompanyData = {}) => {
         if (!user) return;
 
@@ -105,7 +96,7 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
         };
 
         const docRef = await addDoc(
-            collection(firestore, `users/${user.uid}/companies`),
+            collection(firestore, `empresas`),
             companyPayload
         );
 
@@ -114,23 +105,17 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
         return docRef.id;
     }, [user, firestore]);
 
-    // ---------------------------
-    // 4 — ATUALIZAR EMPRESA
-    // ---------------------------
     const updateCompany = useCallback(async (companyId: string, companyData: Partial<Company>) => {
         if (!user) return;
 
-        const docRef = doc(firestore, `users/${user.uid}/companies/${companyId}`);
+        const docRef = doc(firestore, `empresas/${companyId}`);
         await setDoc(docRef, companyData, { merge: true });
     }, [user, firestore]);
 
-    // ---------------------------
-    // 5 — DELETAR EMPRESA
-    // ---------------------------
     const deleteCompany = useCallback(async (companyId: string) => {
         if (!user) return;
 
-        await deleteDoc(doc(firestore, `users/${user.uid}/companies/${companyId}`));
+        await deleteDoc(doc(firestore, `empresas/${companyId}`));
 
         if (currentCompany === companyId) {
             const remaining = companies.filter((c) => c.id !== companyId);
@@ -148,9 +133,6 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
         }
     }, [user, currentCompany, companies, firestore, router]);
 
-    // ---------------------------
-    // 6 — useScopedData → subcoleção scopedData
-    // ---------------------------
     const useScopedData = <T,>(key: string, defaultValue: T): [T, (value: T) => Promise<void>] => {
         const [data, setData] = useState<T>(defaultValue);
 
@@ -159,7 +141,7 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
 
             const ref = doc(
                 firestore,
-                `users/${user.uid}/companies/${currentCompany}/scopedData/${key}`
+                `empresas/${currentCompany}/scopedData/${key}`
             );
 
             const unsub = onSnapshot(ref, (snapshot) => {
@@ -178,7 +160,7 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
 
             const ref = doc(
                 firestore,
-                `users/${user.uid}/companies/${currentCompany}/scopedData/${key}`
+                `empresas/${currentCompany}/scopedData/${key}`
             );
 
             await setDoc(ref, { value }, { merge: true });
@@ -186,7 +168,7 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
 
         return [data, updateValue];
     };
-
+    
     const contextValue: CompanyContextType = {
         companies,
         currentCompany,

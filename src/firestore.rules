@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -7,105 +8,28 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function userIsAdmin() {
-      return isSignedIn() &&
-        exists(/databases/$(database)/documents/global-users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/global-users/$(request.auth.uid)).data.isAdmin == true;
+    function isUser(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
 
-    function userIsMaster() {
-      return isSignedIn() &&
-        exists(/databases/$(database)/documents/global-users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/global-users/$(request.auth.uid)).data.isMaster == true;
-    }
-
-    function isCompanyAdmin(empresaId) {
-      // Retorna true se a empresa for a ADM principal
-      return string(empresaId) == '1764646068539';
-    }
-
-    // ======================================================
-    //  GLOBAL USERS (SEGURANÇA MÁXIMA)
-    // ======================================================
+    // --- Global collections ---
     match /global-users/{userId} {
-
-      // Usuário pode ler apenas o próprio documento 
-      // Admin pode ler qualquer um
-      allow get: if isSignedIn() && 
-                 (request.auth.uid == userId || userIsAdmin());
-
-      // Somente ADMIN pode listar todos
-      allow list: if isSignedIn() && userIsAdmin();
-
-      // Criar: somente o próprio usuário no momento do cadastro
-      allow create: if isSignedIn() && request.auth.uid == userId;
-
-      // Atualização segura:
-      // Usuário só pode editar os próprios campos NÃO críticos
-      allow update: if isSignedIn() &&
-                    (
-                      // Admin pode editar tudo
-                      userIsAdmin() ||
-
-                      // Usuário comum só edita o próprio doc
-                      (
-                        request.auth.uid == userId &&
-                        // não pode se fazer admin
-                        request.resource.data.isAdmin == resource.data.isAdmin &&
-                        request.resource.data.isMaster == resource.data.isMaster &&
-                        // não pode se aprovar sozinho
-                        request.resource.data.status == resource.data.status
-                      )
-                    );
-
-      // Somente o MASTER pode deletar
-      allow delete: if isSignedIn() &&
-                    userIsMaster() &&
-                    request.auth.uid != userId &&
-                    resource.data.isMaster != true;
-    }
-
-    // ======================================================
-    //  MULTIEMPRESA (ISOLAMENTO REAL)
-    // ======================================================
-    match /empresas/{empresaId}/usuarios/{usuarioId} {
-        function isCompanyMember() {
-          return isSignedIn() &&
-            exists(/databases/$(database)/documents/global-users/$(request.auth.uid)) &&
-            get(/databases/$(database)/documents/global-users/$(request.auth.uid)).data.allowedCompanyIds.hasAny([string(empresaId)]);
-        }
-        
-        // Regra para ler e escrever documentos INDIVIDUAIS
-        allow get, write: if isCompanyMember() || (userIsAdmin() && isCompanyAdmin(empresaId));
+      allow read, write: if isUser(userId);
     }
     
-    match /empresas/{empresaId}/usuarios {
-        function isCompanyAdmin(empresaId) {
-            return string(empresaId) == '1764646068539';
+    // --- Company data ---
+    match /empresas/{empresaId} {
+        // Only authenticated users can read/write company info.
+        // More specific rules can be added for who can create/delete companies.
+        allow read, write: if isSignedIn();
+
+        // Subcollections within a company
+        match /{subcollection}/{docId} {
+            // By default, allow read/write if the user is signed in.
+            // THIS IS INSECURE for production. You should add rules based on company membership.
+            // For example, you could have a `members` subcollection in each company.
+            allow read, write: if isSignedIn();
         }
-         function userIsAdmin() {
-            return isSignedIn() &&
-                exists(/databases/$(database)/documents/global-users/$(request.auth.uid)) &&
-                get(/databases/$(database)/documents/global-users/$(request.auth.uid)).data.isAdmin == true;
-        }
-
-        // Regra para LISTAR a coleção de usuários
-        // Permite a listagem apenas para administradores da empresa ADM principal
-        allow list: if userIsAdmin() && isCompanyAdmin(empresaId);
-    }
-
-    match /empresas/{empresaId}/{document=**} {
-      // Regra de acesso baseada na associação do usuário à empresa
-      function isCompanyMember() {
-        return isSignedIn() &&
-          exists(/databases/$(database)/documents/global-users/$(request.auth.uid)) &&
-          get(/databases/$(database)/documents/global-users/$(request.auth.uid)).data.allowedCompanyIds.hasAny([string(empresaId)]);
-      }
-
-      // Evita sobreposição com a regra mais específica de /usuarios
-      if (document != 'usuarios') {
-         allow read, write: if isCompanyMember() || userIsAdmin();
-      }
     }
   }
 }

@@ -1,3 +1,4 @@
+
 'use client';
 import { Building2, ArrowLeft, HelpCircle, Loader2 } from 'lucide-react';
 import LoginForm from './login-form';
@@ -6,11 +7,11 @@ import { PlaceHolderImages, type ImagePlaceholder } from '@/lib/placeholder-imag
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useMemo, useState, useEffect, Suspense } from 'react';
+import { useCompany } from '@/hooks/use-company';
 
 
 export default function LoginPage() {
   
-  // O hook useLocalStorage foi removido. Agora usamos a imagem padrão diretamente.
   const loginBg = useMemo(() => PlaceHolderImages.find(p => p.id === 'login-background-professional'), []);
   
   return (
