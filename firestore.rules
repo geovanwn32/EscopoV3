@@ -1,106 +1,271 @@
-rules_version = '2';
 
+rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ---------------------------------------------
-    // 1. Funções utilitárias
-    // ---------------------------------------------
-    
-    // Autenticação obrigatória
-    function signedIn() {
+    //================================================================================
+    // Helper Functions
+    //================================================================================
+
+    /**
+     * Checks if a user is authenticated.
+     */
+    function isSignedIn() {
       return request.auth != null;
     }
 
-    // Confere se o usuário logado é o dono do documento
+    /**
+     * Checks if the requesting user's UID matches the provided userId.
+     * Used for ownership-based access control.
+     */
     function isOwner(userId) {
-      return signedIn() && request.auth.uid == userId;
+      return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Sistema de administradores
+    /**
+     * Checks if the user has an admin role via custom claims.
+     */
     function isAdmin() {
-      // Admins são definidos diretamente no auth token.
-      // Ex: no backend: auth.setCustomUserClaims(uid, { admin: true })
-      return signedIn() && request.auth.token.admin == true;
+      return isSignedIn() && request.auth.token.isAdmin == true;
     }
 
-    // Verifica se "name" existe e é string
-    function validCompanyCreate() {
-      return request.resource.data.keys().hasOnly(["name"]) &&
-             request.resource.data.name is string &&
-             request.resource.data.name.size() > 0;
+    /**
+     * Checks if the user belongs to the specified company via custom claims.
+     * This is the cornerstone of the multi-tenant security model.
+     */
+    function isMemberOfEmpresa(empresaId) {
+      return isSignedIn() && request.auth.token.empresaId == empresaId;
     }
 
-    // Para updates -> só "name" pode ser alterado (se quiser limitar)
-    function validCompanyUpdate() {
-      return request.resource.data.keys().hasOnly(["name"]) &&
-             request.resource.data.name is string &&
-             request.resource.data.name.size() > 0;
+    /**
+     * Ensures a document exists before an update or delete operation.
+     * Prevents writes to non-existent paths.
+     */
+    function isExistingDoc() {
+      return resource != null;
     }
 
-    // Para scopedData:
-    // Qualquer tipo é aceito, desde que exista o campo "value"
-    function validScopedData() {
-      return request.resource.data.keys().hasOnly(["value"]);
-    }
+    //================================================================================
+    // Collection Rules
+    //================================================================================
 
-    // ---------------------------------------------
-    // 2. Regras principais
-    // ---------------------------------------------
-    match /users/{userId} {
-      // Protege o nó raiz de users (não deve ser acessado diretamente)
-      allow read, write: if false;
+    /**
+     * @description Governs access to company root documents.
+     * @path /empresas/{empresaId}
+     * @allow A member of 'empresa-abc' reads their own company document.
+     * @deny A member of 'empresa-xyz' attempts to read the 'empresa-abc' document.
+     * @principle Enforces tenant isolation at the root level.
+     */
+    match /empresas/{empresaId} {
+      allow get, list: if isMemberOfEmpresa(empresaId);
+      allow create: if isMemberOfEmpresa(empresaId) && request.resource.data.id == empresaId;
+      allow update, delete: if isMemberOfEmpresa(empresaId) && isExistingDoc();
 
-      // ---------------------------------------------
-      // 3. Coleção companies
-      // ---------------------------------------------
-      match /companies/{companyId} {
-
-        // Criar empresa
-        allow create: if isOwner(userId) && validCompanyCreate();
-        
-        // Ler empresa
-        allow get, list: if isOwner(userId) || isAdmin();
-
-        // Atualizar empresa
-        allow update: if
-          (
-            isOwner(userId) &&
-            validCompanyUpdate()     // Permite somente alterar "name"
-          )
-          ||
-          isAdmin();                 // Admin pode editar qualquer campo
-
-        // Deletar empresa
-        allow delete: if
-          isAdmin()                 // Somente admin pode deletar
-          ||
-          (isOwner(userId) && false); // Proprietário NÃO pode deletar (bloqueado)
-
-        // ---------------------------------------------
-        // 4. Subcoleção scopedData
-        // ---------------------------------------------
-        match /scopedData/{dataKey} {
-
-          // Scoped data pode ser criado pelo dono ou admin
-          allow create: if
-            (isOwner(userId) && validScopedData())
-            ||
-            isAdmin();
-
-          // Ler scoped data
-          allow get, list: if isOwner(userId) || isAdmin();
-
-          // Atualizar scoped data
-          allow update: if
-            (isOwner(userId) && validScopedData())
-            ||
-            isAdmin();
-
-          // Deletar scoped data → somente admin
-          allow delete: if isAdmin();
-        }
+      /**
+       * @description Governs access to user profiles within a company.
+       * @path /empresas/{empresaId}/usuarios/{usuarioId}
+       * @allow A user (uid: 'user-123') creates their own profile document under their assigned company.
+       * @deny A user attempts to create a profile for another user.
+       * @principle Combines tenant membership with user self-ownership for profile management.
+       */
+      match /usuarios/{usuarioId} {
+        allow get, list: if isMemberOfEmpresa(empresaId);
+        allow create: if isOwner(usuarioId) && isMemberOfEmpresa(empresaId) && request.resource.data.id == usuarioId && request.resource.data.empresaId == empresaId;
+        allow update: if isOwner(usuarioId) && isMemberOfEmpresa(empresaId) && isExistingDoc() && request.resource.data.id == resource.data.id && request.resource.data.empresaId == resource.data.empresaId;
+        allow delete: if isOwner(usuarioId) && isMemberOfEmpresa(empresaId) && isExistingDoc();
       }
+
+      /**
+       * @description Generic rules for company-owned data subcollections.
+       * Applies to: lancamentosFiscais, orcamentos, planosContas, lancamentosContabeis,
+       * parceiros, funcionarios, rubricas, calculosFolha, eventos, arquivos.
+       */
+      function canAccessEmpresaSubcollection() {
+        return isMemberOfEmpresa(empresaId);
+      }
+
+      /**
+       * @description Validates that a new document correctly references its parent company.
+       */
+      function newDocIsValid(empresaId) {
+        return request.resource.data.empresaId == empresaId;
+      }
+
+      /**
+       * @description Validates that a company reference cannot be changed on update.
+       */
+      function isEmpresaIdImmutable() {
+        return request.resource.data.empresaId == resource.data.empresaId;
+      }
+
+      /**
+       * @description Secures fiscal entries for a company.
+       * @path /empresas/{empresaId}/lancamentosFiscais/{lancamentoFiscalId}
+       * @allow A user from 'empresa-abc' creates a new fiscal entry for their company.
+       * @deny A user tries to create an entry where the document's 'empresaId' field does not match the path.
+       * @principle Enforces tenant membership and validates relational integrity.
+       */
+      match /lancamentosFiscais/{lancamentoFiscalId} {
+        allow get, list: if canAccessEmpresaSubcollection();
+        allow create: if canAccessEmpresaSubcollection() && newDocIsValid(empresaId);
+        allow update: if canAccessEmpresaSubcollection() && isExistingDoc() && isEmpresaIdImmutable();
+        allow delete: if canAccessEmpresaSubcollection() && isExistingDoc();
+      }
+
+      /**
+       * @description Secures budgets for a company.
+       * @path /empresas/{empresaId}/orcamentos/{orcamentoId}
+       * @allow A user from 'empresa-abc' lists all budgets for their company.
+       * @deny A user from 'empresa-xyz' attempts to list budgets for 'empresa-abc'.
+       * @principle Enforces tenant membership and validates relational integrity.
+       */
+      match /orcamentos/{orcamentoId} {
+        allow get, list: if canAccessEmpresaSubcollection();
+        allow create: if canAccessEmpresaSubcollection() && newDocIsValid(empresaId);
+        allow update: if canAccessEmpresaSubcollection() && isExistingDoc() && isEmpresaIdImmutable();
+        allow delete: if canAccessEmpresaSubcollection() && isExistingDoc();
+      }
+
+      /**
+       * @description Secures chart of accounts for a company.
+       * @path /empresas/{empresaId}/planosContas/{planoContaId}
+       * @allow A user from 'empresa-abc' updates an existing chart of accounts document.
+       * @deny A user attempts to update a non-existent document.
+       * @principle Enforces tenant membership and validates relational integrity.
+       */
+      match /planosContas/{planoContaId} {
+        allow get, list: if canAccessEmpresaSubcollection();
+        allow create: if canAccessEmpresaSubcollection() && newDocIsValid(empresaId);
+        allow update: if canAccessEmpresaSubcollection() && isExistingDoc() && isEmpresaIdImmutable();
+        allow delete: if canAccessEmpresaSubcollection() && isExistingDoc();
+      }
+
+      /**
+       * @description Secures ledger entries for a company.
+       * @path /empresas/{empresaId}/lancamentosContabeis/{lancamentoContabilId}
+       * @allow A user from 'empresa-abc' deletes a ledger entry from their company.
+       * @deny A user from 'empresa-xyz' attempts to delete an entry from 'empresa-abc'.
+       * @principle Enforces tenant membership and validates relational integrity.
+       */
+      match /lancamentosContabeis/{lancamentoContabilId} {
+        allow get, list: if canAccessEmpresaSubcollection();
+        allow create: if canAccessEmpresaSubcollection() && newDocIsValid(empresaId);
+        allow update: if canAccessEmpresaSubcollection() && isExistingDoc() && isEmpresaIdImmutable();
+        allow delete: if canAccessEmpresaSubcollection() && isExistingDoc();
+      }
+
+      /**
+       * @description Secures partner records for a company.
+       * @path /empresas/{empresaId}/parceiros/{parceiroId}
+       * @allow A user from 'empresa-abc' reads a partner document.
+       * @deny A user who is not signed in attempts to read a partner document.
+       * @principle Enforces tenant membership and validates relational integrity.
+       */
+      match /parceiros/{parceiroId} {
+        allow get, list: if canAccessEmpresaSubcollection();
+        allow create: if canAccessEmpresaSubcollection() && newDocIsValid(empresaId);
+        allow update: if canAccessEmpresaSubcollection() && isExistingDoc() && isEmpresaIdImmutable();
+        allow delete: if canAccessEmpresaSubcollection() && isExistingDoc();
+      }
+
+      /**
+       * @description Secures employee records for a company.
+       * @path /empresas/{empresaId}/funcionarios/{funcionarioId}
+       * @allow A user from 'empresa-abc' creates an employee record.
+       * @deny A user tries to create an employee record under a different company's path.
+       * @principle Enforces tenant membership and validates relational integrity.
+       */
+      match /funcionarios/{funcionarioId} {
+        allow get, list: if canAccessEmpresaSubcollection();
+        allow create: if canAccessEmpresaSubcollection() && newDocIsValid(empresaId);
+        allow update: if canAccessEmpresaSubcollection() && isExistingDoc() && isEmpresaIdImmutable();
+        allow delete: if canAccessEmpresaSubcollection() && isExistingDoc();
+      }
+
+      /**
+       * @description Secures payroll codes for a company.
+       * @path /empresas/{empresaId}/rubricas/{rubricaId}
+       * @allow A user from 'empresa-abc' reads a list of payroll codes.
+       * @deny A user from 'empresa-xyz' tries to read 'empresa-abc' payroll codes.
+       * @principle Enforces tenant membership and validates relational integrity.
+       */
+      match /rubricas/{rubricaId} {
+        allow get, list: if canAccessEmpresaSubcollection();
+        allow create: if canAccessEmpresaSubcollection() && newDocIsValid(empresaId);
+        allow update: if canAccessEmpresaSubcollection() && isExistingDoc() && isEmpresaIdImmutable();
+        allow delete: if canAccessEmpresaSubcollection() && isExistingDoc();
+      }
+
+      /**
+       * @description Secures payroll calculations for a company.
+       * @path /empresas/{empresaId}/calculosFolha/{calculoFolhaId}
+       * @allow A user from 'empresa-abc' updates a payroll calculation document.
+       * @deny A user tries to change the 'empresaId' field on an existing payroll document.
+       * @principle Enforces tenant membership and validates relational integrity.
+       */
+      match /calculosFolha/{calculoFolhaId} {
+        allow get, list: if canAccessEmpresaSubcollection();
+        allow create: if canAccessEmpresaSubcollection() && newDocIsValid(empresaId);
+        allow update: if canAccessEmpresaSubcollection() && isExistingDoc() && isEmpresaIdImmutable();
+        allow delete: if canAccessEmpresaSubcollection() && isExistingDoc();
+      }
+
+      /**
+       * @description Secures calendar events for a company.
+       * @path /empresas/{empresaId}/eventos/{eventoId}
+       * @allow A user from 'empresa-abc' creates a new calendar event.
+       * @deny A non-member tries to create an event.
+       * @principle Enforces tenant membership and validates relational integrity.
+       */
+      match /eventos/{eventoId} {
+        allow get, list: if canAccessEmpresaSubcollection();
+        allow create: if canAccessEmpresaSubcollection() && newDocIsValid(empresaId);
+        allow update: if canAccessEmpresaSubcollection() && isExistingDoc() && isEmpresaIdImmutable();
+        allow delete: if canAccessEmpresaSubcollection() && isExistingDoc();
+      }
+
+      /**
+       * @description Secures uploaded files for a company.
+       * @path /empresas/{empresaId}/arquivos/{arquivoId}
+       * @allow A user from 'empresa-abc' reads a file document.
+       * @deny An anonymous user tries to read a file document.
+       * @principle Enforces tenant membership and validates relational integrity.
+       */
+      match /arquivos/{arquivoId} {
+        allow get, list: if canAccessEmpresaSubcollection();
+        allow create: if canAccessEmpresaSubcollection() && newDocIsValid(empresaId);
+        allow update: if canAccessEmpresaSubcollection() && isExistingDoc() && isEmpresaIdImmutable();
+        allow delete: if canAccessEmpresaSubcollection() && isExistingDoc();
+      }
+
+      /**
+       * @description Secures audit trail entries for a company.
+       * @path /empresas/{empresaId}/auditorias/{auditoriaId}
+       * @allow (create) A member of 'empresa-abc' creates an audit log for an action they performed.
+       * @deny Any user attempts to update or delete an existing audit log.
+       * @principle Ensures audit logs are immutable and non-deletable.
+       */
+      match /auditorias/{auditoriaId} {
+        allow get, list: if isMemberOfEmpresa(empresaId);
+        allow create: if isMemberOfEmpresa(empresaId) && request.resource.data.empresaId == empresaId && request.resource.data.usuarioId == request.auth.uid;
+        allow update: if false;
+        allow delete: if false;
+      }
+    }
+
+    /**
+     * @description Governs access to the system-wide alerts collection.
+     * @path /alertas/{alertaId}
+     * @allow (get) A user with the 'isAdmin' custom claim reads an alert.
+     * @deny Any user without the 'isAdmin' claim tries to read or write an alert.
+     * @principle Restricts access to sensitive system-level data to administrators only.
+     */
+    match /alertas/{alertaId} {
+      allow get, list: if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if isAdmin() && isExistingDoc();
     }
   }
 }
+
+    
