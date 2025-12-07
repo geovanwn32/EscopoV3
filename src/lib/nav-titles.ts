@@ -14,7 +14,6 @@ export const NAV_TITLES: Record<string, string> = {
   '/pessoal/rci': 'RCI (Pró-labore)',
   '/pessoal/13-salario': '13º Salário',
   '/pessoal/ferias': 'Férias',
-  '/pessoal/rescisao': 'Rescisão',
   '/contabil/plano-de-contas': 'Plano de Contas',
   '/contabil/lancamentos': 'Lançamentos Contábeis (IA)',
   '/contabil/importacao-extrato': 'Importação de Extrato (IA)',
