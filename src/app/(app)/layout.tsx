@@ -18,7 +18,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { currentCompany, isLoaded, useScopedData } = useCompany();
-  const [, setAuditLogs] = useScopedData<AuditLog[]>('audit-trail-logs', []);
+  const [auditLogs, setAuditLogs] = useScopedData<AuditLog[]>('audit-trail-logs', []);
   const loginLoggedRef = useRef(false);
 
   const { open: isSidebarOpen } = useSidebar();
@@ -46,11 +46,11 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       }
       // 3. Log login audit once everything is set.
       else if (currentCompany && activeProfile && !loginLoggedRef.current) {
-        logAudit(setAuditLogs, 'LOGIN', 'Autenticação', 'Login bem-sucedido no sistema.');
+        logAudit(setAuditLogs, 'LOGIN', 'Autenticação', 'Login bem-sucedido no sistema.', auditLogs);
         loginLoggedRef.current = true;
       }
     }
-  }, [isLoaded, currentCompany, pathname, router, setAuditLogs]);
+  }, [isLoaded, currentCompany, pathname, router, setAuditLogs, auditLogs]);
 
   // Allow access to selection pages
   if (pathname === '/selecionar-empresa' || pathname === '/selecionar-perfil') {

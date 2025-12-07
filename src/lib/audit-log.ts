@@ -1,4 +1,5 @@
 
+
 export type AuditLogAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'IMPORT' | 'LOGOUT';
 
 export interface AuditLog {
@@ -16,7 +17,7 @@ export const logAudit = (
     action: AuditLogAction,
     module: string,
     details: string,
-    currentLogs: AuditLog[]
+    currentLogs?: AuditLog[]
 ) => {
     let userName = 'Sistema'; // Default user
     if (typeof window !== 'undefined') {
@@ -40,5 +41,5 @@ export const logAudit = (
         module,
         details,
     };
-    setter([newLog, ...currentLogs]);
+    setter([newLog, ...(currentLogs || [])]);
 };
