@@ -25,6 +25,13 @@ const calculators = [
         description: 'Calcule a 1ª, 2ª ou parcela única do 13º salário.',
         color: "text-amber-600 bg-amber-100/80 group-hover:bg-amber-600 dark:bg-amber-900/40 dark:text-amber-400 dark:group-hover:bg-amber-500",
     },
+     {
+        href: '/pessoal/rescisao',
+        icon: <UserMinus className="h-8 w-8" />,
+        label: 'Rescisão',
+        description: 'Calcule a rescisão de contrato de trabalho.',
+        color: "text-rose-600 bg-rose-100/80 group-hover:bg-rose-600 dark:bg-rose-900/40 dark:text-rose-400 dark:group-hover:bg-rose-500",
+    },
     {
         href: '/pessoal/rci',
         icon: <Percent className="h-8 w-8" />,
