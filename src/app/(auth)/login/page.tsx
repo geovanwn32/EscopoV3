@@ -5,26 +5,13 @@ import Image from 'next/image';
 import { PlaceHolderImages, type ImagePlaceholder } from '@/lib/placeholder-images';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { useLocalStorage } from '@/hooks/use-company';
 import { useMemo, useState, useEffect, Suspense } from 'react';
 
 
 export default function LoginPage() {
-  const [loginBgId] = useLocalStorage<string>('loginBackgroundId', 'login-background-professional');
   
-  // Start with the default image that the server will also use.
-  const defaultBg = useMemo(() => PlaceHolderImages.find(p => p.id === 'login-background-professional'), []);
-  const [loginBg, setLoginBg] = useState<ImagePlaceholder | undefined>(defaultBg);
-
-  // This effect runs only on the client, after the initial render.
-  useEffect(() => {
-    // Find the image based on the ID from localStorage.
-    const clientSideBg = PlaceHolderImages.find(p => p.id === loginBgId) || defaultBg;
-    // Update the state if it's different from the initial state.
-    if (clientSideBg?.id !== loginBg?.id) {
-        setLoginBg(clientSideBg);
-    }
-  }, [loginBgId, defaultBg, loginBg?.id]);
+  // O hook useLocalStorage foi removido. Agora usamos a imagem padrão diretamente.
+  const loginBg = useMemo(() => PlaceHolderImages.find(p => p.id === 'login-background-professional'), []);
   
   return (
     <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
