@@ -1,19 +1,20 @@
 
+
 export interface Dependente {
-    id: number;
+    id: string;
     nome: string;
     cpf: string;
     dataNascimento: string; // ISO string
 }
 
 export interface AnotacaoCarteira {
-    id: number;
+    id: string;
     data: string; // ISO string
     descricao: string;
 }
 
 export interface Funcionario {
-    id: number;
+    id: string;
     nome: string;
     cpf: string;
     dataAdmissao: string; // ISO string

@@ -1,7 +1,7 @@
 
 'use client';
 import { useState, useMemo, useEffect } from 'react';
-import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft } from 'lucide-react';
+import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -16,38 +16,63 @@ import Link from 'next/link';
 import { Service } from '@/types/fiscal';
 import { Separator } from '@/components/ui/separator';
 import { MoneyInput } from '@/components/ui/money-input';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, doc, addDoc, updateDoc, deleteDoc, query } from 'firebase/firestore';
 
 
 export default function ServicosPage() {
     const { toast } = useToast();
-    const { useScopedData } = useCompany();
-    const [services, setServices] = useScopedData<Service[]>('cadastros-servicos', []);
+    const { currentCompany } = useCompany();
+    const firestore = useFirestore();
+
+     const servicesQuery = useMemoFirebase(() => {
+        if (!currentCompany) return null;
+        // The collection path should be 'produtos_servicos' according to backend.json
+        return query(collection(firestore, "empresas", String(currentCompany), "produtos_servicos"));
+    }, [firestore, currentCompany]);
+
+    const { data: productsAndServices, isLoading: isLoadingServices } = useCollection<Service | any>(servicesQuery as any);
+    const services = useMemo(() => productsAndServices?.filter(item => item.tipo === 'Serviço') || [], [productsAndServices]);
     
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<Service | null>(null);
     const [editingItem, setEditingItem] = useState<Service | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const handleSave = (itemData: Omit<Service, 'id' | 'codigo'>) => {
-        if (editingItem) {
-            setServices(prev => prev.map(i => i.id === editingItem.id ? { ...editingItem, ...itemData } : i));
-            toast({ title: "Serviço Atualizado!", description: "O serviço foi atualizado com sucesso." });
-        } else {
-            const newCode = (services.length + 1).toString();
-            const newItem: Service = { ...itemData, id: Date.now(), codigo: newCode };
-            setServices(prev => [...prev, newItem]);
-            toast({ title: "Serviço Adicionado!", description: "O novo serviço foi salvo no seu catálogo." });
+    const handleSave = async (itemData: Omit<Service, 'id' | 'codigo' | 'tipo'>) => {
+        if (!currentCompany) return;
+
+        try {
+            if (editingItem) {
+                const serviceDoc = doc(firestore, "empresas", String(currentCompany), "produtos_servicos", editingItem.id);
+                await updateDoc(serviceDoc, { ...itemData });
+                toast({ title: "Serviço Atualizado!", description: "O serviço foi atualizado com sucesso." });
+            } else {
+                const newCode = `SERV-${((services?.length || 0) + 1).toString().padStart(4, '0')}`;
+                const newItem: Omit<Service, 'id'> = { ...itemData, codigo: newCode, tipo: 'Serviço' };
+                const servicesCollection = collection(firestore, "empresas", String(currentCompany), "produtos_servicos");
+                await addDoc(servicesCollection, newItem);
+                toast({ title: "Serviço Adicionado!", description: "O novo serviço foi salvo no seu catálogo." });
+            }
+        } catch (error: any) {
+             toast({ variant: "destructive", title: "Erro ao Salvar", description: error.message });
         }
+
         setIsDialogOpen(false);
         setEditingItem(null);
     };
 
     const handleDeleteClick = (item: Service) => setItemToDelete(item);
 
-    const handleConfirmDelete = () => {
-        if (itemToDelete) {
-            setServices(prev => prev.filter(i => i.id !== itemToDelete.id));
-            toast({ variant: "destructive", title: "Serviço Excluído!", description: `O serviço foi removido.` });
+    const handleConfirmDelete = async () => {
+        if (itemToDelete && currentCompany) {
+            try {
+                const serviceDoc = doc(firestore, "empresas", String(currentCompany), "produtos_servicos", itemToDelete.id);
+                await deleteDoc(serviceDoc);
+                toast({ variant: "destructive", title: "Serviço Excluído!", description: `O serviço foi removido.` });
+            } catch (error: any) {
+                toast({ variant: "destructive", title: "Erro ao Excluir", description: error.message });
+            }
             setItemToDelete(null);
         }
     };
@@ -58,6 +83,7 @@ export default function ServicosPage() {
     };
 
     const filteredItems = useMemo(() => {
+        if (!services) return [];
         return services.filter(item =>
             item.codigo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             item.descricao.toLowerCase().includes(searchTerm.toLowerCase())
@@ -85,7 +111,7 @@ export default function ServicosPage() {
                     <div className="flex items-center justify-between">
                         <div>
                             <CardTitle>Serviços Cadastrados</CardTitle>
-                            <CardDescription>{services.length} serviços encontrados.</CardDescription>
+                            <CardDescription>{services?.length || 0} serviços encontrados.</CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
                              <div className="relative flex-grow">
@@ -119,7 +145,13 @@ export default function ServicosPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredItems.length > 0 ? filteredItems.map(item => (
+                                {isLoadingServices ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="h-24 text-center">
+                                            <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
+                                        </TableCell>
+                                    </TableRow>
+                                ) : filteredItems.length > 0 ? filteredItems.map(item => (
                                     <TableRow key={item.id}>
                                         <TableCell className="font-medium font-mono">{item.codigo}</TableCell>
                                         <TableCell>{item.descricao}</TableCell>
@@ -211,6 +243,7 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
         setFormData(prev => ({
             ...prev,
             [tax]: {
+                // @ts-ignore
                 ...prev[tax],
                 [field]: value
             }
@@ -227,7 +260,7 @@ function ItemForm({ onSave, onOpenChange, item }: ItemFormProps) {
             });
             return;
         }
-        onSave({ ...formData, tipo: 'Serviço' });
+        onSave({ ...formData });
     };
     
     return (

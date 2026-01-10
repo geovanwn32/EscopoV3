@@ -1,15 +1,18 @@
 
 'use client';
-import { Building2, ArrowLeft } from 'lucide-react';
+import { Building2, ArrowLeft, HelpCircle, Loader2 } from 'lucide-react';
 import LoginForm from './login-form';
 import Image from 'next/image';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { PlaceHolderImages, type ImagePlaceholder } from '@/lib/placeholder-images';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { useMemo, useState, useEffect, Suspense } from 'react';
+import { useCompany } from '@/hooks/use-company';
 
 
 export default function LoginPage() {
-  const loginBg = PlaceHolderImages.find(p => p.id === 'login-background');
+  
+  const loginBg = useMemo(() => PlaceHolderImages.find(p => p.id === 'login-background-professional'), []);
   
   return (
     <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
@@ -21,9 +24,10 @@ export default function LoginPage() {
               fill
               className="absolute inset-0 object-cover"
               data-ai-hint={loginBg.imageHint}
+              priority
            />
          )}
-         <div className="absolute inset-0 bg-zinc-900/60" />
+         <div className="absolute inset-0 bg-blue-950/70" />
          <div className="relative z-20 flex items-center text-2xl font-bold font-headline">
             <Building2 className="h-8 w-8 mr-3" />
             EscopoV3
@@ -37,14 +41,27 @@ export default function LoginPage() {
           </blockquote>
         </div>
       </div>
-       <div className="relative flex items-center justify-center py-12 px-4 sm:px-0 animated-gradient">
+       <div className="relative flex flex-col items-center justify-center py-12 px-4 sm:px-0">
             <Button asChild variant="ghost" className="absolute top-6 left-6 text-muted-foreground hover:text-foreground">
                 <Link href="/landing">
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Voltar
                 </Link>
             </Button>
-          <LoginForm />
+            <Suspense fallback={<div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+                <LoginForm />
+            </Suspense>
+           <div className="absolute bottom-6 text-center text-xs text-muted-foreground space-y-2">
+                <div className='flex items-center justify-center gap-2'>
+                    <HelpCircle className="h-4 w-4" />
+                    <p>Precisa de ajuda? <a href="https://wa.me/5562998554529" target="_blank" rel="noopener noreferrer" className="underline font-semibold">Contate o administrador</a>.</p>
+                </div>
+                <div>
+                    <Link href="#" className="underline underline-offset-2">Política de Privacidade</Link>
+                    {' | '}
+                    <Link href="#" className="underline underline-offset-2">Termos de Serviço</Link>
+                </div>
+            </div>
       </div>
     </div>
   );

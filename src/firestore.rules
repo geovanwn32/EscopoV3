@@ -1,0 +1,35 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isUser(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // --- Global collections ---
+    match /global-users/{userId} {
+      allow read, write: if isUser(userId);
+    }
+    
+    // --- Company data ---
+    match /empresas/{empresaId} {
+        // Only authenticated users can read/write company info.
+        // More specific rules can be added for who can create/delete companies.
+        allow read, write: if isSignedIn();
+
+        // Subcollections within a company
+        match /{subcollection}/{docId} {
+            // By default, allow read/write if the user is signed in.
+            // THIS IS INSECURE for production. You should add rules based on company membership.
+            // For example, you could have a `members` subcollection in each company.
+            allow read, write: if isSignedIn();
+        }
+    }
+  }
+}

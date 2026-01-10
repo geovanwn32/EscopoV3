@@ -1,10 +1,11 @@
 
+
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Shield, KeyRound, Loader2, ArrowLeft, PlusCircle, Trash2, LogOut } from 'lucide-react';
+import { User, Shield, KeyRound, Loader2, ArrowLeft, PlusCircle, Trash2, LogOut, Pencil } from 'lucide-react';
 import { useCompany } from '@/hooks/use-company';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -13,30 +14,59 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useAuth } from '@/firebase';
+import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, where, addDoc, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+
 
 interface UserProfile {
-    id: number;
+    id: string;
+    uid: string;
     name: string;
     email: string;
     isAdmin: boolean;
     isMaster?: boolean;
     password?: string;
-    status: 'Ativo' | 'Inativo';
+    status: 'Ativo' | 'Inativo' | 'Pendente';
+    photoURL?: string;
 }
 
 export default function SelecionarPerfilPage() {
     const router = useRouter();
     const auth = useAuth();
-    const { useScopedData } = useCompany();
-    const [users, setUsers] = useScopedData<UserProfile[]>('global-users', []);
+    const firestore = useFirestore();
+    const { user: firebaseUser } = useUser();
+    
+    const usersQuery = useMemoFirebase(() => {
+        if (!firebaseUser?.email) return null;
+        return query(collection(firestore, "global-users"), where("email", "==", firebaseUser.email));
+    }, [firestore, firebaseUser?.email]);
+
+    const { data: users, isLoading: isLoadingUsers } = useCollection<UserProfile>(usersQuery as any);
+    
     const { toast } = useToast();
 
     const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+    const [userToEdit, setUserToEdit] = useState<UserProfile | null>(null);
     const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
+
+    const availableProfiles = useMemo(() => {
+        if (!users) return [];
+        return users.filter(u => u.status !== 'Pendente');
+    }, [users]);
+    
+    useEffect(() => {
+        if (users && users.some(u => u.isMaster && u.password !== '123456')) {
+            const masterUser = users.find(u => u.isMaster && u.password !== '123456');
+            if(masterUser) {
+                const userDocRef = doc(firestore, "global-users", masterUser.id);
+                updateDoc(userDocRef, { password: '123456' });
+            }
+        }
+    }, [users, firestore]);
+
 
     const handleProfileSelect = (user: UserProfile) => {
         if (user.status === 'Inativo') {
@@ -50,6 +80,7 @@ export default function SelecionarPerfilPage() {
         if (user.password) {
             setSelectedUser(user);
         } else {
+            console.warn(`User ${user.name} has no password set. Logging in directly.`);
             sessionStorage.setItem('user-profile', JSON.stringify(user));
             router.push('/selecionar-empresa');
         }
@@ -60,9 +91,14 @@ export default function SelecionarPerfilPage() {
 
         setTimeout(() => {
             if (password === selectedUser?.password) {
-                toast({ title: "Acesso Autorizado!", description: `Bem-vindo(a) ${selectedUser.name}.` });
-                sessionStorage.setItem('user-profile', JSON.stringify(selectedUser));
-                router.push('/selecionar-empresa');
+                if (selectedUser) {
+                    sessionStorage.setItem('user-profile', JSON.stringify(selectedUser));
+                    toast({ title: "Acesso Autorizado!", description: `Bem-vindo(a) ${selectedUser.name}.` });
+                    router.push('/selecionar-empresa');
+                } else {
+                    toast({ variant: 'destructive', title: "Erro de Perfil", description: "Não foi possível encontrar os dados do seu perfil." });
+                    setIsLoading(false);
+                }
             } else {
                 toast({ variant: 'destructive', title: "Senha Incorreta", description: "A senha que você inseriu está incorreta. Tente novamente." });
                 setIsLoading(false);
@@ -71,25 +107,44 @@ export default function SelecionarPerfilPage() {
         }, 500);
     };
 
+
     const handleDialogClose = () => {
         setSelectedUser(null);
         setPassword('');
         setIsLoading(false);
     }
     
-    const handleSaveNewUser = (userData: Omit<UserProfile, 'id' | 'isAdmin' | 'isMaster' | 'permissions' | 'status'>) => {
-        const isFirstUser = users.length === 0;
-        const newUser: UserProfile = {
-            id: Date.now(),
+    const handleSaveNewUser = async (userData: Omit<UserProfile, 'id' | 'isAdmin' | 'isMaster' | 'status' | 'uid' | 'photoURL'>) => {
+        if (!firebaseUser) {
+            toast({ variant: 'destructive', title: "Erro", description: "Você precisa estar autenticado para criar um perfil." });
+            return;
+        }
+        
+        const isFirstUser = !users || users.length === 0;
+        const newUser: Omit<UserProfile, 'id'> = {
+            uid: firebaseUser.uid,
             ...userData,
-            isAdmin: isFirstUser, // First user is always admin
-            isMaster: isFirstUser, // First user is always master
-            permissions: {},
+            isAdmin: isFirstUser,
+            isMaster: isFirstUser,
             status: 'Ativo',
+            photoURL: firebaseUser.photoURL || '',
         };
-        setUsers(prev => [...prev, newUser]);
+
+        await addDoc(collection(firestore, "global-users"), newUser);
+        
         setIsAddUserOpen(false);
         toast({ title: "Perfil Adicionado", description: "O novo perfil foi criado. Agora você pode fazer login com ele." });
+    };
+
+    const handleUpdateUserName = async (userId: string, newName: string) => {
+        if (!newName) {
+            toast({ variant: 'destructive', title: "Nome inválido", description: "O nome não pode ser vazio." });
+            return;
+        }
+        const userDocRef = doc(firestore, "global-users", userId);
+        await updateDoc(userDocRef, { name: newName });
+        setUserToEdit(null);
+        toast({ title: "Perfil Atualizado", description: `O nome do perfil foi alterado para ${newName}.` });
     };
 
     const handleDeleteClick = (user: UserProfile) => {
@@ -101,20 +156,23 @@ export default function SelecionarPerfilPage() {
             });
             return;
         }
-        if (user.isAdmin && users.filter(u => u.isAdmin && !u.isMaster).length <= 1) {
+        const adminUsers = users?.filter(u => u.isAdmin && !u.isMaster) || [];
+        const masterExists = users?.some(u => u.isMaster);
+
+        if (user.isAdmin && masterExists && adminUsers.length <= 1) {
             toast({
                 variant: 'destructive',
                 title: 'Ação não permitida',
-                description: 'Não é possível excluir o único perfil de administrador.',
+                description: 'Não é possível excluir o único perfil de administrador quando um Master existe.',
             });
             return;
         }
         setUserToDelete(user);
     };
 
-    const handleConfirmDelete = () => {
+    const handleConfirmDelete = async () => {
         if (userToDelete) {
-            setUsers(prevUsers => prevUsers.filter(user => user.id !== userToDelete.id));
+            await deleteDoc(doc(firestore, "global-users", userToDelete.id));
             toast({
                 variant: 'destructive',
                 title: 'Perfil Excluído',
@@ -129,9 +187,6 @@ export default function SelecionarPerfilPage() {
         sessionStorage.clear();
         router.push('/login');
     };
-    
-    useEffect(() => {
-    }, [router]);
 
     return (
         <div className="flex min-h-screen w-full items-center justify-center p-4 lg:p-8 animated-gradient">
@@ -147,15 +202,23 @@ export default function SelecionarPerfilPage() {
                     </p>
                 </div>
                 
-                {users.length > 0 ? (
+                {isLoadingUsers ? (
+                     <div className="flex justify-center items-center h-64">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                ) : availableProfiles.length > 0 ? (
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 justify-center">
-                    {users.map((user) => (
+                    {availableProfiles.map((user) => (
                         <Card
                             key={user.id}
                             className="flex flex-col justify-between transition-shadow hover:shadow-lg focus-within:shadow-lg"
                         >
-                            <CardContent className="flex flex-col flex-grow items-center justify-center p-6 text-center space-y-4">
+                             <CardContent 
+                                className="flex flex-col flex-grow items-center justify-center p-6 text-center space-y-4 cursor-pointer"
+                                onClick={() => handleProfileSelect(user)}
+                            >
                                 <Avatar className="h-20 w-20 border-2">
+                                     <AvatarImage src={user.photoURL} alt={user.name} />
                                     <AvatarFallback className="bg-muted">
                                         {user.isMaster ? (
                                             <Shield className="h-10 w-10 text-amber-500" />
@@ -175,6 +238,10 @@ export default function SelecionarPerfilPage() {
                                 <Button className="w-full" onClick={() => handleProfileSelect(user)}>
                                     <KeyRound className="mr-2 h-4 w-4" />
                                     Acessar
+                                </Button>
+                                <Button variant="ghost" size="icon" className="text-muted-foreground hover:bg-primary/10 hover:text-primary" onClick={() => setUserToEdit(user)}>
+                                    <Pencil className="h-4 w-4" />
+                                    <span className="sr-only">Editar</span>
                                 </Button>
                                 {!user.isMaster && (
                                     <Button variant="ghost" size="icon" className="text-destructive/70 hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDeleteClick(user)}>
@@ -201,7 +268,7 @@ export default function SelecionarPerfilPage() {
                         <CardHeader>
                             <CardTitle>Nenhum Perfil Cadastrado</CardTitle>
                             <CardDescription>
-                                Vamos criar o primeiro perfil de administrador para você começar a usar o sistema.
+                                Você precisa criar seu primeiro perfil para este login.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -250,7 +317,13 @@ export default function SelecionarPerfilPage() {
                 open={isAddUserOpen} 
                 onOpenChange={setIsAddUserOpen}
                 onSave={handleSaveNewUser}
-                isFirstUser={users.length === 0}
+                isFirstUser={!users || users.length === 0}
+            />
+
+            <EditUserDialog
+                user={userToEdit}
+                onOpenChange={() => setUserToEdit(null)}
+                onSave={handleUpdateUserName}
             />
 
             <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
@@ -275,24 +348,33 @@ export default function SelecionarPerfilPage() {
 interface AddUserDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSave: (data: Omit<UserProfile, 'id' | 'isAdmin' | 'isMaster' | 'permissions' | 'status'>) => void;
+    onSave: (data: Omit<UserProfile, 'id' | 'isAdmin' | 'isMaster' | 'status' | 'uid' | 'photoURL'>) => void;
     isFirstUser: boolean;
 }
 
 function AddUserDialog({ open, onOpenChange, onSave, isFirstUser }: AddUserDialogProps) {
+    const { user: firebaseUser } = useUser();
     const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const { toast } = useToast();
 
+    useEffect(() => {
+        if(firebaseUser?.displayName) {
+            setName(firebaseUser.displayName);
+        }
+    }, [firebaseUser]);
+
     const handleSubmit = () => {
-        if (!name || !email || !password) {
-            toast({ variant: 'destructive', title: "Campos obrigatórios", description: "Nome, email e senha são obrigatórios." });
+        if (!name || !password) {
+            toast({ variant: 'destructive', title: "Campos obrigatórios", description: "Nome e senha são obrigatórios." });
             return;
         }
-        onSave({ name, email, password });
+         if (!firebaseUser?.email) {
+            toast({ variant: 'destructive', title: "Erro", description: "Email do usuário não encontrado." });
+            return;
+        }
+        onSave({ name, email: firebaseUser.email, password });
         setName('');
-        setEmail('');
         setPassword('');
     };
 
@@ -310,12 +392,12 @@ function AddUserDialog({ open, onOpenChange, onSave, isFirstUser }: AddUserDialo
                         <Label htmlFor="new-name">Nome</Label>
                         <Input id="new-name" value={name} onChange={(e) => setName(e.target.value)} />
                     </div>
-                    <div className="space-y-2">
+                     <div className="space-y-2">
                         <Label htmlFor="new-email">Email</Label>
-                        <Input id="new-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                        <Input id="new-email" type="email" value={firebaseUser?.email || ''} disabled />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="new-password">Senha</Label>
+                        <Label htmlFor="new-password">Senha de acesso ao perfil</Label>
                         <Input id="new-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
                     </div>
                 </div>
@@ -326,4 +408,45 @@ function AddUserDialog({ open, onOpenChange, onSave, isFirstUser }: AddUserDialo
             </DialogContent>
         </Dialog>
     )
+}
+
+interface EditUserDialogProps {
+    user: UserProfile | null;
+    onOpenChange: () => void;
+    onSave: (userId: string, newName: string) => void;
+}
+
+function EditUserDialog({ user, onOpenChange, onSave }: EditUserDialogProps) {
+    const [name, setName] = useState('');
+
+    useEffect(() => {
+        if (user) {
+            setName(user.name);
+        }
+    }, [user]);
+
+    const handleSubmit = () => {
+        if (user) {
+            onSave(user.id, name);
+        }
+    };
+    
+    return (
+        <Dialog open={!!user} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Editar Nome do Perfil</DialogTitle>
+                    <DialogDescription>Altere o nome de exibição para este perfil.</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-2 py-4">
+                    <Label htmlFor="edit-name">Nome do Perfil</Label>
+                    <Input id="edit-name" value={name} onChange={(e) => setName(e.target.value)} autoFocus/>
+                </div>
+                 <DialogFooter>
+                    <Button variant="outline" onClick={onOpenChange}>Cancelar</Button>
+                    <Button onClick={handleSubmit}>Salvar Alterações</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
 }

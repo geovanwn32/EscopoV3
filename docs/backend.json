@@ -1,112 +1,36 @@
-
 {
   "entities": {
     "Empresa": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Empresa",
       "type": "object",
-      "description": "Entidade que representa a empresa ativa no sistema.",
+      "description": "Represents a company within the EscopoV3 system.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Identificador único da empresa."
+          "description": "Unique identifier for the Empresa entity."
         },
-        "nomeFantasia": {
+        "nome": {
           "type": "string",
-          "description": "Nome fantasia da empresa."
-        },
-        "razaoSocial": {
-          "type": "string",
-          "description": "Razão social da empresa."
+          "description": "The name of the company."
         },
         "cnpj": {
           "type": "string",
-          "description": "CNPJ da empresa.",
-          "format": "string"
+          "description": "The CNPJ (Brazilian corporate tax ID) of the company."
         },
         "endereco": {
           "type": "string",
-          "description": "Endereço da empresa."
+          "description": "The address of the company."
         },
         "logomarcaUrl": {
           "type": "string",
-          "description": "URL da logomarca da empresa.",
+          "description": "URL of the company's logo.",
           "format": "uri"
-        },
-        "inscricaoEstadual": {
-          "type": "string",
-          "description": "Inscrição Estadual da empresa."
-        },
-        "inscricaoMunicipal": {
-          "type": "string",
-          "description": "Inscrição Municipal da empresa."
-        },
-        "inscricaoSuframa": {
-          "type": "string",
-          "description": "Inscrição na SUFRAMA."
-        },
-        "telefone": {
-          "type": "string",
-          "description": "Telefone de contato da empresa."
-        },
-        "email": {
-          "type": "string",
-          "description": "E-mail de contato da empresa.",
-          "format": "email"
-        },
-        "regimeTributario": {
-          "type": "string",
-          "description": "Regime tributário da empresa (ex: Simples Nacional, Lucro Presumido)."
-        },
-        "classificacaoTributaria": {
-          "type": "string",
-          "description": "Classificação tributária (eSocial/EFD-Reinf)."
-        },
-        "cnaePrincipal": {
-          "type": "string",
-          "description": "CNAE Fiscal Principal da empresa."
-        },
-        "contadorNome": {
-          "type": "string",
-          "description": "Nome do contador responsável."
-        },
-        "contadorCpf": {
-          "type": "string",
-          "description": "CPF do contador responsável."
-        },
-        "contadorCrc": {
-          "type": "string",
-          "description": "Número do CRC do contador."
-        },
-        "planoId": {
-          "type": "string",
-          "description": "Identificador do plano de assinatura da empresa.",
-          "enum": [
-            "Gratuito",
-            "Basico",
-            "Profissional"
-          ]
-        },
-        "statusLicenca": {
-          "type": "string",
-          "description": "Status atual da licença da empresa.",
-          "enum": [
-            "Ativa",
-            "Inadimplente",
-            "Cancelada",
-            "Expirada"
-          ]
-        },
-        "dataVencimentoLicenca": {
-          "type": "string",
-          "description": "Data de vencimento da licença da empresa.",
-          "format": "date-time"
         }
       },
       "required": [
         "id",
-        "nomeFantasia",
-        "razaoSocial",
+        "nome",
         "cnpj"
       ]
     },
@@ -114,72 +38,67 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Usuario",
       "type": "object",
-      "description": "Entidade que representa um usuário do sistema.",
+      "description": "Represents a user of the EscopoV3 system.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Identificador único do usuário."
-        },
-        "nome": {
-          "type": "string",
-          "description": "Nome completo do usuário."
-        },
-        "email": {
-          "type": "string",
-          "description": "Endereço de email do usuário.",
-          "format": "email"
+          "description": "Unique identifier for the Usuario entity."
         },
         "empresaId": {
           "type": "string",
-          "description": "Referência para a empresa a qual o usuário pertence. (Relacionamento: Empresa 1:N Usuário)"
+          "description": "Reference to Empresa. (Relationship: Empresa 1:N Usuario)"
         },
-        "isAdmin": {
-          "type": "boolean",
-          "description": "Indica se o usuário é um administrador."
+        "nome": {
+          "type": "string",
+          "description": "The user's full name."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address.",
+          "format": "email"
+        },
+        "funcao": {
+          "type": "string",
+          "description": "The user's role or job title within the company."
         }
       },
       "required": [
         "id",
+        "empresaId",
         "nome",
-        "email",
-        "empresaId"
+        "email"
       ]
     },
     "LancamentoFiscal": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "LancamentoFiscal",
       "type": "object",
-      "description": "Entidade que representa um lançamento fiscal (NF-e, NFS-e, etc.).",
+      "description": "Represents a fiscal entry (nota fiscal) in the EscopoV3 system.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Identificador único do lançamento fiscal."
+          "description": "Unique identifier for the LancamentoFiscal entity."
         },
         "empresaId": {
           "type": "string",
-          "description": "Referência para a empresa a qual o lançamento pertence. (Relacionamento: Empresa 1:N LançamentoFiscal)"
+          "description": "Reference to Empresa. (Relationship: Empresa 1:N LancamentoFiscal)"
         },
         "tipo": {
           "type": "string",
-          "description": "Tipo do lançamento fiscal (NF-e, NFS-e, Recibo, etc.)."
+          "description": "The type of fiscal entry (e.g., venda, compra, servico)."
         },
         "dataEmissao": {
           "type": "string",
-          "description": "Data de emissão do documento fiscal.",
+          "description": "The date the fiscal document was issued.",
           "format": "date-time"
         },
-        "valor": {
+        "valorTotal": {
           "type": "number",
-          "description": "Valor total do documento fiscal."
+          "description": "The total value of the fiscal document."
         },
-        "descricao": {
+        "parceiroId": {
           "type": "string",
-          "description": "Descrição do lançamento fiscal."
-        },
-        "xmlUrl": {
-          "type": "string",
-          "description": "URL to the xml file in storage, if one was uploaded",
-          "format": "uri"
+          "description": "Reference to Parceiro. (Relationship: Parceiro 1:N LancamentoFiscal)"
         }
       },
       "required": [
@@ -187,38 +106,78 @@
         "empresaId",
         "tipo",
         "dataEmissao",
-        "valor"
+        "valorTotal",
+        "parceiroId"
       ]
     },
-    "PlanoConta": {
+    "Parceiro": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "PlanoConta",
+      "title": "Parceiro",
       "type": "object",
-      "description": "Entidade que representa uma conta do plano de contas.",
+      "description": "Represents a business partner (customer, vendor, etc.) in the EscopoV3 system.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Identificador único da conta."
+          "description": "Unique identifier for the Parceiro entity."
         },
         "empresaId": {
           "type": "string",
-          "description": "Referência para a empresa a qual o plano de contas pertence. (Relacionamento: Empresa 1:N PlanoConta)"
-        },
-        "codigo": {
-          "type": "string",
-          "description": "Código da conta contábil."
-        },
-        "descricao": {
-          "type": "string",
-          "description": "Descrição da conta contábil."
+          "description": "Reference to Empresa. (Relationship: Empresa 1:N Parceiro)"
         },
         "tipo": {
           "type": "string",
-          "description": "Tipo da conta (Ativo, Passivo, Receita, Despesa, etc.)."
+          "description": "The type of partner (e.g., cliente, fornecedor)."
+        },
+        "nome": {
+          "type": "string",
+          "description": "The name of the partner."
+        },
+        "documento": {
+          "type": "string",
+          "description": "The partner's tax ID (CPF or CNPJ)."
+        },
+        "endereco": {
+          "type": "string",
+          "description": "The partner's address."
+        }
+      },
+      "required": [
+        "id",
+        "empresaId",
+        "tipo",
+        "nome",
+        "documento"
+      ]
+    },
+    "PlanoDeContas": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PlanoDeContas",
+      "type": "object",
+      "description": "Represents the chart of accounts in the EscopoV3 system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the PlanoDeContas entity."
+        },
+        "empresaId": {
+          "type": "string",
+          "description": "Reference to Empresa. (Relationship: Empresa 1:N PlanoDeContas)"
+        },
+        "codigo": {
+          "type": "string",
+          "description": "The account code."
+        },
+        "descricao": {
+          "type": "string",
+          "description": "The description of the account."
+        },
+        "tipo": {
+          "type": "string",
+          "description": "The account type (e.g., ativo, passivo)."
         },
         "natureza": {
           "type": "string",
-          "description": "Natureza do saldo (Devedor, Credor)."
+          "description": "The nature of the account (e.g., devedora, credora)."
         }
       },
       "required": [
@@ -234,36 +193,36 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "LancamentoContabil",
       "type": "object",
-      "description": "Entidade que representa um lançamento contábil (partida dobrada).",
+      "description": "Represents a journal entry in the EscopoV3 system.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Identificador único do lançamento contábil."
+          "description": "Unique identifier for the LancamentoContabil entity."
         },
         "empresaId": {
           "type": "string",
-          "description": "Referência para a empresa a qual o lançamento pertence. (Relacionamento: Empresa 1:N LancamentoContabil)"
+          "description": "Reference to Empresa. (Relationship: Empresa 1:N LancamentoContabil)"
         },
         "data": {
           "type": "string",
-          "description": "Data do lançamento contábil.",
+          "description": "The date of the journal entry.",
           "format": "date-time"
         },
         "descricao": {
           "type": "string",
-          "description": "Descrição do lançamento contábil."
+          "description": "The description of the journal entry."
         },
         "debitoContaId": {
           "type": "string",
-          "description": "Referência para a conta de débito. (Relacionamento: PlanoConta 1:N LancamentoContabil)"
+          "description": "Reference to PlanoDeContas for debit account. (Relationship: PlanoDeContas 1:N LancamentoContabil)"
         },
         "creditoContaId": {
           "type": "string",
-          "description": "Referência para a conta de crédito. (Relacionamento: PlanoConta 1:N LancamentoContabil)"
+          "description": "Reference to PlanoDeContas for credit account. (Relationship: PlanoDeContas 1:N LancamentoContabil)"
         },
         "valor": {
           "type": "number",
-          "description": "Valor do lançamento contábil."
+          "description": "The amount of the journal entry."
         }
       },
       "required": [
@@ -276,468 +235,69 @@
         "valor"
       ]
     },
-    "Parceiro": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Parceiro",
-      "type": "object",
-      "description": "Entidade que representa um parceiro (cliente, fornecedor, etc.).",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Identificador único do parceiro."
-        },
-        "empresaId": {
-          "type": "string",
-          "description": "Referência para a empresa a qual o parceiro pertence."
-        },
-        "personType": {
-          "type": "string",
-          "description": "Tipo de pessoa (FISICA ou JURIDICA).",
-          "enum": [
-            "FISICA",
-            "JURIDICA"
-          ]
-        },
-        "name": {
-          "type": "string",
-          "description": "Nome ou Razão Social do parceiro."
-        },
-        "document": {
-          "type": "string",
-          "description": "CNPJ ou CPF do parceiro."
-        },
-        "type": {
-          "type": "string",
-          "description": "Tipo do parceiro (Cliente, Fornecedor, Transportadora, etc.).",
-          "enum": [
-            "Cliente",
-            "Fornecedor",
-            "Transportadora"
-          ]
-        },
-        "email": {
-          "type": "string",
-          "format": "email"
-        },
-        "phone": {
-          "type": "string"
-        },
-        "address": {
-          "type": "object",
-          "properties": {
-            "street": {
-              "type": "string"
-            },
-            "number": {
-              "type": "string"
-            },
-            "complement": {
-              "type": "string"
-            },
-            "neighborhood": {
-              "type": "string"
-            },
-            "city": {
-              "type": "string"
-            },
-            "state": {
-              "type": "string"
-            },
-            "zipCode": {
-              "type": "string"
-            }
-          }
-        },
-        "taxRegime": {
-          "type": "string",
-          "description": "Regime tributário do parceiro."
-        }
-      },
-      "required": [
-        "id",
-        "empresaId",
-        "personType",
-        "name",
-        "document",
-        "type"
-      ]
-    },
-    "Funcionario": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Funcionario",
-      "type": "object",
-      "description": "Entidade que representa um funcionário.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Identificador único do funcionário."
-        },
-        "empresaId": {
-          "type": "string",
-          "description": "Referência para a empresa a qual o funcionário pertence. (Relacionamento: Empresa 1:N Funcionario)"
-        },
-        "nome": {
-          "type": "string",
-          "description": "Nome completo do funcionário."
-        },
-        "cpf": {
-          "type": "string",
-          "description": "CPF do funcionário."
-        },
-        "dataAdmissao": {
-          "type": "string",
-          "description": "Data de admissão do funcionário.",
-          "format": "date-time"
-        },
-        "cargo": {
-          "type": "string",
-          "description": "Cargo do funcionário."
-        },
-        "departamento": {
-          "type": "string",
-          "description": "Departamento do funcionário."
-        },
-        "salario": {
-          "type": "number",
-          "description": "Salário do funcionário."
-        },
-        "dataNascimento": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Data de nascimento."
-        },
-        "genero": {
-          "type": "string",
-          "enum": [
-            "Masculino",
-            "Feminino",
-            "Outro"
-          ]
-        },
-        "estadoCivil": {
-          "type": "string",
-          "enum": [
-            "Solteiro(a)",
-            "Casado(a)",
-            "Divorciado(a)",
-            "Viúvo(a)",
-            "União Estável"
-          ]
-        },
-        "nacionalidade": {
-          "type": "string"
-        },
-        "rg": {
-          "type": "string",
-          "description": "Número do RG."
-        },
-        "pis": {
-          "type": "string",
-          "description": "Número do PIS/PASEP."
-        },
-        "endereco": {
-          "type": "object",
-          "properties": {
-            "cep": {
-              "type": "string"
-            },
-            "logradouro": {
-              "type": "string"
-            },
-            "numero": {
-              "type": "string"
-            },
-            "complemento": {
-              "type": "string"
-            },
-            "bairro": {
-              "type": "string"
-            },
-            "cidade": {
-              "type": "string"
-            },
-            "uf": {
-              "type": "string"
-            }
-          }
-        },
-        "contato": {
-          "type": "object",
-          "properties": {
-            "telefone": {
-              "type": "string"
-            },
-            "email": {
-              "type": "string",
-              "format": "email"
-            }
-          }
-        },
-        "contrato": {
-          "type": "object",
-          "properties": {
-            "horarioTrabalho": {
-              "type": "string"
-            },
-            "tipoContrato": {
-              "type": "string",
-              "enum": [
-                "CLT",
-                "Estágio",
-                "PJ",
-                "Temporário"
-              ]
-            }
-          }
-        },
-        "dadosBancarios": {
-          "type": "object",
-          "properties": {
-            "banco": {
-              "type": "string"
-            },
-            "agencia": {
-              "type": "string"
-            },
-            "conta": {
-              "type": "string"
-            }
-          }
-        },
-        "dependentes": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "id": { "type": "number" },
-              "nome": {
-                "type": "string"
-              },
-              "cpf": {
-                "type": "string"
-              },
-              "dataNascimento": {
-                "type": "string",
-                "format": "date-time"
-              }
-            }
-          }
-        },
-        "anotacoesCarteira": {
-            "type": "array",
-            "description": "Anotações na Carteira de Trabalho.",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "id": { "type": "number" },
-                    "data": { "type": "string", "format": "date-time" },
-                    "descricao": { "type": "string" }
-                }
-            }
-        }
-      },
-      "required": [
-        "id",
-        "empresaId",
-        "nome",
-        "cpf",
-        "dataAdmissao",
-        "cargo",
-        "salario"
-      ]
-    },
-    "ProdutoServico": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "ProdutoServico",
-      "type": "object",
-      "description": "Entidade que representa um produto ou serviço com seus dados fiscais e tributários.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Identificador único do produto/serviço."
-        },
-        "empresaId": {
-          "type": "string",
-          "description": "Referência para a empresa a qual o produto/serviço pertence."
-        },
-        "tipo": {
-          "type": "string",
-          "description": "Tipo (Produto ou Serviço).",
-          "enum": [
-            "Produto",
-            "Serviço"
-          ]
-        },
-        "codigo": {
-          "type": "string",
-          "description": "Código do produto/serviço."
-        },
-        "descricao": {
-          "type": "string",
-          "description": "Descrição do produto/serviço."
-        },
-        "valor": {
-          "type": "number",
-          "description": "Valor unitário do produto/serviço."
-        },
-        "unidadeMedida": {
-          "type": "string",
-          "description": "Unidade de medida (ex: UN, KG, CX)."
-        },
-        "ncm": {
-          "type": "string",
-          "description": "Nomenclatura Comum do Mercosul."
-        },
-        "cest": {
-          "type": "string",
-          "description": "Código Especificador da Substituição Tributária."
-        },
-        "cfop": {
-          "type": "string",
-          "description": "Código Fiscal de Operações e Prestações (padrão para saídas)."
-        },
-        "origem": {
-          "type": "string",
-          "description": "Origem da mercadoria (0-Nacional, 1-Estrangeira, etc.)."
-        },
-        "icms": {
-          "type": "object",
-          "description": "Informações do ICMS.",
-          "properties": {
-            "cst": {
-              "type": "string",
-              "description": "Código de Situação Tributária."
-            },
-            "aliquota": {
-              "type": "number",
-              "description": "Alíquota do ICMS."
-            },
-            "baseCalculo": {
-              "type": "number",
-              "description": "Percentual de redução da base de cálculo."
-            }
-          }
-        },
-        "ipi": {
-          "type": "object",
-          "description": "Informações do IPI.",
-          "properties": {
-            "cst": {
-              "type": "string",
-              "description": "Código de Situação Tributária."
-            },
-            "aliquota": {
-              "type": "number",
-              "description": "Alíquota do IPI."
-            }
-          }
-        },
-        "pis": {
-          "type": "object",
-          "description": "Informações do PIS.",
-          "properties": {
-            "cst": {
-              "type": "string",
-              "description": "Código de Situação Tributária."
-            },
-            "aliquota": {
-              "type": "number",
-              "description": "Alíquota do PIS."
-            }
-          }
-        },
-        "cofins": {
-          "type": "object",
-          "description": "Informações do COFINS.",
-          "properties": {
-            "cst": {
-              "type": "string",
-              "description": "Código de Situação Tributária."
-            },
-            "aliquota": {
-              "type": "number",
-              "description": "Alíquota do COFINS."
-            }
-          }
-        }
-      },
-      "required": [
-        "id",
-        "empresaId",
-        "tipo",
-        "codigo",
-        "descricao",
-        "valor"
-      ]
-    },
     "Evento": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Evento",
       "type": "object",
-      "description": "Entidade que representa um evento na agenda.",
+      "description": "Represents an event in the EscopoV3 system's calendar.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Identificador único do evento."
+          "description": "Unique identifier for the Evento entity."
         },
         "empresaId": {
           "type": "string",
-          "description": "Referência para a empresa a qual o evento pertence. (Relacionamento: Empresa 1:N Evento)"
-        },
-        "titulo": {
-          "type": "string",
-          "description": "Título do evento."
-        },
-        "descricao": {
-          "type": "string",
-          "description": "Descrição do evento."
+          "description": "Reference to Empresa. (Relationship: Empresa 1:N Evento)"
         },
         "dataInicio": {
           "type": "string",
-          "description": "Data e hora de início do evento.",
+          "description": "The start date and time of the event.",
           "format": "date-time"
         },
         "dataFim": {
           "type": "string",
-          "description": "Data e hora de fim do evento.",
+          "description": "The end date and time of the event.",
           "format": "date-time"
+        },
+        "descricao": {
+          "type": "string",
+          "description": "A description of the event."
         }
       },
       "required": [
         "id",
         "empresaId",
-        "titulo",
-        "descricao",
         "dataInicio",
-        "dataFim"
+        "dataFim",
+        "descricao"
       ]
     },
     "Arquivo": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Arquivo",
       "type": "object",
-      "description": "Entidade que representa um arquivo armazenado no sistema.",
+      "description": "Represents a file stored within the EscopoV3 system.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Identificador único do arquivo."
+          "description": "Unique identifier for the Arquivo entity."
         },
         "empresaId": {
           "type": "string",
-          "description": "Referência para a empresa a qual o arquivo pertence. (Relacionamento: Empresa 1:N Arquivo)"
+          "description": "Reference to Empresa. (Relationship: Empresa 1:N Arquivo)"
         },
         "nome": {
           "type": "string",
-          "description": "Nome do arquivo."
+          "description": "The name of the file."
         },
         "url": {
           "type": "string",
-          "description": "URL do arquivo no sistema de armazenamento.",
+          "description": "The URL where the file is stored.",
           "format": "uri"
         },
         "tipo": {
           "type": "string",
-          "description": "Tipo do arquivo (PDF, DOC, XLSX, etc.)."
+          "description": "The MIME type of the file."
         }
       },
       "required": [
@@ -748,157 +308,87 @@
         "tipo"
       ]
     },
-    "Auditoria": {
+    "Funcionario": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Auditoria",
+      "title": "Funcionario",
       "type": "object",
-      "description": "Entidade para rastrear alterações, ações do usuário e modificações de dados para fins de conformidade e segurança.",
+      "description": "Represents an employee of a company within the EscopoV3 system.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Identificador único da entrada de auditoria."
-        },
-        "usuarioId": {
-          "type": "string",
-          "description": "Referência ao usuário que realizou a ação. (Relacionamento: Usuario 1:N Auditoria)"
+          "description": "Unique identifier for the Funcionario entity."
         },
         "empresaId": {
           "type": "string",
-          "description": "Referência para a empresa relacionada à ação de auditoria. (Relacionamento: Empresa 1:N Auditoria)"
-        },
-        "data": {
-          "type": "string",
-          "description": "Data e hora em que a ação foi realizada.",
-          "format": "date-time"
-        },
-        "modulo": {
-          "type": "string",
-          "description": "Módulo do sistema onde a ação ocorreu."
-        },
-        "acao": {
-          "type": "string",
-          "description": "Descrição da ação realizada (ex: 'Criar', 'Editar', 'Excluir')."
-        },
-        "detalhes": {
-          "type": "string",
-          "description": "Detalhes adicionais sobre a ação realizada, incluindo os dados modificados."
-        }
-      },
-      "required": [
-        "id",
-        "usuarioId",
-        "empresaId",
-        "data",
-        "modulo",
-        "acao"
-      ]
-    },
-    "Kpi": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Kpi",
-      "type": "object",
-      "description": "Entidade que armazena as configurações de KPI do dashboard.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Identificador único do KPI."
-        },
-        "empresaId": {
-          "type": "string",
-          "description": "Referência para a empresa a qual o KPI pertence. (Relacionamento: Empresa 1:N Kpi)"
+          "description": "Reference to Empresa. (Relationship: Empresa 1:N Funcionario)"
         },
         "nome": {
           "type": "string",
-          "description": "Nome do KPI."
+          "description": "The full name of the employee."
         },
-        "modulo": {
+        "cpf": {
           "type": "string",
-          "description": "Módulo associado ao KPI."
+          "description": "The employee's CPF (Brazilian individual tax ID)."
         },
-        "filtro": {
+        "dataAdmissao": {
           "type": "string",
-          "description": "Filtro aplicado ao KPI."
+          "description": "The employee's hiring date.",
+          "format": "date-time"
+        },
+        "cargo": {
+          "type": "string",
+          "description": "The employee's job title."
         }
       },
       "required": [
         "id",
         "empresaId",
         "nome",
-        "modulo"
+        "cpf",
+        "dataAdmissao",
+        "cargo"
       ]
     },
-    "AlertaWebsite": {
+    "Rubrica": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "AlertaWebsite",
+      "title": "Rubrica",
       "type": "object",
-      "description": "Entidade que armazena informações sobre o status de sites governamentais.",
+      "description": "Represents a payroll code (rubrica) used in the EscopoV3 system for personnel calculations.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Identificador único do alerta."
-        },
-        "url": {
-          "type": "string",
-          "description": "URL do site governamental monitorado."
-        },
-        "status": {
-          "type": "string",
-          "description": "Status do site (Online, Offline, Instável)."
-        },
-        "ultimaVerificacao": {
-          "type": "string",
-          "description": "Data e hora da última verificação.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "url",
-        "status",
-        "ultimaVerificacao"
-      ]
-    },
-    "SugestaoDescricaoTransacao": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "SugestaoDescricaoTransacao",
-      "type": "object",
-      "description": "Entidade que armazena sugestões de descrição para transações manuais, geradas por IA.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Identificador único da sugestão."
+          "description": "Unique identifier for the Rubrica entity."
         },
         "empresaId": {
           "type": "string",
-          "description": "Referência para a empresa à qual a sugestão pertence. (Relacionamento: Empresa 1:N SugestaoDescricaoTransacao)"
+          "description": "Reference to Empresa. (Relationship: Empresa 1:N Rubrica)"
         },
-        "valor": {
-          "type": "number",
-          "description": "Valor da transação."
-        },
-        "contaContabilId": {
+        "codigo": {
           "type": "string",
-          "description": "Referência para a conta contábil associada. (Relacionamento: PlanoConta 1:N SugestaoDescricaoTransacao)"
+          "description": "The payroll code number."
         },
-        "sugestao": {
+        "descricao": {
           "type": "string",
-          "description": "Descrição sugerida para a transação."
+          "description": "A description of the payroll code."
+        },
+        "tipo": {
+          "type": "string",
+          "description": "The type of payroll code (e.g., provento, desconto)."
         }
       },
       "required": [
         "id",
         "empresaId",
-        "valor",
-        "contaContabilId",
-        "sugestao"
+        "codigo",
+        "descricao",
+        "tipo"
       ]
     }
   },
   "auth": {
     "providers": [
       "password",
-      "anonymous",
-      "google.com"
+      "anonymous"
     ]
   },
   "firestore": {
@@ -910,7 +400,7 @@
           "schema": {
             "$ref": "#/backend/entities/Empresa"
           },
-          "description": "Represents a company in the system. The document ID serves as the unique identifier for the company.",
+          "description": "Stores company data.  All documents in this collection have the same security requirements.",
           "params": [
             {
               "name": "empresaId",
@@ -926,7 +416,7 @@
           "schema": {
             "$ref": "#/backend/entities/Usuario"
           },
-          "description": "Represents a user associated with a company.  This subcollection defines user access to the company's data. Includes denormalized 'empresaId' for authorization independence.",
+          "description": "Stores user data for a specific company. Uses path-based ownership. All documents in this collection have the same security requirements.",
           "params": [
             {
               "name": "empresaId",
@@ -946,7 +436,7 @@
           "schema": {
             "$ref": "#/backend/entities/LancamentoFiscal"
           },
-          "description": "Represents a fiscal record associated with a company. Includes denormalized 'empresaId' for authorization independence.",
+          "description": "Stores fiscal entries for a specific company. Uses path-based ownership. All documents in this collection have the same security requirements.",
           "params": [
             {
               "name": "empresaId",
@@ -954,27 +444,47 @@
             },
             {
               "name": "lancamentoFiscalId",
-              "description": "The unique identifier for the fiscal record."
+              "description": "The unique identifier for the fiscal entry."
             }
           ]
         }
       },
       {
-        "path": "/empresas/{empresaId}/planos_conta/{planoContaId}",
+        "path": "/empresas/{empresaId}/parceiros/{parceiroId}",
         "definition": {
-          "entityName": "PlanoConta",
+          "entityName": "Parceiro",
           "schema": {
-            "$ref": "#/backend/entities/PlanoConta"
+            "$ref": "#/backend/entities/Parceiro"
           },
-          "description": "Represents a chart of accounts for a company. Includes denormalized 'empresaId' for authorization independence.",
+          "description": "Stores business partner data for a specific company. Uses path-based ownership. All documents in this collection have the same security requirements.",
           "params": [
             {
               "name": "empresaId",
               "description": "The unique identifier for the company."
             },
             {
-              "name": "planoContaId",
-              "description": "The unique identifier for the account."
+              "name": "parceiroId",
+              "description": "The unique identifier for the business partner."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/empresas/{empresaId}/planos_de_contas/{planoDeContasId}",
+        "definition": {
+          "entityName": "PlanoDeContas",
+          "schema": {
+            "$ref": "#/backend/entities/PlanoDeContas"
+          },
+          "description": "Stores chart of accounts data for a specific company. Uses path-based ownership. All documents in this collection have the same security requirements.",
+          "params": [
+            {
+              "name": "empresaId",
+              "description": "The unique identifier for the company."
+            },
+            {
+              "name": "planoDeContasId",
+              "description": "The unique identifier for the chart of accounts entry."
             }
           ]
         }
@@ -986,7 +496,7 @@
           "schema": {
             "$ref": "#/backend/entities/LancamentoContabil"
           },
-          "description": "Represents a journal entry for a company. Includes denormalized 'empresaId' for authorization independence.",
+          "description": "Stores journal entry data for a specific company. Uses path-based ownership. All documents in this collection have the same security requirements.",
           "params": [
             {
               "name": "empresaId",
@@ -1000,73 +510,13 @@
         }
       },
       {
-        "path": "/empresas/{empresaId}/parceiros/{parceiroId}",
-        "definition": {
-          "entityName": "Parceiro",
-          "schema": {
-            "$ref": "#/backend/entities/Parceiro"
-          },
-          "description": "Represents a partner (customer, vendor) for a company. Includes denormalized 'empresaId' for authorization independence.",
-          "params": [
-            {
-              "name": "empresaId",
-              "description": "The unique identifier for the company."
-            },
-            {
-              "name": "parceiroId",
-              "description": "The unique identifier for the partner."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/empresas/{empresaId}/funcionarios/{funcionarioId}",
-        "definition": {
-          "entityName": "Funcionario",
-          "schema": {
-            "$ref": "#/backend/entities/Funcionario"
-          },
-          "description": "Represents an employee of a company. Includes denormalized 'empresaId' for authorization independence.",
-          "params": [
-            {
-              "name": "empresaId",
-              "description": "The unique identifier for the company."
-            },
-            {
-              "name": "funcionarioId",
-              "description": "The unique identifier for the employee."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/empresas/{empresaId}/produtos_servicos/{produtoServicoId}",
-        "definition": {
-          "entityName": "ProdutoServico",
-          "schema": {
-            "$ref": "#/backend/entities/ProdutoServico"
-          },
-          "description": "Represents a product or service offered by a company. Includes denormalized 'empresaId' for authorization independence.",
-          "params": [
-            {
-              "name": "empresaId",
-              "description": "The unique identifier for the company."
-            },
-            {
-              "name": "produtoServicoId",
-              "description": "The unique identifier for the product or service."
-            }
-          ]
-        }
-      },
-      {
         "path": "/empresas/{empresaId}/eventos/{eventoId}",
         "definition": {
           "entityName": "Evento",
           "schema": {
             "$ref": "#/backend/entities/Evento"
           },
-          "description": "Represents an event in a company's calendar. Includes denormalized 'empresaId' for authorization independence.",
+          "description": "Stores event data for a specific company. Uses path-based ownership. All documents in this collection have the same security requirements.",
           "params": [
             {
               "name": "empresaId",
@@ -1086,7 +536,7 @@
           "schema": {
             "$ref": "#/backend/entities/Arquivo"
           },
-          "description": "Represents a file stored by a company. Includes denormalized 'empresaId' for authorization independence.",
+          "description": "Stores file data for a specific company. Uses path-based ownership. All documents in this collection have the same security requirements.",
           "params": [
             {
               "name": "empresaId",
@@ -1100,96 +550,46 @@
         }
       },
       {
-        "path": "/auditoria/{auditoriaId}",
+        "path": "/empresas/{empresaId}/funcionarios/{funcionarioId}",
         "definition": {
-          "entityName": "Auditoria",
+          "entityName": "Funcionario",
           "schema": {
-            "$ref": "#/backend/entities/Auditoria"
+            "$ref": "#/backend/entities/Funcionario"
           },
-          "description": "Represents an audit log entry. Each entry tracks a specific action performed by a user within the system. Root collection for global monitoring.",
-          "params": [
-            {
-              "name": "auditoriaId",
-              "description": "The unique identifier for the audit log entry."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/empresas/{empresaId}/kpis/{kpiId}",
-        "definition": {
-          "entityName": "Kpi",
-          "schema": {
-            "$ref": "#/backend/entities/Kpi"
-          },
-          "description": "Represents a Key Performance Indicator for a company's dashboard. Includes denormalized 'empresaId' for authorization independence.",
+          "description": "Stores employee data for a specific company. Uses path-based ownership. All documents in this collection have the same security requirements.",
           "params": [
             {
               "name": "empresaId",
               "description": "The unique identifier for the company."
             },
             {
-              "name": "kpiId",
-              "description": "The unique identifier for the KPI."
+              "name": "funcionarioId",
+              "description": "The unique identifier for the employee."
             }
           ]
         }
       },
       {
-        "path": "/alertas_website/{alertaWebsiteId}",
+        "path": "/empresas/{empresaId}/rubricas/{rubricaId}",
         "definition": {
-          "entityName": "AlertaWebsite",
+          "entityName": "Rubrica",
           "schema": {
-            "$ref": "#/backend/entities/AlertaWebsite"
+            "$ref": "#/backend/entities/Rubrica"
           },
-          "description": "Represents an alert for the status of a government website. No company-specific data; globally accessible.",
-          "params": [
-            {
-              "name": "alertaWebsiteId",
-              "description": "The unique identifier for the website alert."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/empresas/{empresaId}/sugestoes_descricao_transacao/{sugestaoDescricaoTransacaoId}",
-        "definition": {
-          "entityName": "SugestaoDescricaoTransacao",
-          "schema": {
-            "$ref": "#/backend/entities/SugestaoDescricaoTransacao"
-          },
-          "description": "Represents a suggested transaction description generated by AI. Includes denormalized 'empresaId' for authorization independence.",
+          "description": "Stores payroll code data for a specific company. Uses path-based ownership. All documents in this collection have the same security requirements.",
           "params": [
             {
               "name": "empresaId",
               "description": "The unique identifier for the company."
             },
             {
-              "name": "sugestaoDescricaoTransacaoId",
-              "description": "The unique identifier for the transaction description suggestion."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/roles_admin/{userId}",
-        "definition": {
-          "entityName": "roleAdmin",
-          "schema": {
-            "$ref": "#/backend/entities/Usuario"
-          },
-          "description": "Marks a user as an administrator. Existence of the document grants admin privileges.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier for the user."
+              "name": "rubricaId",
+              "description": "The unique identifier for the payroll code."
             }
           ]
         }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to support the ERP Contábil \"EscopoV3\" application, focusing on security, scalability, and debuggability. The design adheres to the principles of Authorization Independence, Clarity of Intent, DBAC (Database-Based Access Control), QAPs (Queries Are Not Filters), and Invariants. Authorization Independence is achieved through denormalization, specifically by including the `empresaId` in every document, enabling rules to validate access without relying on parent document data. Structural Segregation is used to maintain a homogeneous security posture within each collection. Access Modeling employs path-based ownership and membership maps for collaborative data. Data Clarity is enhanced through explicit state modeling using a dedicated `status` field and predictable schema. \n\n**Details on how Authorization Independence and QAPs are achieved:**\n\n*   **Authorization Independence:** Every document that belongs to an `Empresa` includes the `empresaId` field. Security rules can use this to verify that the current user has access to the `Empresa` document (through the `Usuarios` collection) without needing to perform a `get()` operation on the `Empresa` document itself. For example, rules for `/empresas/{empresaId}/lancamentos_fiscais/{lancamentoFiscalId}` will check if `request.auth.uid` exists in `/empresas/{empresaId}/usuarios/{uid}` or if the `empresaId` on the `lancamentos_fiscais` document matches an `Empresa` document the user has access to. This ensures that all security checks are atomic and independent of parent documents.\n*   **QAPs (Rules are not Filters):** The structure facilitates secure `list` operations because authorization rules can be applied directly at the collection level. Because all documents in collections like `/empresas/{empresaId}/lancamentos_fiscais` have the `empresaId` field, security rules can restrict access to only those documents where the `empresaId` matches an `Empresa` document the user has access to. This prevents the need to filter data on the client-side, ensuring that users only receive data they are authorized to access.\n\n*   **Audit Logs**: `/auditoria` are implemented at the root to allow for cross-company monitoring of actions. To constrain this data to only be read by admins, a separate `/roles_admin/{uid}` collection is leveraged to allow rule constraints."
+    "reasoning": "The Firestore data structure is designed to adhere to the principles of Authorization Independence, Clarity of Intent, and Homogeneous Security Posture. It uses path-based ownership for user and company-related data and denormalizes authorization data where necessary to avoid `get()` calls in security rules. All collections are designed with a homogeneous security posture, ensuring that documents within a collection share the same security requirements.\n\n*   **Authorization Independence:** Achieved by using path-based ownership (e.g., `/empresas/{empresaId}/usuarios/{usuarioId}`) and denormalizing authorization data into subcollections when needed. For example, if we had collaborative documents, the `members` map from the parent would be copied into the child documents.\n*   **QAPs (Rules are not Filters):** Supported by segregating data with different access needs into different collections. For example, company data is separated by `empresaId`, enabling secure `list` operations within a company's scope. Private user data is stored under `/users/{userId}`, ensuring only the user can access it.\n*   **DBAC:** Roles would be managed via a separate collection `/roles_admin/{uid}`. However, the current schema doesn't have this feature implemented.\n\nThe structure prioritizes clarity, security, and scalability, making it easier to implement robust security rules and maintain the application over time."
   }
 }
-
-    

@@ -25,12 +25,12 @@ const calculators = [
         description: 'Calcule a 1ª, 2ª ou parcela única do 13º salário.',
         color: "text-amber-600 bg-amber-100/80 group-hover:bg-amber-600 dark:bg-amber-900/40 dark:text-amber-400 dark:group-hover:bg-amber-500",
     },
-    {
+     {
         href: '/pessoal/rescisao',
         icon: <UserMinus className="h-8 w-8" />,
         label: 'Rescisão',
-        description: 'Calcule a rescisão de contrato de trabalho (TRCT).',
-        color: "text-red-600 bg-red-100/80 group-hover:bg-red-600 dark:bg-red-900/40 dark:text-red-400 dark:group-hover:bg-red-500",
+        description: 'Calcule a rescisão de contrato de trabalho.',
+        color: "text-rose-600 bg-rose-100/80 group-hover:bg-rose-600 dark:bg-rose-900/40 dark:text-rose-400 dark:group-hover:bg-rose-500",
     },
     {
         href: '/pessoal/rci',
@@ -38,13 +38,6 @@ const calculators = [
         label: 'RCI (Pró-labore)',
         description: 'Calcule o Recibo de Pagamento de Autônomo ou pró-labore.',
         color: "text-indigo-600 bg-indigo-100/80 group-hover:bg-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400 dark:group-hover:bg-indigo-500",
-    },
-    {
-        href: '/funcionarios',
-        icon: <Briefcase className="h-8 w-8" />,
-        label: 'Funcionários',
-        description: 'Gerencie os dados dos seus colaboradores.',
-        color: "text-slate-600 bg-slate-100/80 group-hover:bg-slate-600 dark:bg-slate-700/40 dark:text-slate-400 dark:group-hover:bg-slate-500",
     },
 ]
 

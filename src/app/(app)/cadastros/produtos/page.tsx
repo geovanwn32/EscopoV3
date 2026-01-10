@@ -1,6 +1,6 @@
 'use client';
 import { useState, useMemo, useEffect } from 'react';
-import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft } from 'lucide-react';
+import { MoreHorizontal, Plus, Search, Trash2, Pencil, ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -16,6 +16,9 @@ import { Product } from '@/types/fiscal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { MoneyInput } from '@/components/ui/money-input';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, doc, addDoc, updateDoc, deleteDoc, query } from 'firebase/firestore';
+
 
 interface UnidadeDeMedida {
     id: number;
@@ -25,35 +28,61 @@ interface UnidadeDeMedida {
 
 export default function ProdutosPage() {
     const { toast } = useToast();
-    const { useScopedData } = useCompany();
-    const [products, setProducts] = useScopedData<Product[]>('cadastros-produtos', []);
-    const [unidadesDeMedida] = useScopedData<UnidadeDeMedida[]>('cadastros-unidade-de-medida', []);
+    const { currentCompany } = useCompany();
+    const firestore = useFirestore();
+
+    const productsQuery = useMemoFirebase(() => {
+        if (!currentCompany) return null;
+        // The collection path should be 'produtos_servicos' according to backend.json
+        return query(collection(firestore, "empresas", String(currentCompany), "produtos_servicos"));
+    }, [firestore, currentCompany]);
+
+    // We filter for "Produto" on the client-side
+    const { data: productsAndServices, isLoading: isLoadingProducts } = useCollection<Product | any>(productsQuery as any);
+    const products = useMemo(() => productsAndServices?.filter(item => item.tipo === 'Produto') || [], [productsAndServices]);
+
+
+    const [unidadesDeMedida, setUnidadesDeMedida] = useState<UnidadeDeMedida[]>([]); // Assuming this might come from somewhere else
     
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<Product | null>(null);
     const [editingItem, setEditingItem] = useState<Product | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const handleSave = (itemData: Omit<Product, 'id' | 'codigo'>) => {
-        if (editingItem) {
-            setProducts(prev => prev.map(i => i.id === editingItem.id ? { ...editingItem, ...itemData } : i));
-            toast({ title: "Produto Atualizado!", description: "O produto foi atualizado com sucesso." });
-        } else {
-            const newCode = (products.length + 1).toString();
-            const newItem: Product = { ...itemData, id: Date.now(), codigo: newCode };
-            setProducts(prev => [...prev, newItem]);
-            toast({ title: "Produto Adicionado!", description: "O novo produto foi salvo no seu catálogo." });
+    const handleSave = async (itemData: Omit<Product, 'id' | 'codigo'>) => {
+        if (!currentCompany) return;
+
+        try {
+            if (editingItem) {
+                const productDoc = doc(firestore, "empresas", String(currentCompany), "produtos_servicos", editingItem.id);
+                await updateDoc(productDoc, { ...itemData });
+                toast({ title: "Produto Atualizado!", description: "O produto foi atualizado com sucesso." });
+            } else {
+                const newCode = `PROD-${((products?.length || 0) + 1).toString().padStart(4, '0')}`;
+                const newItem: Omit<Product, 'id'> = { ...itemData, codigo: newCode, tipo: 'Produto' };
+                const productsCollection = collection(firestore, "empresas", String(currentCompany), "produtos_servicos");
+                await addDoc(productsCollection, newItem);
+                toast({ title: "Produto Adicionado!", description: "O novo produto foi salvo no seu catálogo." });
+            }
+        } catch (error: any) {
+            toast({ variant: "destructive", title: "Erro ao Salvar", description: error.message });
         }
+        
         setIsDialogOpen(false);
         setEditingItem(null);
     };
 
     const handleDeleteClick = (item: Product) => setItemToDelete(item);
 
-    const handleConfirmDelete = () => {
-        if (itemToDelete) {
-            setProducts(prev => prev.filter(i => i.id !== itemToDelete.id));
-            toast({ variant: "destructive", title: "Produto Excluído!", description: `O produto foi removido.` });
+    const handleConfirmDelete = async () => {
+        if (itemToDelete && currentCompany) {
+            try {
+                const productDoc = doc(firestore, "empresas", String(currentCompany), "produtos_servicos", itemToDelete.id);
+                await deleteDoc(productDoc);
+                toast({ variant: "destructive", title: "Produto Excluído!", description: `O produto foi removido.` });
+            } catch (error: any) {
+                 toast({ variant: "destructive", title: "Erro ao Excluir", description: error.message });
+            }
             setItemToDelete(null);
         }
     };
@@ -64,6 +93,7 @@ export default function ProdutosPage() {
     };
 
     const filteredItems = useMemo(() => {
+        if (!products) return [];
         return products.filter(item =>
             item.codigo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             item.descricao.toLowerCase().includes(searchTerm.toLowerCase())
@@ -91,7 +121,7 @@ export default function ProdutosPage() {
                     <div className="flex items-center justify-between">
                         <div>
                             <CardTitle>Produtos Cadastrados</CardTitle>
-                            <CardDescription>{products.length} produtos encontrados.</CardDescription>
+                            <CardDescription>{products?.length || 0} produtos encontrados.</CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
                              <div className="relative flex-grow">
@@ -126,7 +156,13 @@ export default function ProdutosPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredItems.length > 0 ? filteredItems.map(item => (
+                                {isLoadingProducts ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="h-24 text-center">
+                                            <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
+                                        </TableCell>
+                                    </TableRow>
+                                ) : filteredItems.length > 0 ? filteredItems.map(item => (
                                     <TableRow key={item.id}>
                                         <TableCell className="font-medium font-mono">{item.codigo}</TableCell>
                                         <TableCell>{item.descricao}</TableCell>
@@ -177,7 +213,7 @@ export default function ProdutosPage() {
 }
 
 interface ItemFormProps {
-    onSave: (item: Omit<Product, 'id' | 'codigo'>) => void;
+    onSave: (item: Omit<Product, 'id' | 'codigo' | 'tipo'>) => void;
     onOpenChange: (open: boolean) => void;
     item: Product | null;
     unidadesDeMedida: UnidadeDeMedida[];
@@ -229,6 +265,7 @@ function ItemForm({ onSave, onOpenChange, item, unidadesDeMedida }: ItemFormProp
         setFormData(prev => ({
             ...prev,
             [tax]: {
+                // @ts-ignore
                 ...prev[tax],
                 [field]: value
             }
@@ -286,9 +323,9 @@ function ItemForm({ onSave, onOpenChange, item, unidadesDeMedida }: ItemFormProp
                                             <SelectValue placeholder="Selecione..." />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {unidadesDeMedida.map(un => (
-                                                <SelectItem key={un.id} value={un.sigla}>{un.sigla} - {un.descricao}</SelectItem>
-                                            ))}
+                                            <SelectItem value="UN">UN - Unidade</SelectItem>
+                                            <SelectItem value="KG">KG - Quilograma</SelectItem>
+                                            <SelectItem value="CX">CX - Caixa</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>

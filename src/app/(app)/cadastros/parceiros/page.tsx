@@ -16,16 +16,26 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Partner, PartnerType, PersonType } from '@/types/partner';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useCompany, useLocalStorage } from '@/hooks/use-company';
+import { useCompany } from '@/hooks/use-company';
 import { AuditLog, logAudit } from '@/lib/audit-log';
 import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, doc, addDoc, updateDoc, deleteDoc, query } from 'firebase/firestore';
 
 export default function ParceirosPage() {
     const { toast } = useToast();
-    const { useScopedData } = useCompany();
-    const [partners, setPartners] = useScopedData<Partner[]>('partners', []);
-    const [auditLogs, setAuditLogs] = useLocalStorage<AuditLog[]>('audit-trail-logs', []);
+    const { currentCompany } = useCompany();
+    const firestore = useFirestore();
+
+    const partnersQuery = useMemoFirebase(() => {
+        if (!currentCompany) return null;
+        return query(collection(firestore, "empresas", String(currentCompany), "parceiros"));
+    }, [firestore, currentCompany]);
+
+    const { data: partners, isLoading: isLoadingPartners } = useCollection<Partner>(partnersQuery as any);
+    
+    const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]); // This should also go to Firestore
 
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -34,26 +44,38 @@ export default function ParceirosPage() {
     const [isReadOnly, setIsReadOnly] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     
-    const handleSavePartner = (partnerData: Omit<Partner, 'id'>) => {
-        if (editingPartner) {
-            // Update existing partner
-            setPartners(prev => prev.map(p => p.id === editingPartner.id ? { ...editingPartner, ...partnerData } : p));
-            toast({
-                title: "Parceiro Atualizado!",
-                description: `O parceiro ${partnerData.name} foi atualizado com sucesso.`
+    const handleSavePartner = async (partnerData: Omit<Partner, 'id' | 'empresaId'>) => {
+        if (!currentCompany) return;
+        
+        try {
+            if (editingPartner) {
+                // Update existing partner
+                const partnerDoc = doc(firestore, "empresas", String(currentCompany), "parceiros", editingPartner.id);
+                await updateDoc(partnerDoc, partnerData);
+                toast({
+                    title: "Parceiro Atualizado!",
+                    description: `O parceiro ${partnerData.name} foi atualizado com sucesso.`
+                });
+                logAudit(setAuditLogs, 'UPDATE', 'Parceiros', `Atualizou o parceiro "${partnerData.name}".`);
+            } else {
+                // Add new partner
+                const partnersCollection = collection(firestore, "empresas", String(currentCompany), "parceiros");
+                const newDocRef = await addDoc(partnersCollection, { ...partnerData, empresaId: String(currentCompany) });
+                toast({
+                    title: "Parceiro Salvo!",
+                    description: `O parceiro ${partnerData.name} foi adicionado com sucesso.`
+                });
+                logAudit(setAuditLogs, 'CREATE', 'Parceiros', `Criou o parceiro "${partnerData.name}" (Doc ID: ${newDocRef.id}).`);
+            }
+        } catch (error: any) {
+             toast({
+                variant: "destructive",
+                title: "Erro ao salvar parceiro",
+                description: error.message,
             });
-            logAudit(setAuditLogs, 'UPDATE', 'Parceiros', `Atualizou o parceiro "${partnerData.name}".`);
-            setEditingPartner(null);
-        } else {
-            // Add new partner
-            const newPartner = { ...partnerData, id: Date.now() };
-            setPartners(prev => [...prev, newPartner]);
-            toast({
-                title: "Parceiro Salvo!",
-                description: `O parceiro ${newPartner.name} foi adicionado com sucesso.`
-            });
-            logAudit(setAuditLogs, 'CREATE', 'Parceiros', `Criou o parceiro "${newPartner.name}" (Doc: ${newPartner.document}).`);
         }
+        
+        setEditingPartner(null);
         setIsDialogOpen(false);
     };
 
@@ -61,15 +83,24 @@ export default function ParceirosPage() {
         setItemToDelete(partner);
     };
 
-    const handleConfirmDelete = () => {
-        if (itemToDelete) {
-            setPartners(prev => prev.filter(p => p.id !== itemToDelete.id));
-            toast({
-                variant: "destructive",
-                title: "Parceiro Excluído!",
-                description: `O parceiro ${itemToDelete.name} foi removido.`
-            });
-            logAudit(setAuditLogs, 'DELETE', 'Parceiros', `Excluiu o parceiro "${itemToDelete.name}".`);
+    const handleConfirmDelete = async () => {
+        if (itemToDelete && currentCompany) {
+             try {
+                const partnerDoc = doc(firestore, "empresas", String(currentCompany), "parceiros", itemToDelete.id);
+                await deleteDoc(partnerDoc);
+                toast({
+                    variant: "destructive",
+                    title: "Parceiro Excluído!",
+                    description: `O parceiro ${itemToDelete.name} foi removido.`
+                });
+                logAudit(setAuditLogs, 'DELETE', 'Parceiros', `Excluiu o parceiro "${itemToDelete.name}".`);
+            } catch (error: any) {
+                toast({
+                    variant: "destructive",
+                    title: "Erro ao excluir parceiro",
+                    description: error.message,
+                });
+            }
             setItemToDelete(null);
         }
     };
@@ -95,6 +126,7 @@ export default function ParceirosPage() {
     }
 
     const filteredPartners = useMemo(() => {
+        if (!partners) return [];
         return partners.filter(partner => 
             partner.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             partner.document.toLowerCase().includes(searchTerm.toLowerCase())
@@ -124,7 +156,7 @@ export default function ParceirosPage() {
                     <div className="flex items-center justify-between">
                         <div>
                             <CardTitle>Parceiros Cadastrados</CardTitle>
-                            <CardDescription>{partners.length} parceiros encontrados.</CardDescription>
+                            <CardDescription>{partners?.length || 0} parceiros encontrados.</CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
                              <div className="relative flex-grow">
@@ -166,7 +198,13 @@ export default function ParceirosPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredPartners.length > 0 ? (
+                                {isLoadingPartners ? (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="h-24 text-center">
+                                            <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
+                                        </TableCell>
+                                    </TableRow>
+                                ) : filteredPartners.length > 0 ? (
                                     filteredPartners.map(partner => (
                                         <TableRow key={partner.id}>
                                             <TableCell className="font-medium">{partner.name}</TableCell>
@@ -234,7 +272,7 @@ export default function ParceirosPage() {
 }
 
 interface PartnerFormProps {
-    onSave: (partner: Omit<Partner, 'id'>) => void;
+    onSave: (partner: Omit<Partner, 'id' | 'empresaId'>) => void;
     onOpenChange: (open: boolean) => void;
     partner: Partner | null;
     isReadOnly: boolean;
@@ -242,6 +280,7 @@ interface PartnerFormProps {
 
 function PartnerForm({ onSave, onOpenChange, partner, isReadOnly }: PartnerFormProps) {
     const { toast } = useToast();
+    
     const [personType, setPersonType] = useState<PersonType>('JURIDICA');
     const [document, setDocument] = useState('');
     const [name, setName] = useState('');
@@ -367,15 +406,15 @@ function PartnerForm({ onSave, onOpenChange, partner, isReadOnly }: PartnerFormP
         if (personType === 'JURIDICA') {
             let formatted = onlyNumbers;
             if (formatted.length > 2) formatted = `${formatted.slice(0, 2)}.${formatted.slice(2)}`;
-            if (formatted.length > 6) formatted = `${formatted.slice(0, 6)}.${formatted.slice(6)}`;
-            if (formatted.length > 10) formatted = `${formatted.slice(0, 10)}/${formatted.slice(10)}`;
-            if (formatted.length > 15) formatted = `${formatted.slice(0, 15)}-${formatted.slice(15)}`;
+            if (formatted.length > 5) formatted = `${formatted.slice(0, 5)}.${formatted.slice(5)}`;
+            if (formatted.length > 8) formatted = `${formatted.slice(0, 8)}/${formatted.slice(8)}`;
+            if (formatted.length > 12) formatted = `${formatted.slice(0, 12)}-${formatted.slice(12)}`;
             setDocument(formatted.slice(0, 18));
         } else { // FISICA
              let formatted = onlyNumbers;
             if (formatted.length > 3) formatted = `${formatted.slice(0, 3)}.${formatted.slice(3)}`;
-            if (formatted.length > 7) formatted = `${formatted.slice(0, 7)}.${formatted.slice(7)}`;
-            if (formatted.length > 11) formatted = `${formatted.slice(0, 11)}-${formatted.slice(11)}`;
+            if (formatted.length > 6) formatted = `${formatted.slice(0, 6)}.${formatted.slice(6)}`;
+            if (formatted.length > 9) formatted = `${formatted.slice(0, 9)}-${formatted.slice(9)}`;
             setDocument(formatted.slice(0, 14));
         }
     }

@@ -4,19 +4,29 @@
       "id": "user-avatar-1",
       "description": "Avatar do usuário",
       "imageUrl": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxwZXJzb258ZW58MHx8fHwxNzY0NTU1MDAxfDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "pessoa"
+      "imageHint": "pessoa",
+      "category": "Avatar"
     },
     {
       "id": "login-background",
       "description": "Fundo abstrato para a página de login",
       "imageUrl": "https://images.unsplash.com/photo-1600376691342-236eab114592?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8b2ZmaWNlJTIwYnVzaW5lc3N8ZW58MHx8fHwxNzY0NjM1MTU4fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "escritório negócio"
+      "imageHint": "escritório negócio",
+      "category": "Background"
     },
     {
       "id": "login-character",
       "description": "Personagem de desenho animado 3D para a tela de login",
       "imageUrl": "https://images.unsplash.com/photo-1740252117012-bb53ad05e370?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHwzZCUyMGNoYXJhY3RlcnxlbnwwfHx8fDE3NjQ3MDgwNDZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "3d character"
+      "imageHint": "3d character",
+      "category": "Marketing"
+    },
+    {
+      "id": "login-background-professional",
+      "description": "Fundo profissional para a página de login, mostrando um escritório moderno",
+      "imageUrl": "https://images.unsplash.com/photo-1521737852567-6949f3f9f2b5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wzNjk5ODV8MHwxfHNlYXJjaHw3fHxtb2Rlcm4lMjBvZmZpY2V8ZW58MHx8fHwxNjkyMTI0NDU1fDA&ixlib=rb-4.0.3&q=80&w=1080",
+      "imageHint": "escritório moderno",
+      "category": "Background"
     }
   ]
 }

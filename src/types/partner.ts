@@ -2,7 +2,8 @@ export type PersonType = 'JURIDICA' | 'FISICA';
 export type PartnerType = 'Cliente' | 'Fornecedor' | 'Transportadora';
 
 export interface Partner {
-    id: number;
+    id: string;
+    empresaId?: string; // Optional because it's handled at the collection level
     personType: PersonType;
     name: string;
     document: string;

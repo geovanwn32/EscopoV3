@@ -1,14 +1,12 @@
 
-
 'use client';
 import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useToast } from '@/hooks/use-toast';
-import { useCompany, useLocalStorage } from '@/hooks/use-company';
+import { useLocalStorage, type Company } from '@/hooks/use-company';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, Calendar as CalendarIcon, Shield, User as UserIcon, RefreshCw, Search, MoreHorizontal, Pencil, Trash2, Crown, Building, Briefcase, Upload } from 'lucide-react';
+import { Check, X, Calendar as CalendarIcon, Shield, User as UserIcon, RefreshCw, Search, MoreHorizontal, Pencil, Trash2, Crown, Building, Briefcase, Upload, Users, Clock, FileWarning, ArrowUpDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Image as ImageIcon, LayoutGrid, FileType } from 'lucide-react';
 import { AuditLog, logAudit } from '@/lib/audit-log';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -26,6 +24,9 @@ import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useUser } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
 const modules = [
@@ -62,17 +63,33 @@ interface User {
     photoURL?: string;
 }
 
+type SortKey = keyof User | 'licenca' | 'criacao';
+
+const adminTools = [
+    { id: 'geral', label: 'Visão Geral', icon: LayoutGrid, href: '/admin' },
+    { id: 'media', label: 'Gerenciador de Mídia', icon: ImageIcon, href: '/admin/gerenciador-de-midia' },
+]
+
 export default function AdminPage() {
     const { toast } = useToast();
-    const { companies } = useCompany();
     const [users, setUsers] = useLocalStorage<User[]>('global-users', []);
     const [auditLogs, setAuditLogs] = useLocalStorage<AuditLog[]>('audit-trail-logs', []);
     const { user: firebaseUser } = useUser();
+    const [companies] = useLocalStorage<Company[]>('companies', []);
     
     const [userToEdit, setUserToEdit] = useState<User | null>(null);
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeProfile, setActiveProfile] = useState<User | null>(null);
+
+    // State for advanced controls
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [planFilter, setPlanFilter] = useState('all');
+    const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'ascending' | 'descending' }>({ key: 'name', direction: 'ascending' });
+    const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
+
 
      useEffect(() => {
         if (firebaseUser) {
@@ -85,19 +102,73 @@ export default function AdminPage() {
         }
     }, [firebaseUser]);
 
+    const kpiData = useMemo(() => {
+        const totalUsers = users.length;
+        const pendingUsers = users.filter(u => u.status === 'Pendente').length;
+        const activeLicenses = users.filter(u => u.statusLicenca === 'Ativa').length;
+        const expiringSoon = users.filter(u => u.dataExpiracaoLicenca && new Date(u.dataExpiracaoLicenca) <= addDays(new Date(), 7)).length;
+        return { totalUsers, pendingUsers, activeLicenses, expiringSoon };
+    }, [users]);
+    
+
     // Filter out the master user from the list displayed
-    const displayUsers = useMemo(() => {
-        return users.filter(user => 
-            !user.isMaster &&
-            (user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-             user.email.toLowerCase().includes(searchTerm.toLowerCase()))
-        )
-        .sort((a, b) => {
-            if (a.status === 'Pendente' && b.status !== 'Pendente') return -1;
-            if (a.status !== 'Pendente' && b.status === 'Pendente') return 1;
-            return new Date(b.creationDate || 0).getTime() - new Date(a.creationDate || 0).getTime();
+    const filteredAndSortedUsers = useMemo(() => {
+        const nonMasterUsers = users.filter(user => !user.isMaster);
+        
+        let filtered = nonMasterUsers.filter(user => {
+            const searchMatch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                user.email.toLowerCase().includes(searchTerm.toLowerCase());
+            const statusMatch = statusFilter === 'all' || user.status === statusFilter;
+            const planMatch = planFilter === 'all' || user.planoId === planFilter;
+            return searchMatch && statusMatch && planMatch;
         });
-    }, [users, searchTerm]);
+
+        if (sortConfig.key) {
+            filtered.sort((a, b) => {
+                let aValue, bValue;
+
+                if (sortConfig.key === 'licenca') {
+                    aValue = a.dataExpiracaoLicenca ? new Date(a.dataExpiracaoLicenca).getTime() : 0;
+                    bValue = b.dataExpiracaoLicenca ? new Date(b.dataExpiracaoLicenca).getTime() : 0;
+                } else if (sortConfig.key === 'criacao') {
+                     aValue = a.creationDate ? new Date(a.creationDate).getTime() : 0;
+                     bValue = b.creationDate ? new Date(b.creationDate).getTime() : 0;
+                } else {
+                    aValue = a[sortConfig.key as keyof User];
+                    bValue = b[sortConfig.key as keyof User];
+                }
+
+                if (aValue === undefined || aValue === null) return 1;
+                if (bValue === undefined || bValue === null) return -1;
+                
+                if (aValue < bValue) {
+                    return sortConfig.direction === 'ascending' ? -1 : 1;
+                }
+                if (aValue > bValue) {
+                    return sortConfig.direction === 'ascending' ? 1 : -1;
+                }
+                return 0;
+            });
+        }
+        
+        return filtered;
+
+    }, [users, searchTerm, statusFilter, planFilter, sortConfig]);
+
+    const paginatedUsers = useMemo(() => {
+        const startIndex = (currentPage - 1) * rowsPerPage;
+        return filteredAndSortedUsers.slice(startIndex, startIndex + rowsPerPage);
+    }, [filteredAndSortedUsers, currentPage, rowsPerPage]);
+
+    const totalPages = Math.ceil(filteredAndSortedUsers.length / rowsPerPage);
+
+    const handleSort = (key: SortKey) => {
+        let direction: 'ascending' | 'descending' = 'ascending';
+        if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+            direction = 'descending';
+        }
+        setSortConfig({ key, direction });
+    };
     
      const handleSaveUserEdit = (itemData: Omit<User, 'id'>) => {
         if (!userToEdit) return;
@@ -150,6 +221,25 @@ export default function AdminPage() {
 
     const handleDeleteUser = () => {
         if (!userToDelete) return;
+        
+        if (userToDelete.isMaster) {
+             toast({
+                variant: 'destructive',
+                title: 'Ação não permitida',
+                description: 'Não é possível excluir o perfil Master.',
+            });
+            setUserToDelete(null);
+            return;
+        }
+        if (userToDelete.isAdmin && users.filter(u => u.isAdmin).length <= 1) {
+             toast({
+                variant: 'destructive',
+                title: 'Ação não permitida',
+                description: 'Não é possível excluir o único perfil de administrador.',
+            });
+            setUserToDelete(null);
+            return;
+        }
 
         setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
         toast({
@@ -178,6 +268,41 @@ export default function AdminPage() {
         }
     };
 
+    const handleBulkAction = (action: 'approve' | 'reject') => {
+        if (selectedUserIds.length === 0) {
+            toast({ variant: 'destructive', title: 'Nenhum usuário selecionado' });
+            return;
+        }
+
+        if (action === 'approve') {
+            setUsers(prev => prev.map(user => {
+                if (selectedUserIds.includes(user.id) && user.status === 'Pendente') {
+                    return { 
+                        ...user, 
+                        status: 'Ativo', 
+                        dataExpiracaoLicenca: user.dataExpiracaoLicenca || addDays(new Date(), 30).toISOString() 
+                    };
+                }
+                return user;
+            }));
+            toast({ title: "Usuários Aprovados", description: `${selectedUserIds.length} usuários foram aprovados.` });
+        } else if (action === 'reject') {
+            setUsers(prev => prev.filter(user => !selectedUserIds.includes(user.id)));
+            toast({ variant: 'destructive', title: "Usuários Recusados", description: `${selectedUserIds.length} solicitações foram recusadas.` });
+        }
+
+        setSelectedUserIds([]);
+    };
+    
+    const toggleSelectAll = (checked: boolean) => {
+        if (checked) {
+            setSelectedUserIds(paginatedUsers.map(u => u.id));
+        } else {
+            setSelectedUserIds([]);
+        }
+    };
+
+
     return (
       <div className="space-y-6">
         <div className="space-y-1">
@@ -186,97 +311,223 @@ export default function AdminPage() {
             Gerencie usuários, aprove solicitações e controle as licenças de acesso ao sistema.
           </p>
         </div>
-        <Card>
-            <CardHeader>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                        <CardTitle>Gerenciamento de Usuários</CardTitle>
-                        <CardDescription>Abaixo estão todos os usuários do sistema. Aprove os pendentes e gerencie os ativos.</CardDescription>
-                    </div>
-                     <div className="flex items-center gap-2">
-                        <div className="relative flex-grow">
-                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Buscar por nome ou e-mail..." className="pl-9" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+
+        <Tabs defaultValue="geral">
+            <TabsList>
+                {adminTools.map(tool => (
+                    <TabsTrigger key={tool.id} value={tool.id} asChild>
+                       <Link href={tool.href}>
+                         <tool.icon className="mr-2 h-4 w-4" /> {tool.label}
+                       </Link>
+                    </TabsTrigger>
+                ))}
+            </TabsList>
+            
+            <TabsContent value="geral" className="mt-4">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total de Usuários</CardTitle>
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent><div className="text-2xl font-bold">{kpiData.totalUsers}</div></CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Acessos Pendentes</CardTitle>
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent><div className="text-2xl font-bold">{kpiData.pendingUsers}</div></CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Licenças Ativas</CardTitle>
+                            <Check className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent><div className="text-2xl font-bold">{kpiData.activeLicenses}</div></CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Licenças a Expirar</CardTitle>
+                            <FileWarning className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent><div className="text-2xl font-bold">{kpiData.expiringSoon}</div></CardContent>
+                    </Card>
+                </div>
+
+                <Card className="mt-6">
+                    <CardHeader>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div>
+                                <CardTitle>Gerenciamento de Usuários</CardTitle>
+                                <CardDescription>{filteredAndSortedUsers.length} usuários encontrados.</CardDescription>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <div className="relative flex-grow">
+                                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                    <Input placeholder="Buscar por nome ou e-mail..." className="pl-9" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                                </div>
+                                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                    <SelectTrigger className="w-full sm:w-[180px]"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Todos os Status</SelectItem>
+                                        <SelectItem value="Pendente">Pendente</SelectItem>
+                                        <SelectItem value="Ativo">Ativo</SelectItem>
+                                        <SelectItem value="Inativo">Inativo</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <Select value={planFilter} onValueChange={setPlanFilter}>
+                                    <SelectTrigger className="w-full sm:w-[180px]"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Todos os Planos</SelectItem>
+                                        <SelectItem value="Gratuito">Gratuito</SelectItem>
+                                        <SelectItem value="Basico">Básico</SelectItem>
+                                        <SelectItem value="Profissional">Profissional</SelectItem>
+                                        <SelectItem value="Empresarial">Empresarial</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <Button variant="outline" size="icon" onClick={handleRefresh}>
+                                    <RefreshCw className="h-4 w-4" />
+                                    <span className="sr-only">Atualizar</span>
+                                </Button>
+                            </div>
                         </div>
-                        <Button variant="outline" size="icon" onClick={handleRefresh}>
-                            <RefreshCw className="h-4 w-4" />
-                            <span className="sr-only">Atualizar</span>
-                        </Button>
-                    </div>
-                </div>
-            </CardHeader>
-            <CardContent>
-                 <div className="rounded-md border">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Nome</TableHead>
-                                <TableHead>Email</TableHead>
-                                <TableHead>Plano Solicitado</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Licença Expira em</TableHead>
-                                <TableHead className="w-[180px] text-center">Ações</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {displayUsers.length > 0 ? displayUsers.map(user => (
-                                <TableRow key={user.id} className={user.status === 'Pendente' ? 'bg-muted/50' : ''}>
-                                    <TableCell className="font-medium flex items-center gap-2">
-                                        {user.isAdmin ? <Shield className='h-4 w-4 text-primary' /> : <UserIcon className='h-4 w-4 text-muted-foreground' />}
-                                        {user.name}
-                                    </TableCell>
-                                    <TableCell>{user.email}</TableCell>
-                                     <TableCell>
-                                        {user.planoId ? <Badge variant="outline" className='flex items-center gap-1.5'><Briefcase className='h-3 w-3'/> {user.planoId}</Badge> : 'N/A'}
-                                    </TableCell>
-                                    <TableCell>{getStatusBadge(user.status)}</TableCell>
-                                    <TableCell>
-                                        {user.dataExpiracaoLicenca ? format(new Date(user.dataExpiracaoLicenca), 'dd/MM/yyyy') : 'N/A'}
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                        {user.status === 'Pendente' ? (
-                                            <div className="space-x-2">
-                                                <Button size="sm" variant="outline" className="text-red-500 border-red-500/50 hover:bg-red-500/10 hover:text-red-600" onClick={() => handleRejection(user.id)}>
-                                                    <X className="mr-2 h-4 w-4"/>
-                                                    Recusar
-                                                </Button>
-                                                <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600" onClick={() => setUserToEdit(user)}>
-                                                    <Pencil className="mr-2 h-4 w-4"/>
-                                                    Revisar
-                                                </Button>
-                                            </div>
-                                        ) : (
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                        <span className="sr-only">Ações</span>
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem onClick={() => setUserToEdit(user)}>
-                                                        <Pencil className="mr-2 h-4 w-4" /> Editar
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setUserToDelete(user)}>
-                                                        <Trash2 className="mr-2 h-4 w-4" /> Excluir
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        )}
-                                    </TableCell>
-                                </TableRow>
-                            )) : (
-                                <TableRow>
-                                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                                        Nenhum usuário para gerenciar no momento.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
-            </CardContent>
-        </Card>
+                        {selectedUserIds.length > 0 && (
+                            <div className="flex items-center gap-2 mt-4 border-t pt-4">
+                                <span className="text-sm text-muted-foreground">{selectedUserIds.length} selecionado(s)</span>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild><Button variant="outline">Ações em Lote <ArrowUpDown className="ml-2 h-4 w-4"/></Button></DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                        <DropdownMenuItem onSelect={() => handleBulkAction('approve')} className="text-emerald-600 focus:text-emerald-700">Aprovar Selecionados</DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => handleBulkAction('reject')} className="text-destructive focus:text-destructive">Recusar Selecionados</DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                        )}
+                    </CardHeader>
+                    <CardContent>
+                        <div className="rounded-md border">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="w-[50px]"><Checkbox onCheckedChange={toggleSelectAll} checked={selectedUserIds.length === paginatedUsers.length && paginatedUsers.length > 0} /></TableHead>
+                                        <TableHead className="cursor-pointer" onClick={() => handleSort('name')}>
+                                            <div className='flex items-center gap-2'>Nome <ArrowUpDown className="h-3 w-3" /></div>
+                                        </TableHead>
+                                        <TableHead>Email</TableHead>
+                                        <TableHead>Plano Solicitado</TableHead>
+                                        <TableHead className="cursor-pointer" onClick={() => handleSort('criacao')}>
+                                            <div className='flex items-center gap-2'>Data de Criação <ArrowUpDown className="h-3 w-3" /></div>
+                                        </TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead className="cursor-pointer" onClick={() => handleSort('licenca')}>
+                                            <div className='flex items-center gap-2'>Licença Expira em <ArrowUpDown className="h-3 w-3" /></div>
+                                        </TableHead>
+                                        <TableHead className="w-[100px] text-center">Ações</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {paginatedUsers.length > 0 ? paginatedUsers.map(user => (
+                                        <TableRow key={user.id} className={user.status === 'Pendente' ? 'bg-muted/50' : ''} data-state={selectedUserIds.includes(user.id) && "selected"}>
+                                            <TableCell><Checkbox checked={selectedUserIds.includes(user.id)} onCheckedChange={(checked) => setSelectedUserIds(prev => checked ? [...prev, user.id] : prev.filter(id => id !== user.id))} /></TableCell>
+                                            <TableCell className="font-medium flex items-center gap-2">
+                                                {user.isMaster ? <Crown className='h-4 w-4 text-amber-500' /> : user.isAdmin ? <Shield className='h-4 w-4 text-primary' /> : <UserIcon className='h-4 w-4 text-muted-foreground' />}
+                                                {user.name}
+                                            </TableCell>
+                                            <TableCell>{user.email}</TableCell>
+                                            <TableCell>
+                                                {user.planoId ? <Badge variant="outline" className='flex items-center gap-1.5'><Briefcase className='h-3 w-3'/> {user.planoId}</Badge> : 'N/A'}
+                                            </TableCell>
+                                            <TableCell>
+                                                {user.creationDate ? format(new Date(user.creationDate), 'dd/MM/yyyy') : 'N/A'}
+                                            </TableCell>
+                                            <TableCell>{getStatusBadge(user.status)}</TableCell>
+                                            <TableCell>
+                                                {user.dataExpiracaoLicenca ? format(new Date(user.dataExpiracaoLicenca), 'dd/MM/yyyy') : 'N/A'}
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                {user.status === 'Pendente' ? (
+                                                    <div className="space-x-2">
+                                                        <Button size="sm" variant="outline" className="text-red-500 border-red-500/50 hover:bg-red-500/10 hover:text-red-600" onClick={() => handleRejection(user.id)}>
+                                                            <X className="mr-2 h-4 w-4"/>
+                                                            Recusar
+                                                        </Button>
+                                                        <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600" onClick={() => setUserToEdit(user)}>
+                                                            <Pencil className="mr-2 h-4 w-4"/>
+                                                            Revisar
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                                <MoreHorizontal className="h-4 w-4" />
+                                                                <span className="sr-only">Ações</span>
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem onClick={() => setUserToEdit(user)}>
+                                                                <Pencil className="mr-2 h-4 w-4" /> Editar
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setUserToDelete(user)}>
+                                                                <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                )}
+                                            </TableCell>
+                                        </TableRow>
+                                    )) : (
+                                        <TableRow>
+                                            <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                                                Nenhum usuário encontrado com os filtros atuais.
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+                        <div className="flex items-center justify-between pt-4">
+                            <div className="text-sm text-muted-foreground">
+                                {selectedUserIds.length} de {filteredAndSortedUsers.length} linha(s) selecionada(s).
+                            </div>
+                            <div className="flex items-center space-x-6 lg:space-x-8">
+                                <div className="flex items-center space-x-2">
+                                    <p className="text-sm font-medium">Linhas por página</p>
+                                    <Select
+                                        value={`${rowsPerPage}`}
+                                        onValueChange={(value) => {
+                                        setRowsPerPage(Number(value))
+                                        setCurrentPage(1)
+                                        }}
+                                    >
+                                        <SelectTrigger className="h-8 w-[70px]">
+                                        <SelectValue placeholder={rowsPerPage} />
+                                        </SelectTrigger>
+                                        <SelectContent side="top">
+                                        {[5, 10, 20, 50].map((pageSize) => (
+                                            <SelectItem key={pageSize} value={`${pageSize}`}>
+                                            {pageSize}
+                                            </SelectItem>
+                                        ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+                                    Página {currentPage} de {totalPages}
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <Button variant="outline" className="hidden h-8 w-8 p-0 lg:flex" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}><ChevronsLeft className="h-4 w-4" /></Button>
+                                    <Button variant="outline" className="h-8 w-8 p-0" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}><ChevronLeft className="h-4 w-4" /></Button>
+                                    <Button variant="outline" className="h-8 w-8 p-0" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}><ChevronRight className="h-4 w-4" /></Button>
+                                    <Button variant="outline" className="hidden h-8 w-8 p-0 lg:flex" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}><ChevronsRight className="h-4 w-4" /></Button>
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+        </Tabs>
 
         {activeProfile && <UserEditDialog 
             open={!!userToEdit}
@@ -285,6 +536,7 @@ export default function AdminPage() {
             onSave={handleSaveUserEdit}
             users={users}
             activeProfile={activeProfile}
+            allCompanies={companies}
         />}
 
         <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
@@ -301,7 +553,6 @@ export default function AdminPage() {
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
-
       </div>
     );
 }
@@ -314,6 +565,7 @@ interface UserEditDialogProps {
     item: User | null;
     users: User[];
     activeProfile: User;
+    allCompanies: Company[];
 }
 
 const initialPermissions: UserPermissions = modules.reduce((acc, module) => {
@@ -338,7 +590,7 @@ const initialFormState: Omit<User, 'id'> = {
     photoURL: '',
 };
 
-function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile }: UserEditDialogProps) {
+function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile, allCompanies }: UserEditDialogProps) {
     const { toast } = useToast();
     const [formData, setFormData] = useState(initialFormState);
 
@@ -375,6 +627,27 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
     const handleInputChange = (field: keyof typeof formData, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
+    
+    const handlePermissionChange = (permission: string, isChecked: boolean) => {
+        setFormData(prev => ({
+            ...prev,
+            permissions: {
+                ...prev.permissions,
+                [permission]: isChecked,
+            }
+        }))
+    };
+
+    const handleCompanyAccessChange = (companyId: number, isChecked: boolean) => {
+        setFormData(prev => {
+            const currentIds = prev.allowedCompanyIds || [];
+            if (isChecked) {
+                return { ...prev, allowedCompanyIds: [...currentIds, companyId] };
+            } else {
+                return { ...prev, allowedCompanyIds: currentIds.filter(id => id !== companyId) };
+            }
+        });
+    };
 
     const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -407,7 +680,7 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="sm:max-w-4xl">
                 <DialogHeader>
                     <DialogTitle>{isApprovalFlow ? 'Revisar e Aprovar Usuário' : (item ? 'Editar' : 'Convidar') + ' Usuário'}</DialogTitle>
                     <DialogDescription>{isApprovalFlow ? 'Revise os dados, defina a licença e aprove o acesso do usuário.' : 'Preencha os dados e defina o perfil de acesso do usuário.'}</DialogDescription>
@@ -501,7 +774,8 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
 
                     <Separator />
 
-                    {activeProfile.isAdmin && isEditingSelf && (
+                    {activeProfile.isMaster && (
+                        <>
                         <div className="space-y-2 flex items-center justify-between rounded-lg border p-3 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-900">
                             <div className='space-y-0.5'>
                                 <Label htmlFor="isMasterSwitch" className='flex items-center text-amber-900 dark:text-amber-300'><Crown className='mr-2 h-4 w-4' />Perfil Master</Label>
@@ -513,11 +787,9 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
                                 id="isMasterSwitch"
                                 checked={formData.isMaster}
                                 onCheckedChange={(checked) => handleInputChange('isMaster', checked)}
-                                disabled={otherMasterExists}
+                                disabled={isEditingSelf && !otherMasterExists}
                             />
                         </div>
-                    )}
-                    {activeProfile.isMaster && (
                         <div className="space-y-2 flex items-center justify-between rounded-lg border p-3">
                             <div className='space-y-0.5'>
                                 <Label htmlFor="isAdmin" className='flex items-center'><Shield className='mr-2 h-4 w-4 text-primary' />Perfil de Administrador</Label>
@@ -529,10 +801,54 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
                                 id="isAdmin"
                                 checked={formData.isAdmin}
                                 onCheckedChange={(checked) => handleInputChange('isAdmin', checked)}
-                                disabled={item?.isMaster || (item?.isAdmin && !otherAdminExists)}
+                                disabled={item?.isMaster || (isEditingSelf && !otherAdminExists)}
                             />
                         </div>
+                        </>
                     )}
+
+                    {!formData.isAdmin && !formData.isMaster && (
+                        <>
+                            <Separator />
+                            <div className="space-y-3">
+                                <Label className="flex items-center"><Building className="mr-2 h-4 w-4" /> Acesso às Empresas</Label>
+                                <div className="max-h-32 overflow-y-auto space-y-2 rounded-md border p-2">
+                                    {allCompanies.map(company => (
+                                        <div key={company.id} className="flex items-center space-x-2">
+                                            <Checkbox
+                                                id={`company-${company.id}`}
+                                                checked={formData.allowedCompanyIds?.includes(company.id)}
+                                                onCheckedChange={(checked) => handleCompanyAccessChange(company.id, !!checked)}
+                                            />
+                                            <label htmlFor={`company-${company.id}`} className="text-sm font-medium leading-none">
+                                                {company.name}
+                                            </label>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <Separator />
+                            <div className="space-y-3">
+                                <Label className="flex items-center"><Shield className="mr-2 h-4 w-4" /> Permissões de Módulo</Label>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 rounded-md border p-4">
+                                    {modules.map(module => (
+                                        <div key={module.id} className="flex items-center space-x-2">
+                                            <Checkbox
+                                                id={`perm-${module.id}`}
+                                                checked={formData.permissions?.[module.id] || false}
+                                                onCheckedChange={(checked) => handlePermissionChange(module.id, !!checked)}
+                                            />
+                                            <label htmlFor={`perm-${module.id}`} className="text-sm font-medium leading-none">
+                                                {module.label}
+                                            </label>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+
                     <div className="space-y-2 flex items-center justify-between rounded-lg border p-3">
                         <div className='space-y-0.5'>
                             <Label htmlFor="status" className='flex items-center'>Status do Usuário</Label>
@@ -557,13 +873,7 @@ function UserEditDialog({ open, onOpenChange, item, onSave, users, activeProfile
         </Dialog>
     );
 }
-    
 
     
-
-    
-
-    
-
 
     

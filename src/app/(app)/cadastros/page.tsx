@@ -1,9 +1,12 @@
+
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Package, Users, Handshake, Briefcase, FileText, FileSignature, Scale, Table, Globe, BookText, AreaChart } from 'lucide-react';
+import { Package, Users, Handshake, Briefcase, FileText, FileSignature, Scale, Table, Globe, BookText, AreaChart, Percent } from 'lucide-react';
 import Link from 'next/link';
+import { useCompany } from '@/hooks/use-company';
+import { useMemo } from 'react';
 
-const cadastroItens = [
+const allCadastroItens = [
     {
         href: '/cadastros/parceiros',
         icon: <Handshake className="h-8 w-8" />,
@@ -26,18 +29,18 @@ const cadastroItens = [
         color: "text-amber-600 bg-amber-100/80 group-hover:bg-amber-600 dark:bg-amber-900/40 dark:text-amber-400 dark:group-hover:bg-amber-500",
     },
     {
-        href: '/funcionarios',
+        href: '/cadastros/funcionarios',
         icon: <Users className="h-8 w-8" />,
         label: 'Funcionários',
         description: 'Gerencie os dados dos seus colaboradores.',
-        color: "text-red-600 bg-red-100/80 group-hover:bg-red-600 dark:bg-red-900/40 dark:text-red-400 dark:group-hover:bg-red-500",
+        color: "text-rose-600 bg-rose-100/80 group-hover:bg-rose-600 dark:bg-rose-900/40 dark:text-rose-400 dark:group-hover:bg-rose-500",
     },
-     {
-        href: '/cadastros/usuarios',
+    {
+        href: '/socios',
         icon: <Users className="h-8 w-8" />,
-        label: 'Usuários e Perfis',
-        description: 'Gerencie usuários, perfis e permissões de acesso.',
-        color: "text-orange-600 bg-orange-100/80 group-hover:bg-orange-600 dark:bg-orange-900/40 dark:text-orange-400 dark:group-hover:bg-orange-500",
+        label: 'Sócios',
+        description: 'Gerencie os dados dos sócios da empresa.',
+        color: "text-blue-600 bg-blue-100/80 group-hover:bg-blue-600 dark:bg-blue-900/40 dark:text-blue-400 dark:group-hover:bg-blue-500",
     },
     {
         href: '/cadastros/cfop',
@@ -66,6 +69,13 @@ const cadastroItens = [
         label: 'Unidades de Medida',
         description: 'Gerencie as unidades de medida para produtos.',
         color: "text-rose-600 bg-rose-100/80 group-hover:bg-rose-600 dark:bg-rose-900/40 dark:text-rose-400 dark:group-hover:bg-rose-500",
+    },
+    {
+        href: '/rubricas',
+        icon: <Percent className="h-8 w-8" />,
+        label: 'Rubricas',
+        description: 'Gerencie as rubricas para fiscal e pessoal.',
+        color: "text-zinc-600 bg-zinc-100/80 group-hover:bg-zinc-600 dark:bg-zinc-700/40 dark:text-zinc-400 dark:group-hover:bg-zinc-500",
     },
     {
         href: '/cadastros/tabelas-cst',
@@ -98,6 +108,21 @@ const cadastroItens = [
 ]
 
 export default function CadastrosPage() {
+    const { currentCompany } = useCompany();
+
+    const cadastroItens = useMemo(() => {
+        // ID da empresa administradora
+        const adminCompanyId = 1764646068539;
+
+        // Se a empresa atual não for a administradora, filtre o item "Usuários e Perfis"
+        if (currentCompany !== adminCompanyId) {
+            return allCadastroItens.filter(item => item.href !== '/cadastros/usuarios');
+        }
+
+        // Se for a empresa administradora, retorne todos os itens
+        return allCadastroItens;
+    }, [currentCompany]);
+
     return (
         <div className="space-y-6">
             <div className="space-y-1">
